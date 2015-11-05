@@ -63,18 +63,18 @@ Being based on both OAuth2 and UMA concepts, this project can be used as great t
 * Provide a better and more secure way to your users share information
 
 
-### Protection API
+### The Protection API
 
 The **Protection API** provides ways for resource servers to remotely register the resources they want to protect, as well manage policies
 and permissions for these resources.
 
-### Authorization API
+### The Authorization API
 
 The **Authorization API** provides ways for any client application to ask for authorization for a given set of resources and/or any scopes. When
 asking for authorization, all policies associated with the resources and/or scopes being requested will be evaluated, as a result the server
 will return a specific token that can finally be used to access a protected resource on a resource server.
 
-### Entitlements API
+### The Entitlements API
 
 The **Entitlements API** provides ways for any client application to ask for all the permissions for a given user, based on the policies
 associated with each resource. In other words, it provides for clients what an user is entitled to do in the scope of a given resource server, which resources
