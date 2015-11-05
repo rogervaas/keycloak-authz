@@ -1,0 +1,16 @@
+<div data-ng-controller="ClientTabCtrl">
+
+    <h1 data-ng-show="create">Add Resource Server</h1>
+    <h1 data-ng-hide="create">
+        {{server.name|capitalize}}
+        <i id="removeServer" class="pficon pficon-delete clickable" data-ng-click="removeServer()" data-ng-show="!path[5]"></i>
+    </h1>
+
+    <ul class="nav nav-tabs nav-tabs-pf"  data-ng-hide="create && !path[4]">
+        <li ng-class="{active: !path[5]}"><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}">Settings</a></li>
+        <li ng-class="{active: path[5] == 'resource'}" data-ng-hide="create"><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}/resource">Resources</a></li>
+        <li ng-class="{active: path[5] == 'scope'}" data-ng-hide="create"><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}/scope">Scopes</a></li>
+        <li ng-class="{active: path[5] == 'policy'}" data-ng-hide="create"><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}/policy">Server Policies</a></li>
+        <li ng-class="{active: path[5] == 'evaluate'}" data-ng-hide="create"><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}/evaluate">Evaluate</a></li>
+    </ul>
+</div>

@@ -1,0 +1,13 @@
+package com.photoz.authz.policy.admin
+
+import org.keycloak.authz.core.policy.Evaluation;
+
+rule "Authorize Admin Resources"
+    dialect "mvel"
+        when
+           $evaluation : Evaluation(
+               $context : context, $context.identity.hasRole("admin")
+           )
+        then
+           $evaluation.grant();
+end

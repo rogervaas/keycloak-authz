@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <artifactId>keycloak-authz-enforcer-parent</artifactId>
+        <groupId>org.keycloak</groupId>
+        <version>1.0-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>keycloak-authz-servlet-enforcer</artifactId>
+    <packaging>jar</packaging>
+
+    <name>KeyCloak Authz: Servlet Policy Enforcement and Decision Point</name>
+    <description>KeyCloak: Servlet Policy Enforcement and Decision Point</description>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jboss.spec.javax.servlet</groupId>
+            <artifactId>jboss-servlet-api_3.1_spec</artifactId>
+            <version>1.0.0.Final</version>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-authz-client</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-authz-server-admin-services</artifactId>
+            <version>1.0-SNAPSHOT</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.undertow</groupId>
+            <artifactId>undertow-servlet</artifactId>
+            <version>1.2.9.Final</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+</project>

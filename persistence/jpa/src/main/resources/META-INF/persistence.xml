@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence version="2.0"
+	xmlns="http://java.sun.com/xml/ns/persistence" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+        http://java.sun.com/xml/ns/persistence
+        http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
+	<persistence-unit name="keycloak-authz-admin-jpa-pu" transaction-type="RESOURCE_LOCAL">
+		<provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+		<non-jta-data-source>java:jboss/datasources/KeycloakAuthzDS</non-jta-data-source>
+
+		<class>org.keycloak.authz.persistence.jpa.entity.ResourceServerEntity</class>
+		<class>org.keycloak.authz.persistence.jpa.entity.ResourceEntity</class>
+		<class>org.keycloak.authz.persistence.jpa.entity.ScopeEntity</class>
+		<class>org.keycloak.authz.persistence.jpa.entity.PolicyEntity</class>
+
+		<exclude-unlisted-classes>true</exclude-unlisted-classes>
+
+		<properties>
+			<property name="hibernate.hbm2ddl.auto" value="update" />
+			<property name="hibernate.show_sql" value="true" />
+		</properties>
+	</persistence-unit>
+</persistence>

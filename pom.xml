@@ -1,0 +1,88 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>org.keycloak</groupId>
+    <artifactId>keycloak-authz-parent</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>KeyCloak Authz: Parent</name>
+    <description>KeyCloak Authz: Parent</description>
+
+    <modules>
+        <module>api</module>
+        <module>persistence</module>
+        <module>provider</module>
+        <module>server</module>
+        <module>enforcer</module>
+        <module>examples</module>
+    </modules>
+
+    <properties>
+        <version.keycloak>1.5.0.Final-SNAPSHOT</version.keycloak>
+        <jboss-jaxrs-api.version>1.0.0.Final</jboss-jaxrs-api.version>
+        <resteasy.undertow.version>3.0.10.Final</resteasy.undertow.version>
+        <resteasy.jackson.provider.version>3.0.10.Final</resteasy.jackson.provider.version>
+        <version.org.kohsuke.metainf-services.metainf-services>1.5-jboss-1</version.org.kohsuke.metainf-services.metainf-services>
+
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+    </properties>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- JAX-RS -->
+            <dependency>
+                <groupId>org.jboss.spec.javax.ws.rs</groupId>
+                <artifactId>jboss-jaxrs-api_2.0_spec</artifactId>
+                <version>${jboss-jaxrs-api.version}</version>
+            </dependency>
+
+            <!-- Resteasy -->
+            <dependency>
+                <groupId>org.jboss.resteasy</groupId>
+                <artifactId>resteasy-jackson-provider</artifactId>
+                <version>${resteasy.jackson.provider.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jboss.resteasy</groupId>
+                <artifactId>resteasy-undertow</artifactId>
+                <version>${resteasy.undertow.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.kohsuke.metainf-services</groupId>
+                <artifactId>metainf-services</artifactId>
+                <version>${version.org.kohsuke.metainf-services.metainf-services}</version>
+                <scope>provided</scope>
+            </dependency>
+
+            <!-- Test -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.11</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
+    <profiles>
+        <profile>
+            <id>test</id>
+            <modules>
+                <module>testsuite</module>
+            </modules>
+        </profile>
+        <profile>
+            <id>distribution</id>
+            <modules>
+                <module>distribution/server-feature-pack</module>
+                <module>distribution/server-dist</module>
+            </modules>
+        </profile>
+    </profiles>
+
+</project>
