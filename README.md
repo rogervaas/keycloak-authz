@@ -56,8 +56,8 @@ with a high demand for information sharing.
 Being based on both OAuth2 and UMA concepts, this project can be used as great tool to:
 
 * Control your protected resources and the actions that can be performed on them
-* Centralized Policy Management
-* Centralized and RESTful-based Athorization Services for different platforms and environments    
+* Centralize Policy Management
+* Centralize and RESTful-based Athorization Services for different platforms and environments    
 * Audit and analyse authorization requests and decision results
 * Avoid replicate code across projects or redeploy your applications when your policies need to change
 * Provide a better and more secure way to your users share information
