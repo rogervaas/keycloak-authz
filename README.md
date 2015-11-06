@@ -2,10 +2,6 @@
 
 This a temporary repository holding an Authorization Server based on [Keycloak](https://github.com/keycloak/keycloak).
 
-It is under heavy development and should be used only for evaluation or testing purposes. If you need to get it running, please reach me on IRC, #keycloak on Freenode.
-
-More documentation about concepts, installation, configuration, how to use it and examples will be added as soon as some things are defined.
-
 ## Overview
 
 This projects leverage Keycloak Authorization capabilities in order to support fine-grained permissions and policies with a mix
@@ -23,9 +19,9 @@ and match of different access control mechanisms such as:
     * JBoss Drools
     * XACML (planned)
 
-The whole concept is based on a Keycloak client application acting as a resource server, which resources and their respective scopes
-are protected and ruled by a set of authorization policies. Any client application serving resources to its users can be considered as a resource server. 
-Where these resources are part of the assets of an application and organization.
+The whole concept is based on a Keycloak client application acting as a resource server, which resources and its respective scopes
+are protected and ruled by a set of authorization policies. Any client application serving resources to its users can be considered a resource server,  
+where these resources are part of the assets of an application and the organization.
 
 The authorization server is based on three main APIs:
 
@@ -50,7 +46,7 @@ Instead of doing authorization by your own, this project provides a centralized 
 and their respective policies within an application or organization using some well-known authorization patterns and standards such as OAuth2 and User-Managed Access (UMA).
 
 When talking about Web API Security, an authorization server plays an important role. Today we need to consider a very 
-heteregenous environment, where users are distributed across different regions, with different local policies, using different devices and
+heterogeneous environment, where users are distributed across different regions, with different local policies, using different devices and
 with a high demand for information sharing.
 
 Being based on both OAuth2 and UMA concepts, this project can be used as great tool to:
@@ -61,6 +57,11 @@ Being based on both OAuth2 and UMA concepts, this project can be used as great t
 * Audit and analyse authorization requests and decision results
 * Avoid replicate code across projects or redeploy your applications when your policies need to change
 * Provide a better and more secure way to your users share information
+* Obligations and Advices
+* Alerts and Notifications
+* Authorization and Resource Sharing Flows
+
+Some of these features are planned or are being developed. Feel free to contribute :)
 
 
 ### The Protection API
@@ -153,8 +154,14 @@ In this case, albums have three main scopes:
 
 The authorization requirements for this example application are based on the following premises:
 
-* Any regular user can create and view their albums
-* Only the owner of a album can delete it
+* By default, any regular user can perform any operation on their albums resources. Here we are considering policies based on the resource type.
+
+    * For instance, Alice can create, view and delete her albums. In this case, the policy that applies to the *create* scope is defined on the resource type level. 
+
+* Only the owner of a album can delete it. Here we are considering policies based on a resource instance, in other words, a album which is owned by an user.
+
+    * For instance, only Alice can delete her album. Even administrators can not delete users albums. In this case, the policy that applies to the *delete* scope is enforced on resource instances.
+
 * Only administrators can access the Administrative API (which basically provides ways to query albums for all users)
 
 That said, this application will show you how to use the AuthZ Server to define policies involving:
@@ -226,6 +233,9 @@ If everything is correct, you will be redirect to Keycloak login page. You can l
 
 Consider using this project for evaluation purposes only, right now it is under heavy development and is not prepared to go for
 production.
+
+More details about how the authorization happens, protocols and constraints will be added soon. In a nutshell, we're using a lot
+of stuff from UMA and still evaluating which parts require customizations.
 
 More features and documentation are coming, if you have any suggestion or any issue with this initial documentation, please
 file a  GitHub Issue.
