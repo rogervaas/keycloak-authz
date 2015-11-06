@@ -104,7 +104,7 @@ Once the project was built, you can obtain a distribution that can be used to st
 
 The demo distribution is located at:
 
-    /distribution/demo/target/keycloak-authz-demo-dist-1.0-SNAPSHOT.zip
+    distribution/demo/target/keycloak-authz-demo-dist-1.0-SNAPSHOT.zip
     
 Now, extract that file and you'll have a full Keycloak Server with the AuthZ Server extension installed.
 
@@ -184,14 +184,14 @@ into Keycloak, check the reference documentation.
 After importing that file, you'll have a new realm called ``photoz``. Now, let's import another configuration to configure the
 ```photoz-restful-api``` as a resource server with all resources, scopes and policies.
 
-Click on ``Resource Servers``` on the left side menu. Click on the ``Create`` button on the top of the resource server table. This will
+Click on ``Resource Servers`` on the left side menu. Click on the ``Create`` button on the top of the resource server table. This will
 open the page that allows you to create a new resource server.
 
 Click on the ``Select file`` button, which means you want to import a resource server configuration. Now select the file that is located at:
 
     examples/photoz/photoz-restful-api/photoz-restful-api-authz-config.json
     
-Now click ``Upload`` and a new resource server will created based on the ``photoz-restful-api`` client application.
+Now click ``Upload`` and a new resource server will be created based on the ``photoz-restful-api`` client application.
 
 ## Deploy and Run the Example Applications
 
@@ -200,16 +200,16 @@ To deploy the example applications, follow these steps:
     cd examples/photoz/photoz-html5-client
     mvn wildfly:deploy
     
-And then
+And then:
 
-   cd examples/photoz/photoz-restful-api
-   mvn wildfly:deploy
+    cd examples/photoz/photoz-restful-api
+    mvn wildfly:deploy
    
 Now, try to access the client application using the following URL:
 
     http://localhost:8080/photoz-html5-client
 
-If everything is correct, you will be redirect to Keycloak login page. You can login to the application with the following users:
+If everything is correct, you will be redirect to Keycloak login page. You can login to the application with the following credentials:
 
 * username: jdoe / password: jdoe
 * username: alice / password: alice
