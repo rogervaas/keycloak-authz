@@ -38,7 +38,7 @@
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.keycloak</groupId>
-                                    <artifactId>keycloak-authz-wf9-adapter-distribution</artifactId>
+                                    <artifactId>keycloak-authz-wf9-adapter-dist</artifactId>
                                     <version>${project.version}</version>
                                     <type>zip</type>
                                     <outputDirectory>${project.build.directory}/wildfly-${version.wildfly}</outputDirectory>

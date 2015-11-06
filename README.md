@@ -165,7 +165,7 @@ That said, this application will show you how to use the AuthZ Server to define 
 
 It also provides some background on how you can actually protect your JAX-RS endpoints using a *enforcer*.
 
-## Create the Example Realm and Configuring a Resource Server
+### Create the Example Realm and Configuring a Resource Server
 
 Considering that your AuthZ Server is up and running, log in to the Keycloak Administration Console.
 
@@ -193,7 +193,7 @@ Click on the ``Select file`` button, which means you want to import a resource s
     
 Now click ``Upload`` and a new resource server will be created based on the ``photoz-restful-api`` client application.
 
-## Deploy and Run the Example Applications
+### Deploy and Run the Example Applications
 
 To deploy the example applications, follow these steps:
 
@@ -214,3 +214,11 @@ If everything is correct, you will be redirect to Keycloak login page. You can l
 * username: jdoe / password: jdoe
 * username: alice / password: alice
 * username: admin / password: admin
+
+## Considerations
+
+Consider using this project for evaluation purposes only, right now it is under heavy development and is not prepared to go for
+production.
+
+More features and documentation are coming, if you have any suggestion or any issue with this initial documentation, please
+file a  GitHub Issue.
