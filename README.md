@@ -165,7 +165,7 @@ That said, this application will show you how to use the AuthZ Server to define 
 
 It also provides some background on how you can actually protect your JAX-RS endpoints using a *enforcer*.
 
-### Create the Example Realm and Configuring a Resource Server
+### Create the Example Realm and a Resource Server
 
 Considering that your AuthZ Server is up and running, log in to the Keycloak Administration Console.
 
