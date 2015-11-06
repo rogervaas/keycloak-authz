@@ -43,15 +43,30 @@ public class AuthzClient {
     private final Configuration serverConfiguration;
     private final ClientConfiguration clientConfiguration;
 
-    public AuthzClient(Configuration serverConfiguration) {
+    private AuthzClient(Configuration serverConfiguration) {
         this.serverConfiguration = serverConfiguration;
         this.clientConfiguration = null;
     }
 
-    public AuthzClient(ClientConfiguration serverConfiguration) {
-        this.serverConfiguration = new ResteasyClientBuilder().build().target(serverConfiguration.getClient().getConfigurationUrl())
-                .request().get().readEntity(Configuration.class);
-        this.clientConfiguration = serverConfiguration;
+    private AuthzClient(ClientConfiguration clientConfiguration) {
+        if (clientConfiguration == null) {
+            throw new IllegalArgumentException("Client configuration can not be null.");
+        }
+
+        String configurationUrl = clientConfiguration.getClient().getConfigurationUrl();
+
+        if (configurationUrl == null) {
+            throw new IllegalArgumentException("Configuration URL can not be null.");
+        }
+
+        try {
+            this.serverConfiguration = new ResteasyClientBuilder().build().target(configurationUrl)
+                    .request().get().readEntity(Configuration.class);
+        } catch (Exception e) {
+            throw new RuntimeException("Unexpected error when trying to obtain the configuration from the authorization server[" + configurationUrl  + "].", e);
+        }
+
+        this.clientConfiguration = clientConfiguration;
     }
 
     public static AuthzClient fromConfig(URI authzServerConfigUri) {
@@ -148,7 +163,11 @@ public class AuthzClient {
 
         private final String pat;
 
-        private ProtectionClient(final String pat) {
+        private ProtectionClient(String pat) {
+            if (pat == null) {
+                throw new RuntimeException("No access token was provided when creating client for Protection API.");
+            }
+
             this.pat = pat;
         }
 

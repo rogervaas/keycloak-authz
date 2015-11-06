@@ -21,11 +21,14 @@ import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Identity;
+import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.server.uma.UmaAuthorizationManager;
+import org.keycloak.authz.server.uma.UmaIdentity;
 import org.keycloak.authz.server.uma.authorization.AuthorizationService;
 import org.keycloak.authz.server.uma.config.ConfigurationService;
 import org.keycloak.authz.server.uma.protection.permission.PermissionService;
 import org.keycloak.authz.server.uma.protection.resource.ResourceService;
+import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.ErrorResponseException;
@@ -41,29 +44,28 @@ public class RootResource {
 
     private final RealmModel realm;
 
-    @Context
-    private UmaAuthorizationManager authorizationManager;
+    private final UmaAuthorizationManager authorizationManager;
 
-    @Context
-    private KeycloakSession keycloakSession;
+    private final KeycloakSession keycloakSession;
 
     @Context
     private HttpRequest request;
-    @Context
-    private Identity identity;
 
-
-    public RootResource(final RealmModel realm) {
+    public RootResource(RealmModel realm, UmaAuthorizationManager authorizationManager, KeycloakSession keycloakSession) {
         this.realm = realm;
+        this.authorizationManager = authorizationManager;
+        this.keycloakSession = keycloakSession;
     }
 
     @Path("/resource_set")
     public Object resource() {
+        Identity identity = createIdentity();
+
         if (!identity.hasRole("uma_protection")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_protection scope.", Response.Status.FORBIDDEN);
         }
 
-        ResourceService resource = new ResourceService(this.realm, this.identity, this.authorizationManager, this.keycloakSession);
+        ResourceService resource = new ResourceService(this.realm, getResourceServer(identity), identity, this.authorizationManager, this.keycloakSession);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -72,11 +74,13 @@ public class RootResource {
 
     @Path("/permission")
     public Object permission() {
+        Identity identity = createIdentity();
+
         if (!identity.hasRole("uma_protection")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_protection scope.", Response.Status.FORBIDDEN);
         }
 
-        PermissionService resource = new PermissionService(this.realm);
+        PermissionService resource = new PermissionService(this.realm, getResourceServer(identity), this.authorizationManager);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -85,13 +89,7 @@ public class RootResource {
 
     @Path("/authorize")
     public Object authorize() {
-        if (!this.request.getHttpMethod().equalsIgnoreCase("options")) {
-            if (!identity.hasRole("uma_authorization")) {
-                throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_authorization scope.", Response.Status.FORBIDDEN);
-            }
-        }
-
-        AuthorizationService resource = new AuthorizationService(this.realm);
+        AuthorizationService resource = new AuthorizationService(this.realm, this.authorizationManager, this.keycloakSession);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -100,10 +98,30 @@ public class RootResource {
 
     @Path("/uma_configuration")
     public ConfigurationService configuration() {
-        ConfigurationService resource = new ConfigurationService();
+        ConfigurationService resource = new ConfigurationService(this.authorizationManager);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
         return resource;
+    }
+
+    private Identity createIdentity() {
+        return UmaIdentity.create(realm, keycloakSession);
+    }
+
+    private ResourceServer getResourceServer(Identity identity) {
+        ClientModel clientApplication = realm.getClientById(identity.getResourceServerId());
+
+        if (clientApplication == null) {
+            throw new ErrorResponseException("invalid_clientId", "Client application with id [" + identity.getResourceServerId() + "] does not exist in realm [" + this.realm.getName() + "]", Response.Status.BAD_REQUEST);
+        }
+
+        ResourceServer resourceServer = this.authorizationManager.getStoreFactory().resourceServer().findByClient(identity.getResourceServerId());
+
+        if (resourceServer == null) {
+            throw new ErrorResponseException("invalid_clientId", "Client application [" + clientApplication.getClientId() + "] is not registered as resource server.", Response.Status.FORBIDDEN);
+        }
+
+        return resourceServer;
     }
 }

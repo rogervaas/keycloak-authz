@@ -11,7 +11,7 @@ angular.element(document).ready(function ($http) {
             Identity.loggedIn = false;
             Identity.claim = {};
             Identity.authc = null;
-            window.location = this.authz.authServerUrl + "/realms/photoz/tokens/logout?redirect_uri=http://localhost:9080/photoz-html5-client/index.html";
+            window.location = this.authz.authServerUrl + "/realms/keycloak-authz-examples/tokens/logout?redirect_uri=http://localhost:9080/photoz-html5-client/index.html";
             Identity.authz = null;
         };
         Identity.claim = {};
@@ -162,7 +162,7 @@ module.factory('errorInterceptor', function ($q, $injector) {
                         ticket: response.data.ticket
                     });
 
-                    $injector.get("$http").post('http://localhost:8080/auth/realms/photoz/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
+                    $injector.get("$http").post('http://localhost:8080/auth/realms/keycloak-authz-examples/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
                             .then(function(authzResponse) {
                                 if (authzResponse.data) {
                                     Identity.uma = {};

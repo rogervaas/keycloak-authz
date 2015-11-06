@@ -17,10 +17,6 @@
  */
 package org.keycloak.authz.server.uma.protection.resource;
 
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.keycloak.authz.core.Identity;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.server.admin.resource.ResourceSetResource;
@@ -45,6 +41,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -54,24 +54,16 @@ public class ResourceService {
     private final RealmModel realm;
     private final ResourceServer resourceServer;
     private final ResourceSetResource resourceManager;
+    private final UmaAuthorizationManager authorizationManager;
+    private final KeycloakSession keycloakSession;
+    private final Identity identity;
 
-    @Context
-    private UmaAuthorizationManager authorizationManager;
-
-    @Context
-    private KeycloakSession keycloakSession;
-
-    @Context
-    private Identity identity;
-
-    public ResourceService(RealmModel realm, Identity identity, UmaAuthorizationManager authorizationManager, KeycloakSession keycloakSession) {
+    public ResourceService(RealmModel realm, ResourceServer resourceServer, Identity identity, UmaAuthorizationManager authorizationManager, KeycloakSession keycloakSession) {
         this.realm = realm;
         this.identity = identity;
         this.authorizationManager = authorizationManager;
         this.keycloakSession = keycloakSession;
-        this.resourceServer = this.authorizationManager.getStoreFactory().resourceServer().findByClient(
-                this.identity.getResourceServerId()
-        );
+        this.resourceServer = resourceServer;
         this.resourceManager = new ResourceSetResource(this.realm, this.resourceServer, this.authorizationManager, this.keycloakSession);
     }
 

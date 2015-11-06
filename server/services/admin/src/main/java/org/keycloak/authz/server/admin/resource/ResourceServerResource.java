@@ -259,6 +259,29 @@ public class ResourceServerResource {
                         }
                     }
 
+                    String policyResources = config.get("resources");
+
+                    if (policyResources != null && !policyResources.isEmpty()) {
+                        policyResources = policyResources.replace("[", "");
+                        policyResources = policyResources.replace("]", "");
+
+                        if (!policyResources.isEmpty()) {
+                            String resourceNames = "";
+
+                            for (String resource : policyResources.split(",")) {
+                                if (!resourceNames.isEmpty()) {
+                                    resourceNames =  resourceNames + ",";
+                                }
+
+                                resource = resource.replace("\"", "");
+
+                                resourceNames = resourceNames + "\"" + authorizationManager.getStoreFactory().resource().findById(resource).getName() + "\"";
+                            }
+
+                            config.put("resources", "[" + resourceNames + "]");
+                        }
+                    }
+
                     String applyPolicies = config.get("applyPolicies");
 
                     if (applyPolicies != null && !applyPolicies.isEmpty()) {
@@ -439,6 +462,33 @@ public class ResourceServerResource {
                             }
 
                             config.put("scopes", "[" + scopeNames + "]");
+                        }
+                    }
+
+                    String policyResources = config.get("resources");
+
+                    if (policyResources != null && !policyResources.isEmpty()) {
+                        policyResources = policyResources.replace("[", "");
+                        policyResources = policyResources.replace("]", "");
+
+                        if (!policyResources.isEmpty()) {
+                            String resourceNames = "";
+
+                            for (String resource : policyResources.split(",")) {
+                                if (!resourceNames.isEmpty()) {
+                                    resourceNames =  resourceNames + ",";
+                                }
+
+                                resource = resource.replace("\"", "");
+
+                                if ("".equals(resource)) {
+                                    continue;
+                                }
+
+                                resourceNames = resourceNames + "\"" + authorizationManager.getStoreFactory().resource().findByName(resource).getId() + "\"";
+                            }
+
+                            config.put("resources", "[" + resourceNames + "]");
                         }
                     }
 

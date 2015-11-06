@@ -17,21 +17,22 @@
  */
 package org.keycloak.authz.server.uma.authorization;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import org.jboss.resteasy.spi.HttpRequest;
-import org.keycloak.authz.core.policy.DefaultEvaluationContext;
-import org.keycloak.authz.core.policy.ExecutionContext;
-import org.keycloak.authz.core.policy.EvaluationContext;
+import org.keycloak.OAuthErrorException;
+import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.Identity;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.permission.ResourcePermission;
-import org.keycloak.authz.server.uma.UmaAuthorizationManager;
+import org.keycloak.authz.core.policy.DefaultEvaluationContext;
+import org.keycloak.authz.core.policy.EvaluationContext;
+import org.keycloak.authz.core.policy.EvaluationResult;
+import org.keycloak.authz.core.policy.ExecutionContext;
+import org.keycloak.authz.server.uma.UmaIdentity;
 import org.keycloak.authz.server.uma.protection.permission.PermissionTicket;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.crypto.RSAProvider;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.resources.Cors;
@@ -42,6 +43,9 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -49,18 +53,16 @@ import javax.ws.rs.core.Response;
 public class AuthorizationService {
 
     private final RealmModel realm;
-
-    @Context
-    private UmaAuthorizationManager authorizationManager;
+    private final Authorization authorizationManager;
+    private final KeycloakSession keycloakSession;
 
     @Context
     private HttpRequest request;
 
-    @Context
-    private Identity identity;
-
-    public AuthorizationService(RealmModel realm) {
+    public AuthorizationService(RealmModel realm,Authorization authorization,  KeycloakSession keycloakSession) {
         this.realm = realm;
+        this.authorizationManager = authorization;
+        this.keycloakSession = keycloakSession;
     }
 
     @OPTIONS
@@ -72,19 +74,25 @@ public class AuthorizationService {
     @Consumes("application/json")
     @Produces("application/json")
     public Response authorize(AuthorizationRequest request) {
-        PermissionTicket ticket = verifyPermissionTicket(request);
-        EvaluationContext evaluationContext = createEvaluationContext(ticket);
+        Identity identity = UmaIdentity.create(this.realm, this.keycloakSession);
 
-        this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
+        if (!identity.hasRole("uma_authorization")) {
+            throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_authorization scope.", Response.Status.FORBIDDEN);
+        }
+
+        PermissionTicket ticket = verifyPermissionTicket(request);
+        EvaluationContext evaluationContext = createEvaluationContext(identity, ticket);
+
+        List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
 
         if (evaluationContext.isGranted()) {
-            return Cors.add(this.request, Response.status(Response.Status.CREATED).entity(new AuthorizationResponse(createRequestingPartyToken(ticket)))).allowedOrigins("*").build();
+            return Cors.add(this.request, Response.status(Response.Status.CREATED).entity(new AuthorizationResponse(createRequestingPartyToken(identity, ticket)))).allowedOrigins("*").build();
         }
 
         throw new ErrorResponseException("not_authorized", "Authorization  denied for resource [" + ticket.getResourceSetId() + "].", Response.Status.FORBIDDEN);
     }
 
-    private EvaluationContext createEvaluationContext(PermissionTicket ticket) {
+    private EvaluationContext createEvaluationContext(Identity identity, PermissionTicket ticket) {
         List<Scope> scopes = new ArrayList<>();
 
         for (String scopeName : ticket.getScopes()) {
@@ -100,7 +108,7 @@ public class AuthorizationService {
         });
     }
 
-    private String createRequestingPartyToken(PermissionTicket ticket) {
+    private String createRequestingPartyToken(Identity identity, PermissionTicket ticket) {
         return new JWSBuilder().jsonContent(new RequestingPartyToken(
                 identity.getId(),
                 new Permission(ticket.getResourceSetId(), ticket.getScopes()))).rsa256(this.realm.getPrivateKey()

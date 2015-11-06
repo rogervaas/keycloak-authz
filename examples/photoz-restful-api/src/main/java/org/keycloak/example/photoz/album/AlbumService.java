@@ -72,7 +72,7 @@ public class AlbumService {
         Album album = this.entityManager.find(Album.class, Long.valueOf(id));
 
         try {
-            deleteProtectedResource(album);
+//            deleteProtectedResource(album);
             this.entityManager.remove(album);
         } catch (Exception e) {
             throw new RuntimeException("Could not delete album.", e);

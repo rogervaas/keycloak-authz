@@ -1,0 +1,131 @@
+{
+  "clientId": "photoz-restful-api",
+  "allowRemoteResourceManagement": true,
+  "allowRemotePolicyManagement": true,
+  "policyEnforcementMode": "ENFORCING",
+  "resources": [
+    {
+      "name": "Album Resource",
+      "uri": "/album/*",
+      "type": "http://photoz.com/dev/resource/album",
+      "scopes": [
+        {
+          "name": "http://photoz.com/dev/scopes/album/view"
+        },
+        {
+          "name": "http://photoz.com/dev/scopes/album/create"
+        },
+        {
+          "name": "http://photoz.com/dev/scopes/album/delete"
+        }
+      ],
+      "owner": {
+        "name": "photoz-restful-api"
+      }
+    },
+    {
+      "name": "Admin Resources",
+      "type": "http://photoz.com/dev/resource/admin/album",
+      "scopes": [
+        {
+          "name": "http://photoz.com/dev/scopes/admin/album/manage"
+        }
+      ],
+      "owner": {
+        "name": "photoz-restful-api"
+      }
+    }
+  ],
+  "policies": [
+    {
+      "name": "Only Owner Album Policy",
+      "description": "A policy that tells what only the owner can do.",
+      "type": "drools",
+      "config": {
+        "mavenArtifactVersion": "1.0-SNAPSHOT",
+        "mavenArtifactId": "photoz-authz-policy",
+        "sessionName": "MainOwnerSession",
+        "mavenArtifactGroupId": "org.keycloak",
+        "moduleName": "PhotozAuthzOwnerPolicy",
+        "scannerPeriod": "1",
+        "scannerPeriodUnit": "Hours"
+      }
+    },
+    {
+      "name": "Delete Album Policy",
+      "description": "A policy that only allows the owner to delete his albums.",
+      "type": "scope",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "\"\"",
+        "scopes": "[\"http://photoz.com/dev/scopes/album/delete\"]",
+        "applyPolicies": "[\"Only Owner Album Policy\"]"
+      }
+    },
+    {
+      "name": "Any Admin Policy",
+      "description": "A policy that tells what any user in the 'admin' role can do.",
+      "type": "user",
+      "config": {
+        "users": "[]",
+        "roles": "[\"admin\"]"
+      }
+    },
+    {
+      "name": "Any User Policy",
+      "description": "A policy that tells what any user in the 'user' role can do",
+      "type": "user",
+      "config": {
+        "users": "[]",
+        "roles": "[\"user\"]"
+      }
+    },
+    {
+      "name": "Album Resource Policy",
+      "description": "General policies that apply to all album resources.",
+      "type": "resource",
+      "decisionStrategy": "AFFIRMATIVE",
+      "config": {
+        "defaultResourceType": "http://photoz.com/dev/resource/album",
+        "resources": "[]",
+        "default": "true",
+        "applyPolicies": "[\"Any User Policy\",\"Any Admin Policy\"]"
+      }
+    },
+    {
+      "name": "Admin Resource Policy",
+      "description": "General policy for any administrative resource.",
+      "type": "resource",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"Admin Resources\"]",
+        "applyPolicies": "[\"Any Admin Policy\"]"
+      }
+    }
+  ],
+  "scopes": [
+    {
+      "name": "http://photoz.com/dev/scopes/album/view",
+      "iconUri": "",
+      "policies": []
+    },
+    {
+      "name": "http://photoz.com/dev/scopes/album/create",
+      "iconUri": "",
+      "policies": []
+    },
+    {
+      "name": "http://photoz.com/dev/scopes/album/delete",
+      "iconUri": "",
+      "policies": [
+        {
+          "name": "Delete Album Policy"
+        }
+      ]
+    },
+    {
+      "name": "http://photoz.com/dev/scopes/admin/album/manage",
+      "policies": []
+    }
+  ]
+}

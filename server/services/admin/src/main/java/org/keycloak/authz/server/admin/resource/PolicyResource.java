@@ -17,13 +17,6 @@
  */
 package org.keycloak.authz.server.admin.resource;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.ServiceLoader;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.Authorization;
@@ -47,6 +40,13 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.ServiceLoader;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.keycloak.authz.server.admin.resource.util.Models.toRepresentation;
 
@@ -307,18 +307,10 @@ public class PolicyResource {
         String resources = policy.getConfig().get("resources");
         if (resources != null) {
             String[] resourceIds;
-            if ("resource".equals(policy.getType())) {
-                try {
-                    resourceIds = new ObjectMapper().readValue(resources, String[].class);
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            } else {
-                try {
-                    resourceIds = new String[] { new ObjectMapper().readValue(resources, String.class) };
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
+            try {
+                resourceIds = new ObjectMapper().readValue(resources, String[].class);
+            } catch (IOException e) {
+                throw new RuntimeException(e);
             }
             for (String resourceId : resourceIds) {
                 boolean hasResource = false;

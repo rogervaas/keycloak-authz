@@ -17,19 +17,19 @@
  */
 package org.keycloak.authz.server.uma.protection.permission;
 
-import java.util.UUID;
+import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.Resource;
+import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.server.uma.ErrorResponse;
-import org.keycloak.authz.server.uma.UmaAuthorizationManager;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.models.RealmModel;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import java.util.UUID;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -37,12 +37,13 @@ import javax.ws.rs.core.Response;
 public class PermissionService {
 
     private final RealmModel realm;
+    private final ResourceServer resourceServer;
+    private final Authorization authorizationManager;
 
-    @Context
-    private UmaAuthorizationManager authorizationManager;
-
-    public PermissionService(RealmModel realm) {
+    public PermissionService(RealmModel realm, ResourceServer resourceServer, Authorization authorizationManager) {
         this.realm = realm;
+        this.resourceServer = resourceServer;
+        this.authorizationManager = authorizationManager;
     }
 
     @POST
@@ -58,7 +59,7 @@ public class PermissionService {
         Resource resource = this.authorizationManager.getStoreFactory().resource().findById(resourceSetId);
 
         if (resource == null) {
-            return ErrorResponse.create("invalid_resource_set_id");
+            return ErrorResponse.create("nonexistent_resource_set_id");
         }
 
         for (String requestedScope : request.getScopes()) {

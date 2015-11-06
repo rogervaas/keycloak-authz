@@ -22,7 +22,6 @@ import org.keycloak.authz.server.uma.UmaAuthorizationManager;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -30,8 +29,11 @@ import javax.ws.rs.core.Context;
 @Path("/uma_configuration")
 public class ConfigurationService {
 
-    @Context
-    private UmaAuthorizationManager authorizationManager;
+    private final UmaAuthorizationManager authorizationManager;
+
+    public ConfigurationService(UmaAuthorizationManager authorizationManager) {
+        this.authorizationManager = authorizationManager;
+    }
 
     @GET
     @Produces("application/json")

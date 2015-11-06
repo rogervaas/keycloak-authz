@@ -6,7 +6,7 @@
         http://java.sun.com/xml/ns/persistence/persistence_2_0.xsd">
 	<persistence-unit name="keycloak-authz-admin-jpa-pu" transaction-type="RESOURCE_LOCAL">
 		<provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
-		<non-jta-data-source>java:jboss/datasources/KeycloakAuthzDS</non-jta-data-source>
+		<non-jta-data-source>java:jboss/datasources/KeycloakAuthZDS</non-jta-data-source>
 
 		<class>org.keycloak.authz.persistence.jpa.entity.ResourceServerEntity</class>
 		<class>org.keycloak.authz.persistence.jpa.entity.ResourceEntity</class>

@@ -59,7 +59,7 @@
             <outputDirectory>content</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>../../server/ui/src/main/resources/theme/</directory>
+            <directory>../../server/ui/src/main/resources/theme</directory>
             <outputDirectory>content/standalone/configuration/themes/keycloak-authz</outputDirectory>
             <includes>
                 <include>**/**</include>

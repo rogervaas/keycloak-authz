@@ -1,15 +1,17 @@
 package org.keycloak.authz.persistence;
 
-import java.util.HashMap;
-import java.util.Map;
 import org.keycloak.authz.core.store.spi.PersistenceProvider;
 import org.keycloak.authz.persistence.syncronization.ClientApplicationSynchronizer;
+import org.keycloak.authz.persistence.syncronization.RealmSynchronizer;
 import org.keycloak.authz.persistence.syncronization.Synchronizer;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakTransactionManager;
 import org.keycloak.models.RealmModel;
 import org.keycloak.provider.ProviderEvent;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -22,6 +24,7 @@ public interface PersistenceProviderFactory {
         Map<Class<? extends ProviderEvent>, Synchronizer> synchronizers = new HashMap<>();
 
         synchronizers.put(RealmModel.ClientRemovedEvent.class, new ClientApplicationSynchronizer());
+        synchronizers.put(RealmModel.RealmRemovedEvent.class, new RealmSynchronizer());
 
         factory.register(event -> {
             KeycloakSession session = factory.create();

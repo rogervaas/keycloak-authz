@@ -17,21 +17,13 @@
  */
 package org.keycloak.authz.server.uma.resource;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.Config;
-import org.keycloak.authz.core.Identity;
 import org.keycloak.authz.core.policy.spi.PolicyProviderFactory;
 import org.keycloak.authz.core.store.spi.PersistenceProvider;
 import org.keycloak.authz.persistence.PersistenceProviderFactory;
 import org.keycloak.authz.server.uma.KeycloakAuthorizationManager;
 import org.keycloak.authz.server.uma.UmaAuthorizationManager;
-import org.keycloak.authz.server.uma.UmaIdentity;
 import org.keycloak.authz.server.uma.config.Configuration;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
@@ -43,6 +35,13 @@ import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.resources.spi.RealmResourceProvider;
 import org.keycloak.services.resources.spi.RealmResourceProviderFactory;
 import org.kohsuke.MetaInfServices;
+
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -58,10 +57,8 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
         return new RealmResourceProvider() {
             public Object getResource(final String pathName) {
                 if (pathName.equals("authz")) {
-                    RootResource resource = new RootResource(realm);
+                    RootResource resource = new RootResource(realm, createAuthorizationManager(realm, keycloakSession), keycloakSession);
 
-                    ResteasyProviderFactory.getInstance().pushContext(Identity.class, new UmaIdentity(getAccessToken(keycloakSession, realm), keycloakSession));
-                    ResteasyProviderFactory.getInstance().pushContext(UmaAuthorizationManager.class, createAuthorizationManager(realm, keycloakSession));
                     ResteasyProviderFactory.getInstance().injectProperties(resource);
 
                     return resource;

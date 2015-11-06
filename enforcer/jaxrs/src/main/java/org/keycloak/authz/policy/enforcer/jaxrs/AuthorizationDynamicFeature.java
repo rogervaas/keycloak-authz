@@ -5,6 +5,8 @@ import org.keycloak.authz.server.uma.protection.resource.RegistrationResponse;
 import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
 import org.keycloak.authz.server.uma.representation.UmaScopeRepresentation;
 
+import javax.ws.rs.ClientErrorException;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
@@ -51,8 +53,10 @@ public class AuthorizationDynamicFeature implements DynamicFeature {
                 } else {
                     this.resourceIds.put(resourceInfo.getResourceClass(), search.iterator().next());
                 }
+            } catch (WebApplicationException cre) {
+                throw new RuntimeException("Could not register protected resource. Server returned: [" + cre.getResponse().readEntity(String.class), cre);
             } catch (Exception e) {
-                throw new RuntimeException("Could not register protected resource.", e);
+                throw new RuntimeException("Unexpected error registering protected resources.", e);
             }
         }
 

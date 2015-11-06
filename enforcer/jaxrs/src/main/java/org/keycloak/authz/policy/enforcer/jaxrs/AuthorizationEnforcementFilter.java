@@ -1,12 +1,18 @@
 package org.keycloak.authz.policy.enforcer.jaxrs;
 
+import org.codehaus.jackson.map.ObjectMapper;
 import org.keycloak.authz.client.AuthzClient;
+import org.keycloak.authz.server.uma.ErrorResponse;
 import org.keycloak.authz.server.uma.authorization.Permission;
 import org.keycloak.authz.server.uma.authorization.RequestingPartyToken;
 import org.keycloak.authz.server.uma.protection.permission.PermissionRequest;
 import org.keycloak.authz.server.uma.protection.permission.PermissionResponse;
+import org.keycloak.authz.server.uma.protection.resource.RegistrationResponse;
+import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
+import org.keycloak.authz.server.uma.representation.UmaScopeRepresentation;
 import org.keycloak.jose.jws.JWSInput;
 
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
 import javax.ws.rs.container.ResourceInfo;
@@ -41,38 +47,42 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
         String resourceId = this.resourceIds.get(this.resourceInfo.getResourceClass());
+        String authorization = requestContext.getHeaderString("Authorization");
+        RequestingPartyToken rpt = extractRequestingPartyToken(authorization);
+
+        if (authorization != null && authorization.indexOf("Bearer") != -1) {
+            requestContext.setSecurityContext(createSecurityContext(rpt));
+        }
 
         if (resourceId != null) {
-            String authorization = requestContext.getHeaderString("Authorization");
+            Class<?> resourceClass = resourceInfo.getResourceClass();
+            ProtectedResource protectedResource = resourceClass.getAnnotation(ProtectedResource.class);
+            Method resourceMethod = this.resourceInfo.getResourceMethod();
+            Enforce enforce = resourceMethod.getAnnotation(Enforce.class);
+            Set<String> requiredScopes = new HashSet<>();
 
-            if (authorization != null && authorization.indexOf("Bearer") != -1) {
-                try {
-                    RequestingPartyToken rpt = extractRequestingPartyToken(authorization);
-                    Method resourceMethod = this.resourceInfo.getResourceMethod();
-                    Enforce enforce = resourceMethod.getAnnotation(Enforce.class);
-                    Set<String> requiredScopes = new HashSet<>();
+            try {
 
-                    if (enforce != null) {
-                        requiredScopes.addAll(Arrays.asList(enforce.scopes()));
-                        String uriPattern = enforce.uri();
-                        String uri = uriPattern;
+                if (enforce != null) {
+                    requiredScopes.addAll(Arrays.asList(enforce.scopes()));
+                    String uriPattern = enforce.uri();
+                    String uri = uriPattern;
 
-                        if (uriPattern != null && !"".equals(uriPattern)) {
-                            MultivaluedMap<String, String> pathParameters = requestContext.getUriInfo().getPathParameters();
+                    if (uriPattern != null && !"".equals(uriPattern)) {
+                        MultivaluedMap<String, String> pathParameters = requestContext.getUriInfo().getPathParameters();
 
-                            for (String pathParam: pathParameters.keySet()) {
-                                uri = uriPattern.replaceAll("\\{" + pathParam + "\\}", pathParameters.getFirst(pathParam));
-                            }
+                        for (String pathParam: pathParameters.keySet()) {
+                            uri = uriPattern.replaceAll("\\{" + pathParam + "\\}", pathParameters.getFirst(pathParam));
                         }
+                    }
 
-                        if (!uriPattern.equals(uri)) {
-                            Set<String> resourceIds = createAuthzClient().resource().search("uri=" + uri);
+                    if (!uriPattern.equals(uri)) {
+                        Set<String> resourceIds = createAuthzClient().resource().search("uri=" + uri);
 
-                            if (!resourceIds.isEmpty()) {
-                                resourceId = resourceIds.iterator().next();
-                            } else {
-                                throw new RuntimeException("Resource with URI [" + uri + "] does not exist in the server.");
-                            }
+                        if (!resourceIds.isEmpty()) {
+                            resourceId = resourceIds.iterator().next();
+                        } else {
+                            throw new RuntimeException("Resource with URI [" + uri + "] does not exist in the server.");
                         }
                     }
 
@@ -83,11 +93,36 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
                     } else {
                         requestContext.setSecurityContext(createSecurityContext(rpt));
                     }
-                } catch (IOException e) {
-                    throw new RuntimeException("Could not parse RPT.", e);
                 }
-            } else {
-                requestContext.abortWith(obtainPermissionTicket(resourceId));
+            } catch (WebApplicationException cre) {
+                String serverResponse = cre.getResponse().readEntity(String.class);
+
+                try {
+                    ErrorResponse errorResponse = new ObjectMapper().readValue(serverResponse, ErrorResponse.class);
+
+                    if (errorResponse.getError().equals("nonexistent_resource_set_id")) {
+                        HashSet<UmaScopeRepresentation> scopes = new HashSet<>();
+
+                        for (ProtectedScope protectedScope : protectedResource.scopes()) {
+                            scopes.add(new UmaScopeRepresentation(protectedScope.name(), protectedScope.uri()));
+                        }
+
+                        RegistrationResponse response = createAuthzClient().resource().create(
+                                new UmaResourceRepresentation(enforce.uri(), scopes, enforce.uri(), protectedResource.type())
+                        );
+
+                        this.resourceIds.put(resourceInfo.getResourceClass(), response.getId());
+
+                        requestContext.abortWith(obtainPermissionTicket(resourceId, requiredScopes.toArray(new String[requiredScopes.size()])));
+                    }
+                } catch (Exception ignore) {
+                    ignore.toString();
+                    // ignore
+                }
+
+                throw new RuntimeException("Could not request server for permission. Server returned: [" + serverResponse, cre);
+            } catch (Exception e) {
+                throw new RuntimeException("Unexpected error when asking for permission.", e);
             }
         }
     }

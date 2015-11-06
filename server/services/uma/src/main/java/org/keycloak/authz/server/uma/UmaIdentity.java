@@ -24,8 +24,11 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.representations.AccessToken;
+import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
+
+import javax.ws.rs.core.Response;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -39,7 +42,7 @@ public class UmaIdentity implements Identity {
         AccessToken token = getAccessToken(keycloakSession, realm);
 
         if (token == null) {
-            throw new RuntimeException("Invalid or non-existent access token.");
+            throw new ErrorResponseException("invalid_bearer_token", "Could not obtain bearer access_token from request.", Response.Status.FORBIDDEN);
         }
 
         return new UmaIdentity(token, keycloakSession);
@@ -56,7 +59,7 @@ public class UmaIdentity implements Identity {
         return null;
     }
 
-    public UmaIdentity(AccessToken accessToken, KeycloakSession keycloakSession) {
+    private UmaIdentity(AccessToken accessToken, KeycloakSession keycloakSession) {
         this.accessToken = accessToken;
         this.keycloakSession = keycloakSession;
     }
