@@ -58,7 +58,7 @@
       "decisionStrategy": "UNANIMOUS",
       "config": {
         "resources": "\"\"",
-        "scopes": "[\"http://photoz.com/dev/scopes/album/delete\"]",
+        "scopes": "[\"urn:photoz.com:scopes:album:delete\"]",
         "applyPolicies": "[\"Only Owner Album Policy\"]"
       }
     },
@@ -105,17 +105,17 @@
   ],
   "scopes": [
     {
-      "name": "http://photoz.com/dev/scopes/album/view",
+      "name": "urn:photoz.com:scopes:album:view",
       "iconUri": "",
       "policies": []
     },
     {
-      "name": "http://photoz.com/dev/scopes/album/create",
+      "name": "urn:photoz.com:scopes:album:create",
       "iconUri": "",
       "policies": []
     },
     {
-      "name": "http://photoz.com/dev/scopes/album/delete",
+      "name": "urn:photoz.com:scopes:album:delete",
       "iconUri": "",
       "policies": [
         {
@@ -124,7 +124,7 @@
       ]
     },
     {
-      "name": "http://photoz.com/dev/scopes/admin/album/manage",
+      "name": "urn:photoz.com:scopes:album:admin:manage",
       "policies": []
     }
   ]
