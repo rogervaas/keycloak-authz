@@ -108,7 +108,7 @@ The demo distribution is located at:
     
 Now, extract that file and you'll have a full Keycloak Server with the AuthZ Server extension installed.
 
-    unzip -d /distribution/demo/target/keycloak-authz-demo-dist-1.0-SNAPSHOT.zip /to/this/directory
+    unzip -d /to/this/directory distribution/demo/target/keycloak-authz-demo-dist-1.0-SNAPSHOT.zip
      
 Change ``/to/this/directory`` to the directory where you want to install the AuthZ Server.
 
@@ -181,8 +181,15 @@ Now, create a new realm based on the following configuration file:
 This will import a pre-configured realm with everything you need to run this example. For more details about how to import a realm 
 into Keycloak, check the reference documentation.
 
-After importing that file, you'll have a new realm called ``photoz``. Now, let's import another configuration to configure the
-```photoz-restful-api``` as a resource server with all resources, scopes and policies.
+After importing that file, you'll have a new realm called ``photoz``. 
+
+Back to the command-line, build the example application. This step is necessary given that we're using policies based on
+JBoss Drools, which require ``photoz-authz-policy`` to be available in your local maven repository.
+
+    cd examples/photoz
+    mvn clean install 
+
+Now, let's import another configuration using the Administration Console in order to configure the ``photoz-restful-api`` as a resource server with all resources, scopes and policies.
 
 Click on ``Resource Servers`` on the left side menu. Click on the ``Create`` button on the top of the resource server table. This will
 open the page that allows you to create a new resource server.

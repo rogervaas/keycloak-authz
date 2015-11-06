@@ -39,9 +39,9 @@ import java.util.Set;
 @Stateless
 public class AlbumService {
 
-    public static final String SCOPE_ALBUM_VIEW = "urn:photoz.com/dev/scopes/album/view";
-    public static final String SCOPE_ALBUM_CREATE = "urn:photoz.com/dev/scopes/album/create";
-    public static final String SCOPE_ALBUM_DELETE = "urn:photoz.com/dev/scopes/album/delete";
+    public static final String SCOPE_ALBUM_VIEW = "urn:photoz.com:scopes:album:view";
+    public static final String SCOPE_ALBUM_CREATE = "urn:photoz.com:scopes:album:create";
+    public static final String SCOPE_ALBUM_DELETE = "urn:photoz.com:scopes:album:delete";
 
     @PersistenceContext
     private EntityManager entityManager;

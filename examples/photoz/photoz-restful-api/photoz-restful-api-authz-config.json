@@ -10,13 +10,13 @@
       "type": "http://photoz.com/dev/resource/album",
       "scopes": [
         {
-          "name": "http://photoz.com/dev/scopes/album/view"
+          "name": "urn:photoz.com:scopes:album:view"
         },
         {
-          "name": "http://photoz.com/dev/scopes/album/create"
+          "name": "urn:photoz.com:scopes:album:create"
         },
         {
-          "name": "http://photoz.com/dev/scopes/album/delete"
+          "name": "urn:photoz.com:scopes:album:delete"
         }
       ],
       "owner": {
@@ -28,7 +28,7 @@
       "type": "http://photoz.com/dev/resource/admin/album",
       "scopes": [
         {
-          "name": "http://photoz.com/dev/scopes/admin/album/manage"
+          "name": "urn:photoz.com:scopes:album:manage"
         }
       ],
       "owner": {
