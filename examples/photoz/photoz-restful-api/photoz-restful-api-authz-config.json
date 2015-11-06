@@ -28,7 +28,7 @@
       "type": "http://photoz.com/dev/resource/admin/album",
       "scopes": [
         {
-          "name": "urn:photoz.com:scopes:album:manage"
+          "name": "urn:photoz.com:scopes:album:admin:manage"
         }
       ],
       "owner": {

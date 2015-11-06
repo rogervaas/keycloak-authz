@@ -47,7 +47,7 @@ import java.util.List;
         })
 public class AdminAlbumService {
 
-    public static final String SCOPE_ADMIN_ALBUM_MANAGE = "http://photoz.com/dev/scopes/admin/album/manage";
+    public static final String SCOPE_ADMIN_ALBUM_MANAGE = "urn:photoz.com:scopes:album:admin:manage";
 
     @PersistenceContext
     private EntityManager entityManager;
