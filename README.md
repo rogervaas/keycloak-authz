@@ -47,9 +47,9 @@ Based on some common authorization patterns, this authorization server provides 
     * Provides implementations for different technologies and platforms to actually enforce authorization policies on the resource server side.
       
 Instead of doing authorization by your own, this project provides a centralized but still distributable server to govern the protected resources
-and their respective policies within an application or organization, using some well-known authorization patterns and standards such as OAuth2 and User-Managed Access (UMA).
+and their respective policies within an application or organization using some well-known authorization patterns and standards such as OAuth2 and User-Managed Access (UMA).
 
-When talking about Web API Security, an authorization server plays an important role at this regard. Today we need to consider a very 
+When talking about Web API Security, an authorization server plays an important role. Today we need to consider a very 
 heteregenous environment, where users are distributed across different regions, with different local policies, using different devices and
 with a high demand for information sharing.
 
@@ -57,7 +57,7 @@ Being based on both OAuth2 and UMA concepts, this project can be used as great t
 
 * Control your protected resources and the actions that can be performed on them
 * Centralize Policy Management
-* Centralize and RESTful-based Athorization Services for different platforms and environments    
+* Support a centralized and RESTful-based Athorization Services for different platforms and environments    
 * Audit and analyse authorization requests and decision results
 * Avoid replicate code across projects or redeploy your applications when your policies need to change
 * Provide a better and more secure way to your users share information
