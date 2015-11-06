@@ -83,8 +83,134 @@ in turn to access the protected resources on the resource server.
 
 ## Build
 
-TODO: need to describe how to build the modified version of Keycloak
-        
-## Run and Deploy Examples
+Before building this project you must clone and build a Keycloak branch, which contains some changes to get the AuthZ Server
+properly integrated with Keycloak SPIs. This is a temporary step and we will get these changes merged very soon. That said,
+use the following commands to clone and build the modified Keycloak version:
 
-TODO: make easier to run the authorization server and run examples
+    git clone git@github.com:pedroigor/keycloak.git
+    cd keycloak
+    git checkout -b keycloak-authz-modified    
+    mvn -DskipTests clean install
+    
+Now you can clone and this project using the following command:
+
+    git clone git@github.com:pedroigor/keycloak-authz.git
+    cd keycloak-authz
+    mvn -DskipTests -Pdistribution clean install
+        
+## Install and Start the Authz Server (Demo Distribution) 
+
+Once the project was built, you can obtain a distribution that can be used to start the AuthZ Server and run some example applications.
+
+The demo distribution is located at:
+
+    /distribution/demo/target/keycloak-authz-demo-dist-1.0-SNAPSHOT.zip
+    
+Now, extract that file and you'll have a full Keycloak Server with the AuthZ Server extension installed.
+
+    unzip -d /distribution/demo/target/keycloak-authz-demo-dist-1.0-SNAPSHOT.zip /to/this/directory
+     
+Change ``/to/this/directory`` to the directory where you want to install the AuthZ Server.
+
+You should be able now to enter into the  directory where the AuthZ Server is installed and run the server.
+ 
+    cd /to/this/directory
+    cd bin
+    ./standalone.sh
+    
+If everything is fine, you should now be able to access the server at:
+
+    http://localhost:8080/auth
+
+## About the Example Application
+
+For now, there is a single example application based on HTML5+AngularJS+JAX-RS that will introduce you to some of the main
+concepts around the AuthZ Server.
+
+The example application is located at:
+ 
+    cd examples/photoz
+    
+Basically, it is a project with three modules:
+ 
+* **photoz-restful-api**, providing a simple RESTFul API based on JAX-RS and acting as a regular **client application**.
+* **photoz-html5-client**, providing a HTML5+AngularJS client that will consume the RESTful API and acting as a **resource server**.
+* **photoz-authz-policy**, providing a simple project with some rule-based policies using JBoss Drools.
+
+For this application, users can be regular users or administrators. Regular users can create/view/delete only their albums 
+and administrators can view the albums for all users.
+
+For the AuthZ Server, albums are resources that must be protected based on a set of rules that may define who and how can access them.
+In turn, resources belong to a specific resource server, in this case to the *photoz-restful-api*.
+
+The resources are also associated with a set of scopes that define a specific access context such as a operation that can be performed on them.
+
+In this case, albums have three main scopes:
+
+* urn:photoz.com/dev/scopes/album/create
+* urn:photoz.com/dev/scopes/album/view
+* urn:photoz.com/dev/scopes/album/delete
+
+The authorization requirements for this example application are based on the following premises:
+
+* Any regular user can create and view their albums
+* Only the owner of a album can delete it
+* Only administrators can access the Administrative API (which basically provides ways to query albums for all users)
+
+That said, this application will show you how to use the AuthZ Server to define policies involving:
+
+* Role-based Access Control
+* Attribute-based Access Control
+* Rule-based policies using JBoss Drools
+
+It also provides some background on how you can actually protect your JAX-RS endpoints using a *enforcer*.
+
+## Create the Example Realm and Configuring a Resource Server
+
+Considering that your AuthZ Server is up and running, log in to the Keycloak Administration Console.
+
+Once you are there, click on ``Realm Settings`` on the left side menu and then click on the ``Themes`` tab. In the themes tab,
+choose the ``keycloak-authz`` as the theme for the ``Admin Console Theme``. 
+
+Refresh your browser and check if there is a ``Resource Servers`` option on the left side menu.
+
+Now, create a new realm based on the following configuration file:
+
+    examples/photoz/photoz-realm.json
+    
+This will import a pre-configured realm with everything you need to run this example. For more details about how to import a realm 
+into Keycloak, check the reference documentation.
+
+After importing that file, you'll have a new realm called ``photoz``. Now, let's import another configuration to configure the
+```photoz-restful-api``` as a resource server with all resources, scopes and policies.
+
+Click on ``Resource Servers``` on the left side menu. Click on the ``Create`` button on the top of the resource server table. This will
+open the page that allows you to create a new resource server.
+
+Click on the ``Select file`` button, which means you want to import a resource server configuration. Now select the file that is located at:
+
+    examples/photoz/photoz-restful-api/photoz-restful-api-authz-config.json
+    
+Now click ``Upload`` and a new resource server will created based on the ``photoz-restful-api`` client application.
+
+## Deploy and Run the Example Applications
+
+To deploy the example applications, follow these steps:
+
+    cd examples/photoz/photoz-html5-client
+    mvn wildfly:deploy
+    
+And then
+
+   cd examples/photoz/photoz-restful-api
+   mvn wildfly:deploy
+   
+Now, try to access the client application using the following URL:
+
+    http://localhost:8080/photoz-html5-client
+
+If everything is correct, you will be redirect to Keycloak login page. You can login to the application with the following users:
+
+* username: jdoe / password: jdoe
+* username: alice / password: alice
+* username: admin / password: admin
