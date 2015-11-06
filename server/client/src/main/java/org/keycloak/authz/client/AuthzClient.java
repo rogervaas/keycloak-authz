@@ -22,12 +22,12 @@ import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
 import org.keycloak.admin.client.Keycloak;
+import org.keycloak.authz.client.representation.Configuration;
 import org.keycloak.authz.client.resource.AuthorizationResource;
 import org.keycloak.authz.client.resource.EntitlementResource;
 import org.keycloak.authz.client.resource.PermissionResource;
 import org.keycloak.authz.client.resource.ProtectedResource;
 import org.keycloak.authz.client.resource.ResourceServerResource;
-import org.keycloak.authz.server.uma.config.Configuration;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Form;

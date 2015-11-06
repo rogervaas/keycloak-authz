@@ -20,7 +20,7 @@ package test.org.keycloak.authz.uma.api;
 import java.net.URI;
 import org.junit.Test;
 import org.keycloak.authz.client.AuthzClient;
-import org.keycloak.authz.server.uma.config.Configuration;
+import org.keycloak.authz.client.representation.Configuration;
 
 import static org.junit.Assert.assertNotNull;
 

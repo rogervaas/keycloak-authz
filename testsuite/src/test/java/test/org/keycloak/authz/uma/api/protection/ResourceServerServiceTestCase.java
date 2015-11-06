@@ -17,23 +17,22 @@
  */
 package test.org.keycloak.authz.uma.api.protection;
 
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.authz.client.AuthzClient;
+import org.keycloak.authz.client.representation.Configuration;
+import org.keycloak.authz.client.representation.ResourceServerRepresentation;
 import org.keycloak.authz.client.resource.ResourceServerResource;
-import org.keycloak.authz.server.admin.resource.ErrorCode;
-import org.keycloak.authz.server.admin.resource.representation.ResourceServerRepresentation;
-import org.keycloak.authz.server.uma.config.Configuration;
 import org.keycloak.representations.idm.ClientRepresentation;
 import test.org.keycloak.authz.uma.api.ErrorRepresentation;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.core.Response;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -73,8 +72,6 @@ public class ResourceServerServiceTestCase {
         assertNotNull(newResrouceServer);
         assertNotNull(newResrouceServer.getId());
         assertEquals(this.clientApplication.getId(), newResrouceServer.getClientId());
-        assertEquals(false, newResrouceServer.isAllowRemotePolicyManagement());
-        assertEquals(false, newResrouceServer.isAllowRemoteResourceManagement());
     }
 
     @Test
@@ -93,7 +90,6 @@ public class ResourceServerServiceTestCase {
             ErrorRepresentation error = response.readEntity(ErrorRepresentation.class);
 
             assertNotNull(error);
-            assertEquals(ErrorCode.INVALID_CLIENT_ID, error.getError());
             assertEquals(Response.Status.BAD_REQUEST.getStatusCode(), response.getStatus());
         }
     }
@@ -110,18 +106,10 @@ public class ResourceServerServiceTestCase {
         ResourceServerRepresentation newResrouceServer = resourceServer.create(server);
 
         assertNotNull(newResrouceServer);
-        assertEquals(false, newResrouceServer.isAllowRemotePolicyManagement());
-        assertEquals(false, newResrouceServer.isAllowRemoteResourceManagement());
-
-        newResrouceServer.setAllowRemotePolicyManagement(true);
-        newResrouceServer.setAllowRemoteResourceManagement(true);
 
         resourceServer.update(newResrouceServer.getId(), newResrouceServer);
 
         ResourceServerRepresentation updated = resourceServer.findById(newResrouceServer.getId());
-
-        assertEquals(true, updated.isAllowRemotePolicyManagement());
-        assertEquals(true, updated.isAllowRemoteResourceManagement());
     }
 
     private AuthzClient createAuthzClient() {

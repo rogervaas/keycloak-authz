@@ -19,17 +19,17 @@ package test.org.keycloak.authz.uma.api.authorization;
 
 import org.junit.Test;
 import org.keycloak.authz.client.AuthzClient;
+import org.keycloak.authz.client.representation.AuthorizationRequest;
+import org.keycloak.authz.client.representation.AuthorizationResponse;
+import org.keycloak.authz.client.representation.PermissionRequest;
+import org.keycloak.authz.client.representation.PermissionResponse;
+import org.keycloak.authz.client.representation.ResourceRepresentation;
+import org.keycloak.authz.client.representation.ScopeRepresentation;
 import org.keycloak.authz.client.resource.AuthorizationResource;
 import org.keycloak.authz.client.resource.ProtectedResource;
 import org.keycloak.authz.server.uma.ErrorResponse;
-import org.keycloak.authz.server.uma.authorization.AuthorizationRequest;
-import org.keycloak.authz.server.uma.authorization.AuthorizationResponse;
 import org.keycloak.authz.server.uma.authorization.Permission;
 import org.keycloak.authz.server.uma.authorization.RequestingPartyToken;
-import org.keycloak.authz.server.uma.protection.permission.PermissionRequest;
-import org.keycloak.authz.server.uma.protection.permission.PermissionResponse;
-import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
-import org.keycloak.authz.server.uma.representation.UmaScopeRepresentation;
 import org.keycloak.jose.jws.JWSInput;
 
 import javax.ws.rs.BadRequestException;
@@ -51,9 +51,9 @@ public class AuthorizationServiceTestCase {
 
     @Test
     public void testResourceServerIsOwner() throws Exception {
-        UmaResourceRepresentation resource = createResource();
+        ResourceRepresentation resource = createResource();
         String[] expectedScopes = resource.getScopes().stream()
-                .map(UmaScopeRepresentation::getName).collect(Collectors.toSet()).toArray(new String[resource.getScopes().size()]);
+                .map(ScopeRepresentation::getName).collect(Collectors.toSet()).toArray(new String[resource.getScopes().size()]);
         PermissionResponse ticket = obtainPermissionTicket(resource.getId(), expectedScopes);
         AuthorizationResource authorization = this.authzClient
                 .authorization("jdoe", "jdoe");
@@ -98,8 +98,8 @@ public class AuthorizationServiceTestCase {
         return protection.permission().forResource(new PermissionRequest(resourceId, scopes));
     }
 
-    private UmaResourceRepresentation createResource() {
-        UmaResourceRepresentation description = newResource("Admin Resources", new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/scope1"), new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/scope2"));
+    private ResourceRepresentation createResource() {
+        ResourceRepresentation description = newResource("Admin Resources", new ScopeRepresentation("http://photoz.example.com/dev/scopes/scope1"), new ScopeRepresentation("http://photoz.example.com/dev/scopes/scope2"));
         ProtectedResource resource = this.authzClient
                 .protection("photoz-restful-api", "06cb5239-8ade-4c06-a65b-2aadb4e8ee51")
                 .resource();
@@ -107,7 +107,7 @@ public class AuthorizationServiceTestCase {
         return resource.findById(resource.create(description).getId()).getResourceDescription();
     }
 
-    private UmaResourceRepresentation newResource(String name, UmaScopeRepresentation... scopes) {
-        return new UmaResourceRepresentation(name, new HashSet<>(Arrays.asList(scopes)));
+    private ResourceRepresentation newResource(String name, ScopeRepresentation... scopes) {
+        return new ResourceRepresentation(name, new HashSet<>(Arrays.asList(scopes)));
     }
 }

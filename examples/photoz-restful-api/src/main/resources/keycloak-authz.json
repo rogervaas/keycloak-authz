@@ -1,7 +1,0 @@
-{
-  "client": {
-    "configurationUrl": "http://localhost:8080/auth/realms/keycloak-authz-examples/authz/uma_configuration",
-    "clientId": "photoz-restful-api",
-    "clientSecret": "secret"
-  }
-}

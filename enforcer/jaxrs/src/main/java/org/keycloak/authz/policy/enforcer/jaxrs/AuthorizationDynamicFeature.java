@@ -1,11 +1,10 @@
 package org.keycloak.authz.policy.enforcer.jaxrs;
 
 import org.keycloak.authz.client.AuthzClient;
-import org.keycloak.authz.server.uma.protection.resource.RegistrationResponse;
-import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
-import org.keycloak.authz.server.uma.representation.UmaScopeRepresentation;
+import org.keycloak.authz.client.representation.RegistrationResponse;
+import org.keycloak.authz.client.representation.ResourceRepresentation;
+import org.keycloak.authz.client.representation.ScopeRepresentation;
 
-import javax.ws.rs.ClientErrorException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.ResourceInfo;
@@ -39,14 +38,14 @@ public class AuthorizationDynamicFeature implements DynamicFeature {
                 Set<String> search = this.protectionClient.resource().search("name=" + protectedResource.name());
 
                 if (search.isEmpty()) {
-                    HashSet<UmaScopeRepresentation> scopes = new HashSet<>();
+                    HashSet<ScopeRepresentation> scopes = new HashSet<>();
 
                     for (ProtectedScope protectedScope : protectedResource.scopes()) {
-                        scopes.add(new UmaScopeRepresentation(protectedScope.name(), protectedScope.uri()));
+                        scopes.add(new ScopeRepresentation(protectedScope.name(), protectedScope.uri()));
                     }
 
                     RegistrationResponse response = this.protectionClient.resource().create(
-                            new UmaResourceRepresentation(protectedResource.name(), scopes, protectedResource.uri(), protectedResource.type())
+                            new ResourceRepresentation(protectedResource.name(), scopes, protectedResource.uri(), protectedResource.type())
                     );
 
                     this.resourceIds.put(resourceInfo.getResourceClass(), response.getId());

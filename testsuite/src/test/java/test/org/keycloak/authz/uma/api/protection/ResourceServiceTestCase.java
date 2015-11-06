@@ -19,10 +19,10 @@ package test.org.keycloak.authz.uma.api.protection;
 
 import org.junit.Test;
 import org.keycloak.authz.client.AuthzClient;
+import org.keycloak.authz.client.representation.RegistrationResponse;
+import org.keycloak.authz.client.representation.ResourceRepresentation;
+import org.keycloak.authz.client.representation.ScopeRepresentation;
 import org.keycloak.authz.client.resource.ProtectedResource;
-import org.keycloak.authz.server.uma.protection.resource.RegistrationResponse;
-import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
-import org.keycloak.authz.server.uma.representation.UmaScopeRepresentation;
 
 import javax.ws.rs.NotFoundException;
 import java.net.URI;
@@ -49,11 +49,11 @@ public class ResourceServiceTestCase {
         String resourceName = "Admin Resources";
         String resourceUri = "http://photoz.example.com/admin/*";
         String resourceType = "http://www.keycloak-authz.org/rtype/uri";
-        Set<UmaScopeRepresentation> scopes = new HashSet<>();
+        Set<ScopeRepresentation> scopes = new HashSet<>();
 
-        scopes.add(new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/admin"));
+        scopes.add(new ScopeRepresentation("http://photoz.example.com/dev/scopes/admin"));
 
-        UmaResourceRepresentation resourceDescription = new UmaResourceRepresentation(resourceName, scopes,
+        ResourceRepresentation resourceDescription = new ResourceRepresentation(resourceName, scopes,
                 resourceUri,
                 resourceType);
         ProtectedResource resource = createAuthzClient()
@@ -64,14 +64,14 @@ public class ResourceServiceTestCase {
 
         assertNotNull(resourceId);
 
-        UmaResourceRepresentation newResourceDescription = resource.findById(resourceId).getResourceDescription();
+        ResourceRepresentation newResourceDescription = resource.findById(resourceId).getResourceDescription();
 
         assertNotNull(newResourceDescription.getId());
         assertEquals(resourceName, newResourceDescription.getName());
         assertEquals(resourceUri, newResourceDescription.getUri());
         assertEquals(resourceType, newResourceDescription.getType());
 
-        Set<UmaScopeRepresentation> registeredScopes = newResourceDescription.getScopes();
+        Set<ScopeRepresentation> registeredScopes = newResourceDescription.getScopes();
 
         assertEquals(1, registeredScopes.size());
         assertTrue(registeredScopes.containsAll(scopes));
@@ -95,12 +95,12 @@ public class ResourceServiceTestCase {
         String resourceUri = "http://photoz.example.com/jdoe/family_album";
         String resourceType = "http://www.keycloak-authz.org/rtype/photoalbum";
         String resourceIcon = "http://photoz.example.com/jdoe/family_album/icon";
-        Set<UmaScopeRepresentation> scopes = new HashSet<>();
+        Set<ScopeRepresentation> scopes = new HashSet<>();
 
-        scopes.add(new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/view", "http://photoz.example.com/icons/reading-glasses"));
-        scopes.add(new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/all", "http://photoz.example.com/icons/permit-all"));
+        scopes.add(new ScopeRepresentation("http://photoz.example.com/dev/scopes/view", "http://photoz.example.com/icons/reading-glasses"));
+        scopes.add(new ScopeRepresentation("http://photoz.example.com/dev/scopes/all", "http://photoz.example.com/icons/permit-all"));
 
-        UmaResourceRepresentation resourceDescription = new UmaResourceRepresentation(resourceName, scopes,
+        ResourceRepresentation resourceDescription = new ResourceRepresentation(resourceName, scopes,
                 resourceUri,
                 resourceType,
                 resourceIcon);
@@ -112,7 +112,7 @@ public class ResourceServiceTestCase {
 
         assertNotNull(resourceId);
 
-        UmaResourceRepresentation newResourceDescription = resource.findById(resourceId).getResourceDescription();
+        ResourceRepresentation newResourceDescription = resource.findById(resourceId).getResourceDescription();
 
         assertNotNull(newResourceDescription.getId());
         assertEquals(resourceName, newResourceDescription.getName());
@@ -120,7 +120,7 @@ public class ResourceServiceTestCase {
         assertEquals(resourceType, newResourceDescription.getType());
         assertEquals(resourceIcon, newResourceDescription.getIconUri());
 
-        Set<UmaScopeRepresentation> registeredScopes = newResourceDescription.getScopes();
+        Set<ScopeRepresentation> registeredScopes = newResourceDescription.getScopes();
 
         assertEquals(2, registeredScopes.size());
         assertTrue(registeredScopes.containsAll(scopes));
@@ -135,13 +135,13 @@ public class ResourceServiceTestCase {
         resource.deleteAll();
 
         for (int i = 0; i < 10; i++) {
-            resource.create(newResource("Jdoe Party Album " + i, new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
+            resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
         }
 
         Set<String> resourceNames = new HashSet<>();
 
         for (String id : resource.findAll()) {
-            UmaResourceRepresentation description = resource.findById(id).getResourceDescription();
+            ResourceRepresentation description = resource.findById(id).getResourceDescription();
 
             assertTrue(description.getName().startsWith("Jdoe Party Album"));
             assertTrue(resourceNames.add(description.getName()));
@@ -158,14 +158,14 @@ public class ResourceServiceTestCase {
 
         resource.deleteAll();
 
-        resource.create(newResource("Jdoe Party Album", new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
+        resource.create(newResource("Jdoe Party Album", new ScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
 
         Set<String> rsids = resource.findAll();
 
         assertEquals(1, rsids.size());
 
         String resourceId = rsids.iterator().next();
-        UmaResourceRepresentation description = resource.findById(resourceId).getResourceDescription();
+        ResourceRepresentation description = resource.findById(resourceId).getResourceDescription();
 
         assertTrue(description.getName().equals("Jdoe Party Album"));
 
@@ -194,7 +194,7 @@ public class ResourceServiceTestCase {
         Set<String> rsids = new HashSet<>();
 
         for (int i = 0; i < 10; i++) {
-            rsids.add(resource.create(newResource("Jdoe Party Album " + i, new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/all"))).getId());
+            rsids.add(resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all"))).getId());
         }
 
         resource.deleteAll();
@@ -219,13 +219,13 @@ public class ResourceServiceTestCase {
         resource.deleteAll();
 
         for (int i = 0; i < 10; i++) {
-            resource.create(newResource("Jdoe Party Album " + i, new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
+            resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
         }
 
         Set<String> resourceNames = new HashSet<>();
 
         for (String id : resource.search("all")) {
-            UmaResourceRepresentation description = resource.findById(id).getResourceDescription();
+            ResourceRepresentation description = resource.findById(id).getResourceDescription();
 
             assertTrue(description.getName().startsWith("Jdoe Party Album"));
             assertTrue(resourceNames.add(description.getName()));
@@ -245,7 +245,7 @@ public class ResourceServiceTestCase {
         Set<String> ownerResources = new HashSet<>();
 
         for (int i = 0; i < 10; i++) {
-            ownerResources.add(resource.create(newResource("Jdoe Party Album " + i, new UmaScopeRepresentation("http://photoz.example.com/dev/scopes/all"))).getId());
+            ownerResources.add(resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all"))).getId());
         }
 
         resource = createAuthzClient()
@@ -257,7 +257,7 @@ public class ResourceServiceTestCase {
         ownerResources.stream().forEach(expectedRsId -> assertTrue(allServerResources.contains(expectedRsId)));
     }
 
-    private UmaResourceRepresentation newResource(String name, UmaScopeRepresentation... scopes) {
-        return new UmaResourceRepresentation(name, new HashSet<>(Arrays.asList(scopes)));
+    private ResourceRepresentation newResource(String name, ScopeRepresentation... scopes) {
+        return new ResourceRepresentation(name, new HashSet<>(Arrays.asList(scopes)));
     }
 }

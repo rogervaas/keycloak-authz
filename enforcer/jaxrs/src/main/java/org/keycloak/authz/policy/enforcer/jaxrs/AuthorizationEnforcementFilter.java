@@ -2,14 +2,14 @@ package org.keycloak.authz.policy.enforcer.jaxrs;
 
 import org.codehaus.jackson.map.ObjectMapper;
 import org.keycloak.authz.client.AuthzClient;
-import org.keycloak.authz.server.uma.ErrorResponse;
-import org.keycloak.authz.server.uma.authorization.Permission;
-import org.keycloak.authz.server.uma.authorization.RequestingPartyToken;
-import org.keycloak.authz.server.uma.protection.permission.PermissionRequest;
-import org.keycloak.authz.server.uma.protection.permission.PermissionResponse;
-import org.keycloak.authz.server.uma.protection.resource.RegistrationResponse;
-import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
-import org.keycloak.authz.server.uma.representation.UmaScopeRepresentation;
+import org.keycloak.authz.client.representation.ErrorResponse;
+import org.keycloak.authz.client.representation.Permission;
+import org.keycloak.authz.client.representation.PermissionRequest;
+import org.keycloak.authz.client.representation.PermissionResponse;
+import org.keycloak.authz.client.representation.RegistrationResponse;
+import org.keycloak.authz.client.representation.RequestingPartyToken;
+import org.keycloak.authz.client.representation.ResourceRepresentation;
+import org.keycloak.authz.client.representation.ScopeRepresentation;
 import org.keycloak.jose.jws.JWSInput;
 
 import javax.ws.rs.WebApplicationException;
@@ -101,14 +101,14 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
                     ErrorResponse errorResponse = new ObjectMapper().readValue(serverResponse, ErrorResponse.class);
 
                     if (errorResponse.getError().equals("nonexistent_resource_set_id")) {
-                        HashSet<UmaScopeRepresentation> scopes = new HashSet<>();
+                        HashSet<ScopeRepresentation> scopes = new HashSet<>();
 
                         for (ProtectedScope protectedScope : protectedResource.scopes()) {
-                            scopes.add(new UmaScopeRepresentation(protectedScope.name(), protectedScope.uri()));
+                            scopes.add(new ScopeRepresentation(protectedScope.name(), protectedScope.uri()));
                         }
 
                         RegistrationResponse response = createAuthzClient().resource().create(
-                                new UmaResourceRepresentation(enforce.uri(), scopes, enforce.uri(), protectedResource.type())
+                                new ResourceRepresentation(enforce.uri(), scopes, enforce.uri(), protectedResource.type())
                         );
 
                         this.resourceIds.put(resourceInfo.getResourceClass(), response.getId());

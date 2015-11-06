@@ -1,21 +1,21 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
     <parent>
-        <artifactId>keycloak-authz-parent</artifactId>
         <groupId>org.keycloak</groupId>
+        <artifactId>keycloak-authz-parent</artifactId>
         <version>1.0-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <name>Distribution Parent</name>
+    <name>Keycloak Authz: Distribution Parent</name>
     <description/>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>distribution-pom</artifactId>
+    <artifactId>keycloak-authz-distribution-parent</artifactId>
     <packaging>pom</packaging>
 
     <modules>
-        <module>server-dist</module>
-        <module>server-feature-pack</module>
+        <module>wf9</module>
+        <module>demo</module>
     </modules>
 </project>

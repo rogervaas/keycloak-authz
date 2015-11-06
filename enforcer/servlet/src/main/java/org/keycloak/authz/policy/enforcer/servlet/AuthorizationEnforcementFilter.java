@@ -3,16 +3,16 @@ package org.keycloak.authz.policy.enforcer.servlet;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.authz.client.AuthzClient;
+import org.keycloak.authz.client.representation.AuthorizationRequest;
+import org.keycloak.authz.client.representation.AuthorizationResponse;
+import org.keycloak.authz.client.representation.Permission;
+import org.keycloak.authz.client.representation.PermissionRequest;
+import org.keycloak.authz.client.representation.PermissionResponse;
+import org.keycloak.authz.client.representation.RegistrationResponse;
+import org.keycloak.authz.client.representation.RequestingPartyToken;
+import org.keycloak.authz.client.representation.ResourceRepresentation;
+import org.keycloak.authz.client.representation.ScopeRepresentation;
 import org.keycloak.authz.client.resource.AuthorizationResource;
-import org.keycloak.authz.server.uma.authorization.AuthorizationRequest;
-import org.keycloak.authz.server.uma.authorization.AuthorizationResponse;
-import org.keycloak.authz.server.uma.authorization.Permission;
-import org.keycloak.authz.server.uma.authorization.RequestingPartyToken;
-import org.keycloak.authz.server.uma.protection.permission.PermissionRequest;
-import org.keycloak.authz.server.uma.protection.permission.PermissionResponse;
-import org.keycloak.authz.server.uma.protection.resource.RegistrationResponse;
-import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
-import org.keycloak.authz.server.uma.representation.UmaScopeRepresentation;
 import org.keycloak.jose.jws.JWSInput;
 
 import javax.servlet.Filter;
@@ -61,16 +61,16 @@ public class AuthorizationEnforcementFilter implements Filter {
 
                     if (search.isEmpty()) {
                         if (enforcerConfig.isCreateResources()) {
-                            UmaResourceRepresentation resource = new UmaResourceRepresentation();
+                            ResourceRepresentation resource = new ResourceRepresentation();
 
                             resource.setName(pathConfig.getName());
                             resource.setType(pathConfig.getType());
                             resource.setUri(pathConfig.getPath());
 
-                            HashSet<UmaScopeRepresentation> scopes = new HashSet<>();
+                            HashSet<ScopeRepresentation> scopes = new HashSet<>();
 
                             pathConfig.getScopes().forEach(scopeName -> {
-                                UmaScopeRepresentation scope = new UmaScopeRepresentation();
+                                ScopeRepresentation scope = new ScopeRepresentation();
 
                                 scope.setName(scopeName);
 

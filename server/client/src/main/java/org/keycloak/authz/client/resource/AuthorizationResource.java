@@ -17,8 +17,9 @@
  */
 package org.keycloak.authz.client.resource;
 
-import org.keycloak.authz.server.uma.authorization.AuthorizationRequest;
-import org.keycloak.authz.server.uma.authorization.AuthorizationResponse;
+
+import org.keycloak.authz.client.representation.AuthorizationRequest;
+import org.keycloak.authz.client.representation.AuthorizationResponse;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;

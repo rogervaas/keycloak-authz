@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<module xmlns="urn:jboss:module:1.3" name="org.keycloak.keycloak-authz-server">
+    <resources>
+        <artifact name="${org.keycloak:keycloak-authz-server-uma-services}"/>
+        <artifact name="${org.keycloak:keycloak-authz-api}"/>
+        <artifact name="${org.keycloak:keycloak-authz-drools}"/>
+        <artifact name="${org.keycloak:keycloak-authz-identity}"/>
+        <artifact name="${org.keycloak:keycloak-authz-resource}"/>
+        <artifact name="${org.keycloak:keycloak-authz-scope}"/>
+        <artifact name="${org.keycloak:keycloak-authz-persistence-api}"/>
+        <artifact name="${org.keycloak:keycloak-authz-jpa-provider}"/>
+        <artifact name="${org.keycloak:keycloak-authz-server-admin-services}"/>
+        <artifact name="${org.keycloak:keycloak-authz-server-entitlement-services}"/>
+        <artifact name="${org.keycloak:keycloak-authz-jaxrs-enforcer}"/>
+        <artifact name="${org.keycloak:keycloak-authz-servlet-enforcer}"/>
+        <artifact name="${org.keycloak:keycloak-authz-client}"/>
+
+        <!-- Drools -->
+        <artifact name="${org.kie:kie-api}"/>
+        <artifact name="${org.kie:kie-ci}"/>
+        <artifact name="${org.kie:kie-internal}"/>
+        <artifact name="${org.drools:drools-core}"/>
+        <artifact name="${org.drools:drools-compiler}"/>
+        <artifact name="${org.eclipse.aether:aether-api}"/>
+        <artifact name="${org.eclipse.aether:aether-connector-basic}"/>
+        <artifact name="${org.eclipse.aether:aether-spi}"/>
+        <artifact name="${org.eclipse.aether:aether-impl}"/>
+        <artifact name="${org.eclipse.aether:aether-transport-file}"/>
+        <artifact name="${org.eclipse.aether:aether-transport-http}"/>
+        <artifact name="${org.eclipse.aether:aether-transport-wagon}"/>
+        <artifact name="${org.eclipse.aether:aether-util}"/>
+        <artifact name="${org.apache.ant:ant}"/>
+        <artifact name="${org.apache.ant:ant-launcher}"/>
+        <artifact name="${org.antlr:antlr-runtime}"/>
+        <artifact name="${aopalliance:aopalliance}"/>
+        <artifact name="${org.apache.maven:maven-aether-provider}"/>
+        <artifact name="${org.apache.maven:maven-artifact}"/>
+        <artifact name="${org.apache.maven:maven-compat}"/>
+        <artifact name="${org.apache.maven:maven-core}"/>
+        <artifact name="${org.apache.maven:maven-model}"/>
+        <artifact name="${org.apache.maven:maven-model-builder}"/>
+        <artifact name="${org.apache.maven:maven-plugin-api}"/>
+        <artifact name="${org.apache.maven:maven-repository-metadata}"/>
+        <artifact name="${org.apache.maven:maven-settings}"/>
+        <artifact name="${org.apache.maven:maven-settings-builder}"/>
+        <artifact name="${org.mvel:mvel2}"/>
+        <artifact name="${org.eclipse.sisu:org.eclipse.sisu.inject}"/>
+        <artifact name="${org.eclipse.sisu:org.eclipse.sisu.plexus}"/>
+        <artifact name="${org.sonatype.plexus:plexus-cipher}"/>
+        <artifact name="${org.codehaus.plexus:plexus-classworlds}"/>
+        <artifact name="${org.codehaus.plexus:plexus-component-annotations}"/>
+        <artifact name="${org.codehaus.plexus:plexus-interpolation}"/>
+        <artifact name="${org.sonatype.plexus:plexus-sec-dispatcher}"/>
+        <artifact name="${org.codehaus.plexus:plexus-utils}"/>
+        <artifact name="${org.apache.maven.wagon:wagon-http}"/>
+        <artifact name="${org.apache.maven.wagon:wagon-http-shared4}"/>
+        <artifact name="${org.apache.maven.wagon:wagon-provider-api}"/>
+        <artifact name="${com.thoughtworks.xstream:xstream}"/>
+        <artifact name="${com.google.guava:guava}"/>
+        <artifact name="${org.eclipse.jdt.core.compiler:ecj}"/>
+        <artifact name="${org.apache.httpcomponents:httpclient}"/>
+        <artifact name="${org.apache.httpcomponents:httpcore}"/>
+        <artifact name="${com.lowagie:itext}"/>
+        <artifact name="${org.sonatype.sisu:sisu-guice}"/>
+    </resources>
+    <dependencies>
+        <module name="org.keycloak.keycloak-core"/>
+        <module name="org.keycloak.keycloak-model-api"/>
+        <module name="org.keycloak.keycloak-events-api"/>
+        <module name="org.keycloak.keycloak-services"/>
+        <module name="org.keycloak.keycloak-connections-jpa"/>
+        <module name="javax.ws.rs.api"/>
+        <module name="org.jboss.resteasy.resteasy-jaxrs"/>
+        <module name="org.jboss.resteasy.resteasy-crypto"/>
+        <module name="org.jboss.resteasy.resteasy-multipart-provider"/>
+        <module name="javax.servlet.api"/>
+        <module name="org.codehaus.jackson.jackson-core-asl"/>
+        <module name="org.codehaus.jackson.jackson-mapper-asl"/>
+        <module name="org.codehaus.jackson.jackson-xc"/>
+        <module name="javax.persistence.api"/>
+        <module name="org.bouncycastle"/>
+        <module name="javax.api"/>
+        <module name="org.hibernate" services="import"/>
+        <module name="org.javassist"/>
+        <module name="javax.inject.api"/>
+        <module name="javax.enterprise.api"/>
+        <module name="org.jboss.logging"/>
+        <module name="org.slf4j"/>
+        <module name="org.apache.commons.logging"/>
+    </dependencies>
+
+</module>

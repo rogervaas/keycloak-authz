@@ -17,9 +17,10 @@
  */
 package org.keycloak.authz.client.resource;
 
+import org.keycloak.authz.client.representation.RegistrationResponse;
+import org.keycloak.authz.client.representation.ResourceRepresentation;
+
 import java.util.Set;
-import org.keycloak.authz.server.uma.protection.resource.RegistrationResponse;
-import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -39,7 +40,7 @@ public interface ProtectedResource {
     @POST
     @Consumes("application/json")
     @Produces("application/json")
-    RegistrationResponse create(UmaResourceRepresentation resource);
+    RegistrationResponse create(ResourceRepresentation resource);
 
     @Path("/{id}")
     @GET

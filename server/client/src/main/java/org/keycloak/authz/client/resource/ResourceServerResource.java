@@ -1,6 +1,6 @@
 package org.keycloak.authz.client.resource;
 
-import org.keycloak.authz.server.admin.resource.representation.ResourceServerRepresentation;
+import org.keycloak.authz.client.representation.ResourceServerRepresentation;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.GET;
