@@ -145,19 +145,6 @@ module.factory('errorInterceptor', function ($q, $injector) {
 
                 if (authenticateHeader) {
                     var deferred = $q.defer();
-
-                    //var properties = authenticateHeader.split(",");
-                    //
-                    //for (p of properties) {
-                    //    p = p.trim();
-                    //    var idx = p.indexOf("as_uri=\"");
-                    //
-                    //    if (idx == 0) {
-                    //        var authzEndpoint = p.substring(idx + "as_uri=\"".length, p.length - 2);
-                    //        console.log($http);
-                    //    }
-                    //}
-
                     var data = JSON.stringify({
                         ticket: response.data.ticket
                     });
@@ -167,19 +154,17 @@ module.factory('errorInterceptor', function ($q, $injector) {
                                 if (authzResponse.data) {
                                     Identity.uma = {};
                                     Identity.uma.rpt = authzResponse.data;
-                                    // now let's retry the original request - transformRequest in .run() below will add the new OAuth token
+                                    console.log(authzResponse.data);
                                     $injector.get("$http")(response.config).then(function(response) {
-                                        // we have a successful response - resolve it using deferred
                                         deferred.resolve(response);
                                     },function(response) {
                                         deferred.reject();
-                                        // something went wrong
                                     });
                                 } else {
-                                    deferred.reject(); // login.json didn't give us data
+                                    deferred.reject();
                                 }
                             }, function(response) {
-                                deferred.reject(); // token retry failed, redirect so user can login again
+                                deferred.reject();
                                 alert('Oops, you are probably missing some permission. Contact the administrator.');
                                 return;
                             });

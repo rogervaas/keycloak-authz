@@ -17,15 +17,14 @@
  */
 package org.keycloak.example.photoz.entity;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -37,13 +36,13 @@ public class Album {
     @GeneratedValue
     private Long id;
 
-    @Column
+    @Column(nullable = false)
     private String name;
 
     @OneToMany(mappedBy = "album", fetch = FetchType.EAGER)
     private List<Photo> photos = new ArrayList<>();
 
-    @Column
+    @Column(nullable = false)
     private String userId;
 
     public Long getId() {

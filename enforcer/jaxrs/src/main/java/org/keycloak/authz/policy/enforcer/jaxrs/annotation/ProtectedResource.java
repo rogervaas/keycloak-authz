@@ -1,4 +1,4 @@
-package org.keycloak.authz.policy.enforcer.jaxrs;
+package org.keycloak.authz.policy.enforcer.jaxrs.annotation;
 
 
 import java.lang.annotation.ElementType;
@@ -9,9 +9,12 @@ import java.lang.annotation.Target;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-@Target({ElementType.METHOD, ElementType.FIELD})
+@Target({ElementType.TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Enforce {
+public @interface ProtectedResource {
+    String name();
+    String type() default "";
     String uri() default "";
-    String[] scopes();
+    ProtectedScope[] scopes() default {};
+    boolean create() default true;
 }

@@ -17,9 +17,9 @@
  */
 package org.keycloak.example.photoz.admin;
 
-import org.keycloak.authz.policy.enforcer.jaxrs.Enforce;
-import org.keycloak.authz.policy.enforcer.jaxrs.ProtectedResource;
-import org.keycloak.authz.policy.enforcer.jaxrs.ProtectedScope;
+import org.keycloak.authz.policy.enforcer.jaxrs.annotation.Enforce;
+import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedResource;
+import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedScope;
 import org.keycloak.example.photoz.entity.Album;
 
 import javax.persistence.EntityManager;
@@ -40,7 +40,7 @@ import java.util.List;
 @Path("/admin/album")
 @ProtectedResource(
         name = "Admin Resources",
-        type = "http://photoz.com/dev/resource/admin",
+        type = "http://photoz.com/dev/resource/admin/album",
         uri = "/admin/*",
         scopes = {
                 @ProtectedScope(name = AdminAlbumService.SCOPE_ADMIN_ALBUM_MANAGE)

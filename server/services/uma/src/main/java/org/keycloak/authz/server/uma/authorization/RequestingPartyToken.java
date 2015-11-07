@@ -17,10 +17,11 @@
  */
 package org.keycloak.authz.server.uma.authorization;
 
+import org.keycloak.representations.JsonWebToken;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.keycloak.representations.JsonWebToken;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -31,10 +32,14 @@ public class RequestingPartyToken extends JsonWebToken {
     private final String requestingPartyId;
 
     public RequestingPartyToken() {
-        this(null, null);
+        this.permissions = null;
+        this.requestingPartyId = null;
     }
 
-    public RequestingPartyToken(final String requestingPartyId, Permission... permissions) {
+    public RequestingPartyToken(String requestingPartyId, Permission... permissions) {
+        if (requestingPartyId == null) {
+            throw new IllegalArgumentException("Requesting party identifier is null.");
+        }
         this.requestingPartyId = requestingPartyId;
         if (permissions != null) {
             this.permissions = new ArrayList<>(Arrays.asList(permissions));

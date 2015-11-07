@@ -3,9 +3,9 @@ package org.keycloak.example.photoz.album;
 import org.keycloak.authz.client.AuthzClient;
 import org.keycloak.authz.client.representation.ResourceRepresentation;
 import org.keycloak.authz.client.representation.ScopeRepresentation;
-import org.keycloak.authz.policy.enforcer.jaxrs.Enforce;
-import org.keycloak.authz.policy.enforcer.jaxrs.ProtectedResource;
-import org.keycloak.authz.policy.enforcer.jaxrs.ProtectedScope;
+import org.keycloak.authz.policy.enforcer.jaxrs.annotation.Enforce;
+import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedResource;
+import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedScope;
 import org.keycloak.example.photoz.entity.Album;
 
 import javax.ejb.Stateless;

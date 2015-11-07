@@ -1,4 +1,4 @@
-package org.keycloak.authz.policy.enforcer.jaxrs;
+package org.keycloak.authz.policy.enforcer.jaxrs.annotation;
 
 
 import java.lang.annotation.ElementType;
@@ -11,7 +11,7 @@ import java.lang.annotation.Target;
  */
 @Target({ElementType.METHOD, ElementType.FIELD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface ProtectedScope {
-    String name();
+public @interface Enforce {
     String uri() default "";
+    String[] scopes();
 }

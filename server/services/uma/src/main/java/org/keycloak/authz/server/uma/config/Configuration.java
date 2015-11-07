@@ -42,8 +42,9 @@ public class Configuration {
         configuration.setIssuer(URI.create(authzServerUri + "/realms/" + realm + "/authz"));
         configuration.setRealm(realm);
         configuration.setAuthorizationEndpoint(authorizationEndpoint);
+        configuration.setRptEndpoint(URI.create(authzServerUri + "/realms/" + realm + "/authz/authorize"));
         configuration.setTokenEndpoint(tokenEndpoint);
-        configuration.setResourceSetRegistrationEndpoint(URI.create(authzServerUri.toString() + "/resource_set"));
+        configuration.setResourceSetRegistrationEndpoint(URI.create(authzServerUri + "/realms/" + realm + "/authz/resource_set"));
 
         return configuration;
     }

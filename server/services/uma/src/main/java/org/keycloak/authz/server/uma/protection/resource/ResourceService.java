@@ -149,6 +149,10 @@ public class ResourceService {
                     resources.addAll(this.authorizationManager.getStoreFactory().resource().findByServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getName())).collect(Collectors.toSet()).stream()
                             .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                             .collect(Collectors.toList()));
+                } else if ("type".equals(filterType)) {
+                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getType())).collect(Collectors.toSet()).stream()
+                            .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
+                            .collect(Collectors.toList()));
                 } else if ("uri".equals(filterType)) {
                     resources.addAll(this.authorizationManager.getStoreFactory().resource().findByServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getUri())).collect(Collectors.toSet()).stream()
                             .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
