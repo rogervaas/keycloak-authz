@@ -26,7 +26,7 @@
         <jboss-jaxrs-api.version>1.0.0.Final</jboss-jaxrs-api.version>
         <resteasy.undertow.version>3.0.10.Final</resteasy.undertow.version>
         <resteasy.jackson.provider.version>3.0.10.Final</resteasy.jackson.provider.version>
-        <version.org.kohsuke.metainf-services.metainf-services>1.5-jboss-1</version.org.kohsuke.metainf-services.metainf-services>
+        <version.org.kohsuke.metainf-services.metainf-services>1.5</version.org.kohsuke.metainf-services.metainf-services>
 
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
