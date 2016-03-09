@@ -17,6 +17,10 @@
  */
 package org.keycloak.authz.client.representation;
 
+import org.keycloak.authz.core.model.ResourceServer;
+
+import java.util.List;
+
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -26,9 +30,12 @@ public class ResourceServerRepresentation {
 
     private String clientId;
     private String name;
-
-    public ResourceServerRepresentation() {
-    }
+    private boolean allowRemoteResourceManagement;
+    private boolean allowRemotePolicyManagement;
+    private ResourceServer.PolicyEnforcementMode policyEnforcementMode;
+    private List<ResourceRepresentation> resources;
+    private List<PolicyRepresentation> policies;
+    private List<ScopeRepresentation> scopes;
 
     public void setId(String id) {
         this.id = id;
@@ -52,5 +59,53 @@ public class ResourceServerRepresentation {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public boolean isAllowRemoteResourceManagement() {
+        return this.allowRemoteResourceManagement;
+    }
+
+    public void setAllowRemoteResourceManagement(boolean allowRemoteResourceManagement) {
+        this.allowRemoteResourceManagement = allowRemoteResourceManagement;
+    }
+
+    public boolean isAllowRemotePolicyManagement() {
+        return this.allowRemotePolicyManagement;
+    }
+
+    public void setAllowRemotePolicyManagement(boolean allowRemotePolicyManagement) {
+        this.allowRemotePolicyManagement = allowRemotePolicyManagement;
+    }
+
+    public ResourceServer.PolicyEnforcementMode getPolicyEnforcementMode() {
+        return this.policyEnforcementMode;
+    }
+
+    public void setPolicyEnforcementMode(ResourceServer.PolicyEnforcementMode policyEnforcementMode) {
+        this.policyEnforcementMode = policyEnforcementMode;
+    }
+
+    public void setResources(List<ResourceRepresentation> resources) {
+        this.resources = resources;
+    }
+
+    public List<ResourceRepresentation> getResources() {
+        return resources;
+    }
+
+    public void setPolicies(List<PolicyRepresentation> policies) {
+        this.policies = policies;
+    }
+
+    public List<PolicyRepresentation> getPolicies() {
+        return policies;
+    }
+
+    public void setScopes(List<ScopeRepresentation> scopes) {
+        this.scopes = scopes;
+    }
+
+    public List<ScopeRepresentation> getScopes() {
+        return scopes;
     }
 }

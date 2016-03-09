@@ -26,12 +26,10 @@ import org.keycloak.authz.core.model.Scope;
  */
 public interface ScopeStore {
 
-    Scope create(final String name, final ResourceServer resourceServer);
+    Scope create(String name, ResourceServer resourceServer);
     void save(Scope model);
-
     void delete(String id);
-
     Scope findById(String id);
     Scope findByName(String name);
-    List<Scope> findByServer(String id);
+    List<Scope> findByResourceServer(String id);
 }

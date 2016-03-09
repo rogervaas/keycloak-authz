@@ -59,7 +59,7 @@ public class ResourceServerServiceTestCase {
     @Test
     public void testCreate() {
         AuthzClient client = createAuthzClient();
-        AuthzClient.AdminClient admin = client.admin("admin", "admin", "photoz-restful-api", "06cb5239-8ade-4c06-a65b-2aadb4e8ee51");
+        AuthzClient.AdminClient admin = client.admin("admin", "admin", "admin-cli");
         ResourceServerResource resourceServer = admin.resourceServer();
         ResourceServerRepresentation server = new ResourceServerRepresentation();
 
@@ -77,7 +77,7 @@ public class ResourceServerServiceTestCase {
     @Test
     public void testCreateInvalidClientId() {
         AuthzClient client = createAuthzClient();
-        AuthzClient.AdminClient admin = client.admin("admin", "admin", "photoz-restful-api", "06cb5239-8ade-4c06-a65b-2aadb4e8ee51");
+        AuthzClient.AdminClient admin = client.admin("admin", "admin", "admin-cli");
         ResourceServerResource resourceServer = admin.resourceServer();
         ResourceServerRepresentation server = new ResourceServerRepresentation();
 
@@ -97,7 +97,7 @@ public class ResourceServerServiceTestCase {
     @Test
     public void testUpdate() {
         AuthzClient client = createAuthzClient();
-        AuthzClient.AdminClient admin = client.admin("admin", "admin", "photoz-restful-api", "06cb5239-8ade-4c06-a65b-2aadb4e8ee51");
+        AuthzClient.AdminClient admin = client.admin("admin", "admin", "admin-cli");
         ResourceServerResource resourceServer = admin.resourceServer();
         ResourceServerRepresentation server = new ResourceServerRepresentation();
 
@@ -121,7 +121,7 @@ public class ResourceServerServiceTestCase {
         Configuration configuration = client.getServerConfiguration();
         return Keycloak.getInstance(configuration.getServerUrl().toString(), configuration.getRealm(),
                 "admin", "admin",
-                "realm-management", "b757c328-1aac-4c7a-8f6e-c5a42bfde3d7");
+                "admin-cli");
     }
 
     private ClientRepresentation getClientApplication(String clientId) {

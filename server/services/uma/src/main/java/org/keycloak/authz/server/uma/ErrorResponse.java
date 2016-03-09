@@ -17,7 +17,7 @@
  */
 package org.keycloak.authz.server.uma;
 
-import org.codehaus.jackson.annotate.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import javax.ws.rs.core.Response;
 

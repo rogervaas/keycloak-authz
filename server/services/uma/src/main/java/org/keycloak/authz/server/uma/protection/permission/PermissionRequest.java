@@ -17,10 +17,11 @@
  */
 package org.keycloak.authz.server.uma.protection.permission;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

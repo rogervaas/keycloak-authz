@@ -33,9 +33,8 @@ import org.keycloak.authz.server.uma.authorization.RequestingPartyToken;
 import org.keycloak.jose.jws.JWSInput;
 
 import javax.ws.rs.BadRequestException;
-import java.net.URI;
+import javax.ws.rs.ClientErrorException;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,16 +46,16 @@ import static org.junit.Assert.*;
  */
 public class AuthorizationServiceTestCase {
 
-    private final AuthzClient authzClient = AuthzClient.fromConfig(URI.create("http://localhost:8080/auth/realms/photoz/authz/uma_configuration"));
+    private final AuthzClient authzClient = AuthzClient.create();
 
     @Test
-    public void testResourceServerIsOwner() throws Exception {
+    public void testPermit() throws Exception {
         ResourceRepresentation resource = createResource();
         String[] expectedScopes = resource.getScopes().stream()
                 .map(ScopeRepresentation::getName).collect(Collectors.toSet()).toArray(new String[resource.getScopes().size()]);
         PermissionResponse ticket = obtainPermissionTicket(resource.getId(), expectedScopes);
         AuthorizationResource authorization = this.authzClient
-                .authorization("jdoe", "jdoe");
+                .authorization("admin", "admin");
 
         AuthorizationResponse authorize = authorization.authorize(new AuthorizationRequest(ticket.getTicket()));
         RequestingPartyToken token = new JWSInput(authorize.getRpt()).readJsonContent(RequestingPartyToken.class);
@@ -69,8 +68,25 @@ public class AuthorizationServiceTestCase {
 
         Set<String> scopes = permission.getScopes();
 
-        assertEquals(2, scopes.size());
+        assertEquals(1, scopes.size());
         assertTrue(scopes.containsAll(Arrays.asList(expectedScopes)));
+    }
+
+    @Test
+    public void testDeny() throws Exception {
+        ResourceRepresentation resource = createResource();
+        String[] expectedScopes = resource.getScopes().stream()
+                .map(ScopeRepresentation::getName).collect(Collectors.toSet()).toArray(new String[resource.getScopes().size()]);
+        PermissionResponse ticket = obtainPermissionTicket(resource.getId(), expectedScopes);
+        AuthorizationResource authorization = this.authzClient
+                .authorization("jdoe", "jdoe");
+
+        try {
+            authorization.authorize(new AuthorizationRequest(ticket.getTicket()));
+            fail();
+        } catch (ClientErrorException cee) {
+            assertEquals(403, cee.getResponse().getStatus());
+        }
     }
 
     @Test
@@ -93,21 +109,18 @@ public class AuthorizationServiceTestCase {
 
     private PermissionResponse obtainPermissionTicket(String resourceId, String... scopes) {
         AuthzClient.ProtectionClient protection = this.authzClient
-                .protection("photoz-restful-api", "06cb5239-8ade-4c06-a65b-2aadb4e8ee51");
+                .protection();
 
         return protection.permission().forResource(new PermissionRequest(resourceId, scopes));
     }
 
     private ResourceRepresentation createResource() {
-        ResourceRepresentation description = newResource("Admin Resources", new ScopeRepresentation("http://photoz.example.com/dev/scopes/scope1"), new ScopeRepresentation("http://photoz.example.com/dev/scopes/scope2"));
         ProtectedResource resource = this.authzClient
-                .protection("photoz-restful-api", "06cb5239-8ade-4c06-a65b-2aadb4e8ee51")
+                .protection()
                 .resource();
 
-        return resource.findById(resource.create(description).getId()).getResourceDescription();
-    }
+        String resourceId = resource.search("type=http://photoz.com/dev/resource/admin/album").iterator().next();
 
-    private ResourceRepresentation newResource(String name, ScopeRepresentation... scopes) {
-        return new ResourceRepresentation(name, new HashSet<>(Arrays.asList(scopes)));
+        return resource.findById(resourceId).getResourceDescription();
     }
 }

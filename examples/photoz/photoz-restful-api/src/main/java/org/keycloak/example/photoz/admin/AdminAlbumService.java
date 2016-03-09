@@ -22,6 +22,7 @@ import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedResource;
 import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedScope;
 import org.keycloak.example.photoz.entity.Album;
 
+import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 import javax.ws.rs.GET;
@@ -45,6 +46,7 @@ import java.util.List;
         scopes = {
                 @ProtectedScope(name = AdminAlbumService.SCOPE_ADMIN_ALBUM_MANAGE)
         })
+@Stateless
 public class AdminAlbumService {
 
     public static final String SCOPE_ADMIN_ALBUM_MANAGE = "urn:photoz.com:scopes:album:admin:manage";

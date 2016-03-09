@@ -17,7 +17,7 @@
  */
 package org.keycloak.authz.client.representation;
 
-import org.codehaus.jackson.annotate.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

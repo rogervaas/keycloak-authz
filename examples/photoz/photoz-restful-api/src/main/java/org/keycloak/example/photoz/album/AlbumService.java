@@ -47,16 +47,13 @@ public class AlbumService {
     private EntityManager entityManager;
 
     @Context
-    private SecurityContext securityContext;
-
-    @Context
     private HttpHeaders headers;
 
     @POST
     @Consumes("application/json")
     @Enforce(scopes= AlbumService.SCOPE_ALBUM_CREATE)
-    public Response create(Album album) {
-        album.setUserId(this.securityContext.getUserPrincipal().getName());
+    public Response create(@Context SecurityContext securityContext, Album album) {
+        album.setUserId(securityContext.getUserPrincipal().getName());
 
         this.entityManager.persist(album);
 
@@ -83,8 +80,8 @@ public class AlbumService {
 
     @GET
     @Produces("application/json")
-    public Response findAll() {
-        return Response.ok(this.entityManager.createQuery("from Album where userId = '" + this.securityContext.getUserPrincipal().getName() + "'").getResultList()).build();
+    public Response findAll(@Context SecurityContext securityContext) {
+        return Response.ok(this.entityManager.createQuery("from Album where userId = '" + securityContext.getUserPrincipal().getName() + "'").getResultList()).build();
     }
 
     @GET

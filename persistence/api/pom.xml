@@ -8,6 +8,7 @@
         <artifactId>keycloak-authz-persistence-parent</artifactId>
         <groupId>org.keycloak</groupId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>keycloak-authz-persistence-api</artifactId>
@@ -22,11 +23,6 @@
             <artifactId>keycloak-authz-api</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-model-api</artifactId>
-            <version>${version.keycloak}</version>
         </dependency>
     </dependencies>
 

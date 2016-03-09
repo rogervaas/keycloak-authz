@@ -17,7 +17,7 @@
     <dependencies>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-authz-wf9-adapter-dist</artifactId>
+            <artifactId>keycloak-authz-wildfly-adapter-dist</artifactId>
             <version>${project.version}</version>
         </dependency>
     </dependencies>
@@ -46,10 +46,10 @@
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.keycloak</groupId>
-                                    <artifactId>keycloak-authz-wf9-adapter-dist</artifactId>
+                                    <artifactId>keycloak-authz-wildfly-adapter-dist</artifactId>
                                     <version>${project.version}</version>
                                     <type>zip</type>
-                                    <outputDirectory>${project.build.directory}/keycloak-authz-server-dist-${project.version}</outputDirectory>
+                                    <outputDirectory>${project.build.directory}/keycloak-${project.version}</outputDirectory>
                                 </artifactItem>
                             </artifactItems>
                         </configuration>

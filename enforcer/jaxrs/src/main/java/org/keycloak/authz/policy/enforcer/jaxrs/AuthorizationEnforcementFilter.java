@@ -1,6 +1,6 @@
 package org.keycloak.authz.policy.enforcer.jaxrs;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.keycloak.authz.client.AuthzClient;
 import org.keycloak.authz.client.representation.ErrorResponse;
 import org.keycloak.authz.client.representation.Permission;

@@ -17,8 +17,9 @@
  */
 package org.keycloak.authz.server.uma.authorization;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.Set;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

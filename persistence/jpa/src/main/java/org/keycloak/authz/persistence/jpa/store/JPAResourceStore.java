@@ -73,7 +73,11 @@ public class JPAResourceStore implements ResourceStore {
 
     @Override
     public void delete(String id) {
-        this.entityManager.remove(findById(id));
+        Resource resource = findById(id);
+
+        if (resource != null) {
+            this.entityManager.remove(resource);
+        }
     }
 
     @Override
@@ -91,7 +95,7 @@ public class JPAResourceStore implements ResourceStore {
     }
 
     @Override
-    public List findByServer(String resourceServerId) {
+    public List findByResourceServer(String resourceServerId) {
         Query query = entityManager.createQuery("from ResourceEntity where resourceServer.id = :serverId");
 
         query.setParameter("serverId", resourceServerId);

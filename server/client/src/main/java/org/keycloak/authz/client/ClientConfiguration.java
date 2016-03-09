@@ -1,6 +1,6 @@
 package org.keycloak.authz.client;
 
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

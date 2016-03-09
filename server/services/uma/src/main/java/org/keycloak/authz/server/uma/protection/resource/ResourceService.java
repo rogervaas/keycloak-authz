@@ -39,7 +39,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.HashSet;
 import java.util.List;
@@ -76,7 +75,7 @@ public class ResourceService {
         Response response = this.resourceManager.create(resource);
 
         if (response.getEntity() instanceof ResourceRepresentation) {
-            return Response.status(Response.Status.CREATED).entity(toUmaRepresentation(resource)).build();
+            return Response.status(Response.Status.CREATED).entity(toUmaRepresentation((ResourceRepresentation) response.getEntity())).build();
         }
 
         return response;
@@ -85,8 +84,7 @@ public class ResourceService {
     @Path("/{id}")
     @DELETE
     public Response delete(@PathParam("id") String id) {
-        this.resourceManager.delete(id);
-        return Response.noContent().build();
+        return this.resourceManager.delete(id);
     }
 
     @DELETE
@@ -141,20 +139,20 @@ public class ResourceService {
                             .collect(Collectors.toList()));
 
                     if (identity.isResourceServer()) {
-                        resources.addAll(this.authorizationManager.getStoreFactory().resource().findByServer(identity.getId()).stream()
+                        resources.addAll(this.authorizationManager.getStoreFactory().resource().findByResourceServer(resourceServer.getId()).stream()
                                 .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                                 .collect(Collectors.toList()));
                     }
                 } else if ("name".equals(filterType)) {
-                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getName())).collect(Collectors.toSet()).stream()
+                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getName())).collect(Collectors.toSet()).stream()
                             .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                             .collect(Collectors.toList()));
                 } else if ("type".equals(filterType)) {
-                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getType())).collect(Collectors.toSet()).stream()
+                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getType())).collect(Collectors.toSet()).stream()
                             .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                             .collect(Collectors.toList()));
                 } else if ("uri".equals(filterType)) {
-                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getUri())).collect(Collectors.toSet()).stream()
+                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getUri())).collect(Collectors.toSet()).stream()
                             .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                             .collect(Collectors.toList()));
                 }
@@ -183,7 +181,11 @@ public class ResourceService {
         String ownerId = umaResource.getOwner();
 
         if (ownerId == null) {
-            ownerId = this.resourceServer.getId();
+            if (this.identity.isResourceServer()) {
+                ownerId = this.resourceServer.getId();
+            } else {
+                ownerId = this.identity.getId();
+            }
         }
 
         owner.setId(ownerId);
@@ -214,7 +216,11 @@ public class ResourceService {
         resource.setName(representation.getName());
         resource.setUri(representation.getUri());
         resource.setType(representation.getType());
-        resource.setOwner(representation.getOwner().getId());
+
+        if (representation.getOwner() != null) {
+            resource.setOwner(representation.getOwner().getId());
+        }
+
         resource.setScopes(representation.getScopes().stream().map(scopeRepresentation -> {
             UmaScopeRepresentation umaScopeRep = new UmaScopeRepresentation();
             umaScopeRep.setId(scopeRepresentation.getId());

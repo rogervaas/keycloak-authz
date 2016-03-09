@@ -78,7 +78,7 @@ public class ResourceServiceTestCase {
     }
 
     private AuthzClient createAuthzClient() {
-        return AuthzClient.fromConfig(URI.create("http://localhost:8080/auth/realms/photoz/authz/uma_configuration"));
+        return AuthzClient.create();
     }
 
     /**
@@ -245,11 +245,12 @@ public class ResourceServiceTestCase {
         Set<String> ownerResources = new HashSet<>();
 
         for (int i = 0; i < 10; i++) {
-            ownerResources.add(resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all"))).getId());
+            RegistrationResponse registrationResponse = resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
+            ownerResources.add(registrationResponse.getId());
         }
 
         resource = createAuthzClient()
-                .protection("photoz-restful-api", "06cb5239-8ade-4c06-a65b-2aadb4e8ee51")
+                .protection()
                 .resource();
 
         Set<String> allServerResources = resource.search("all");

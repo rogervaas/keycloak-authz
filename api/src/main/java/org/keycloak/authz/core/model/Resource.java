@@ -80,6 +80,11 @@ public interface Resource {
      */
     void removeScope(Scope scope);
 
+    /**
+     * Updates the scopes associated with this resource.
+     *
+     * @param toUpdate the scopes to update
+     */
     void updateScopes(Set<Scope> toUpdate);
 
     /**
@@ -104,14 +109,14 @@ public interface Resource {
     ResourceServer getResourceServer();
 
     /**
-     * Returns the resource's owner, which is usually an identifier that uniquely identifies the owner.
+     * Returns the resource's owner, which is usually an identifier that uniquely identifies the resource's owner.
      *
      * @return the owner of this resource
      */
     String getOwner();
 
     /**
-     * Returns all {@link Policy} associated with this resource.
+     * Returns all {@link Policy} instances associated with this resource.
      *
      * @return the policies associated with this resource
      */

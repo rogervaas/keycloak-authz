@@ -11,7 +11,7 @@ angular.element(document).ready(function ($http) {
             Identity.loggedIn = false;
             Identity.claim = {};
             Identity.authc = null;
-            window.location = this.authz.authServerUrl + "/realms/photoz/tokens/logout?redirect_uri=http://localhost:8080/photoz-html5-client/index.html";
+            window.location = this.authz.authServerUrl + "/realms/photoz/protocol/openid-connect/logout?redirect_uri=http://localhost:8080/photoz-html5-client/index.html";
             Identity.authz = null;
         };
         Identity.claim = {};

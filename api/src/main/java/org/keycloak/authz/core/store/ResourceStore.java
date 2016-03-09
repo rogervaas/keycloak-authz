@@ -40,8 +40,7 @@ public interface ResourceStore {
 
     /**
      * Saves a new or an existing {@link Resource} instance.
-     resource
-     * @param resourceServer the instance to save
+     * @param resource the instance to save
      */
     void save(Resource resource);
 
@@ -74,7 +73,7 @@ public interface ResourceStore {
      * @param resourceServerId the identifier of the resource server
      * @return a list with all resources associated with the given resource server
      */
-    List<Resource> findByServer(String resourceServerId);
+    List<Resource> findByResourceServer(String resourceServerId);
 
     /**
      * Finds all {@link Resource} associated with a given scope.

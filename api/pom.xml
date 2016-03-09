@@ -8,6 +8,7 @@
         <artifactId>keycloak-authz-parent</artifactId>
         <groupId>org.keycloak</groupId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>keycloak-authz-api</artifactId>
@@ -19,7 +20,7 @@
     <dependencies>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-model-api</artifactId>
+            <artifactId>keycloak-server-spi</artifactId>
             <version>${version.keycloak}</version>
         </dependency>
     </dependencies>

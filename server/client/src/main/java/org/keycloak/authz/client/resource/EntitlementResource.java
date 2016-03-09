@@ -1,10 +1,11 @@
 package org.keycloak.authz.client.resource;
 
-import javax.ws.rs.Consumes;
+import org.keycloak.authz.client.representation.EntitlementResponse;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.Response;
+import javax.ws.rs.QueryParam;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -13,7 +14,6 @@ import javax.ws.rs.core.Response;
 public interface EntitlementResource {
 
     @GET
-    @Consumes()
     @Produces("application/json")
-    Response findAll();
+    EntitlementResponse get(@QueryParam("resourceServerId") String resourceServerId);
 }

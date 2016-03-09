@@ -4,7 +4,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Represents a authorization policy and all the configuration associated with it.
+ * Represents an authorization policy and all the configuration associated with it.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -25,14 +25,14 @@ public interface Policy {
     String getType();
 
     /**
-     * Returns the {@link org.keycloak.authz.model.Policy.DecisionStrategy} for this policy.
+     * Returns the {@link DecisionStrategy} for this policy.
      *
      * @return the decision strategy defined for this policy
      */
     DecisionStrategy getDecisionStrategy();
 
     /**
-     * Sets the {@link org.keycloak.authz.model.Policy.DecisionStrategy} for this policy.
+     * Sets the {DecisionStrategy} for this policy.
      *
      * @return the decision strategy for this policy
      */
@@ -41,7 +41,7 @@ public interface Policy {
     /**
      * Returns a {@link Map} holding string-based key/value pairs representing any additional configuration for this policy.
      *
-     * @return a map with any additional configuration defined this policy.
+     * @return a map with any additional configuration defined for this policy.
      */
     Map<String, String> getConfig();
 
@@ -96,16 +96,16 @@ public interface Policy {
     Set<Policy> getAssociatedPolicies();
 
     /**
-     * Returns the {@link Resource} instances in which this policy is applied.
+     * Returns the {@link Resource} instances where this policy applies.
      *
-     * @return a set with all resource instances in which this policy is applied. Or an empty set if no resources were defined.
+     * @return a set with all resource instances where this policy applies. Or an empty set if there is no resource associated with this policy
      */
     Set<Resource> getResources();
 
     /**
-     * Returns the {@link Scope} instances in which this policy is applied.
+     * Returns the {@link Scope} instances where this policy applies.
      *
-     * @return a set with all scope instances in which this policy is applied. Or an empty set if no scopes were defined.
+     * @return a set with all scope instances where this policy applies. Or an empty set if there is no scope associated with this policy
      */
     Set<Scope> getScopes();
 
@@ -115,6 +115,13 @@ public interface Policy {
      * @param scope the scope
      */
     void addScope(Scope scope);
+
+    /**
+     * Removes a {@link Scope} from this policy.
+     *
+     * @param scope the scope
+     */
+    void removeScope(Scope scope);
 
     /**
      * Adds a {@link Resource} to this policy.
@@ -143,13 +150,6 @@ public interface Policy {
      * @param scope the policy
      */
     void removeAssociatedPolicy(Policy policy);
-
-    /**
-     * Removes a {@link Scope} from this policy.
-     *
-     * @param scope the scope
-     */
-    void removeScope(Scope scope);
 
     /**
      * The decision strategy dictates how the policies associated with a given policy are evaluated and how a final decision

@@ -21,7 +21,6 @@ import org.jboss.resteasy.plugins.providers.multipart.InputPart;
 import org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataInput;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.server.admin.resource.representation.PolicyRepresentation;
@@ -118,9 +117,9 @@ public class ResourceServerResource {
     @Path("{id}")
     @DELETE
     public Response delete(@PathParam("id") String id) {
-        this.authorizationManager.getStoreFactory().resource().findByServer(id).forEach(resource -> this.authorizationManager.getStoreFactory().resource().delete(resource.getId()));
-        this.authorizationManager.getStoreFactory().scope().findByServer(id).forEach(scope -> this.authorizationManager.getStoreFactory().scope().delete(scope.getId()));
-        this.authorizationManager.getStoreFactory().policy().findByServer(id).forEach(scope -> this.authorizationManager.getStoreFactory().policy().delete(scope.getId()));
+        this.authorizationManager.getStoreFactory().resource().findByResourceServer(id).forEach(resource -> this.authorizationManager.getStoreFactory().resource().delete(resource.getId()));
+        this.authorizationManager.getStoreFactory().scope().findByResourceServer(id).forEach(scope -> this.authorizationManager.getStoreFactory().scope().delete(scope.getId()));
+        this.authorizationManager.getStoreFactory().policy().findByResourceServer(id).forEach(scope -> this.authorizationManager.getStoreFactory().policy().delete(scope.getId()));
         this.authorizationManager.getStoreFactory().resourceServer().delete(id);
         return Response.noContent().build();
     }
@@ -164,7 +163,7 @@ public class ResourceServerResource {
         settings.setName(null);
         settings.setClientId(this.realm.getClientById(settings.getClientId()).getClientId());
 
-        List<ResourceRepresentation> resources = this.authorizationManager.getStoreFactory().resource().findByServer(model.getId())
+        List<ResourceRepresentation> resources = this.authorizationManager.getStoreFactory().resource().findByResourceServer(model.getId())
                 .stream().map(resource -> {
                     ResourceRepresentation rep = Models.toRepresentation(resource, model, authorizationManager, realm, keycloakSession);
 
@@ -181,7 +180,7 @@ public class ResourceServerResource {
 
         settings.setResources(resources);
 
-        List<PolicyRepresentation> policies = this.authorizationManager.getStoreFactory().policy().findByServer(model.getId())
+        List<PolicyRepresentation> policies = this.authorizationManager.getStoreFactory().policy().findByResourceServer(model.getId())
                 .stream().map(policy -> {
                     PolicyRepresentation rep = Models.toRepresentation(policy, authorizationManager);
 
@@ -310,7 +309,7 @@ public class ResourceServerResource {
 
         settings.setPolicies(policies);
 
-        List<ScopeRepresentation> scopes = this.authorizationManager.getStoreFactory().scope().findByServer(model.getId()).stream().map(new Function<Scope, ScopeRepresentation>() {
+        List<ScopeRepresentation> scopes = this.authorizationManager.getStoreFactory().scope().findByResourceServer(model.getId()).stream().map(new Function<Scope, ScopeRepresentation>() {
             @Override
             public ScopeRepresentation apply(Scope scope) {
                 ScopeRepresentation rep = Models.toRepresentation(scope);

@@ -32,8 +32,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
-import org.keycloak.services.resources.spi.RealmResourceProvider;
-import org.keycloak.services.resources.spi.RealmResourceProviderFactory;
+import org.keycloak.services.resource.RealmResourceProvider;
+import org.keycloak.services.resource.RealmResourceProviderFactory;
 import org.kohsuke.MetaInfServices;
 
 import java.net.URI;

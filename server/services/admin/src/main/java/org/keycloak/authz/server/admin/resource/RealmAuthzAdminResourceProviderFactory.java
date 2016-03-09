@@ -36,8 +36,8 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
-import org.keycloak.services.resources.admin.spi.RealmAdminResourceProvider;
-import org.keycloak.services.resources.admin.spi.RealmAdminResourceProviderFactory;
+import org.keycloak.services.resource.admin.RealmAdminResourceProvider;
+import org.keycloak.services.resource.admin.RealmAdminResourceProviderFactory;
 import org.kohsuke.MetaInfServices;
 
 /**

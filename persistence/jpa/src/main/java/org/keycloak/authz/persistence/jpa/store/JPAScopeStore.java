@@ -90,7 +90,7 @@ public class JPAScopeStore implements ScopeStore {
     }
 
     @Override
-    public List<Scope> findByServer(final String serverId) {
+    public List<Scope> findByResourceServer(final String serverId) {
         Query query = entityManager.createQuery("from ScopeEntity where resourceServer.id = :serverId");
 
         query.setParameter("serverId", serverId);

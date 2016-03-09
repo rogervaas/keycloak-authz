@@ -17,12 +17,13 @@
  */
 package org.keycloak.authz.server.admin.resource.representation;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Predicate;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * <p>One or more resources that the resource server manages as a set of protected resources.

@@ -26,16 +26,15 @@ import org.keycloak.authz.core.model.ResourceServer;
  */
 public interface PolicyStore {
 
-    Policy create(final String name, final String type, final ResourceServer resourceServer);
+    Policy create(String name, String type, ResourceServer resourceServer);
     void delete(String id);
+    void save(Policy policy);
     Policy findById(String id);
     Policy findByName(String name);
-    List<Policy> findByServer(String id);
+    List<Policy> findByResourceServer(String id);
     List<Policy> findByResource(String resourceId);
     List<Policy> findByResourceType(String resourceType);
     List<Policy> findByScopeName(List<String> scopeNames);
     List<Policy> findByType(String type);
-    void save(Policy policy);
-
     List<Policy> findDependentPolicies(String id);
 }

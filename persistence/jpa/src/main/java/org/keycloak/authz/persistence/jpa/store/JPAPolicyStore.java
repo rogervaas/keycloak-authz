@@ -94,7 +94,7 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public List<Policy> findByServer(final String serverId) {
+    public List<Policy> findByResourceServer(final String serverId) {
         Query query = entityManager.createQuery("from PolicyEntity where resourceServer.id = :serverId");
 
         query.setParameter("serverId", serverId);

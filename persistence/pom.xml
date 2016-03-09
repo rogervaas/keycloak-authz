@@ -8,6 +8,7 @@
         <artifactId>keycloak-authz-parent</artifactId>
         <groupId>org.keycloak</groupId>
         <version>1.0-SNAPSHOT</version>
+        <relativePath>../pom.xml</relativePath>
     </parent>
 
     <artifactId>keycloak-authz-persistence-parent</artifactId>

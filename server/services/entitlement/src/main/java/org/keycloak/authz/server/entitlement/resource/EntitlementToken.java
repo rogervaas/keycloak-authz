@@ -17,26 +17,34 @@
  */
 package org.keycloak.authz.server.entitlement.resource;
 
-import java.util.List;
+import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.representations.JsonWebToken;
+
+import java.util.List;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class EntitlementToken extends JsonWebToken {
 
-    private final List<EntitledResource> permissions;
+    private final List<Permission> permissions;
+    private final String requestingPartyId;
 
     public EntitlementToken() {
-        this(null);
+        this(null, null);
     }
 
-    public EntitlementToken(List<EntitledResource> permissions) {
+    public EntitlementToken(String requestingPartyId, List<Permission> permissions) {
+        this.requestingPartyId = requestingPartyId;
         this.permissions = permissions;
         type("kc_ett");
     }
 
-    public List<EntitledResource> getPermissions() {
+    public String getRequestingPartyId() {
+        return this.requestingPartyId;
+    }
+
+    public List<Permission> getPermissions() {
         return this.permissions;
     }
 }

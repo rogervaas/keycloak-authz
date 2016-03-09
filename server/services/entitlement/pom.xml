@@ -34,6 +34,11 @@
             <artifactId>keycloak-services</artifactId>
             <version>${version.keycloak}</version>
         </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-server-spi</artifactId>
+            <version>${version.keycloak}</version>
+        </dependency>
 
         <!-- JAX-RS API -->
         <dependency>

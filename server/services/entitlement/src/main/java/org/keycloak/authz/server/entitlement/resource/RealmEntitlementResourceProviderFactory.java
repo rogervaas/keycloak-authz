@@ -35,8 +35,8 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakTransactionManager;
 import org.keycloak.models.RealmModel;
-import org.keycloak.services.resources.spi.RealmResourceProvider;
-import org.keycloak.services.resources.spi.RealmResourceProviderFactory;
+import org.keycloak.services.resource.RealmResourceProvider;
+import org.keycloak.services.resource.RealmResourceProviderFactory;
 import org.kohsuke.MetaInfServices;
 
 /**

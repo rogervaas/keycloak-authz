@@ -46,6 +46,9 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -66,7 +69,7 @@ public class AuthorizationService {
     }
 
     @OPTIONS
-    public Response authorizepPeFlight() {
+    public Response authorizepPreFlight() {
         return Cors.add(this.request, Response.ok()).auth().preflight().build();
     }
 
@@ -86,7 +89,7 @@ public class AuthorizationService {
         List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
 
         if (evaluationContext.isGranted()) {
-            return Cors.add(this.request, Response.status(Response.Status.CREATED).entity(new AuthorizationResponse(createRequestingPartyToken(identity, ticket)))).allowedOrigins("*").build();
+            return Cors.add(this.request, Response.status(Response.Status.CREATED).entity(new AuthorizationResponse(createRequestingPartyToken(identity, evaluate)))).allowedOrigins("*").build();
         }
 
         throw new ErrorResponseException("not_authorized", "Authorization  denied for resource [" + ticket.getResourceSetId() + "].", Response.Status.FORBIDDEN);
@@ -108,10 +111,23 @@ public class AuthorizationService {
         });
     }
 
-    private String createRequestingPartyToken(Identity identity, PermissionTicket ticket) {
+    private String createRequestingPartyToken(Identity identity, List<EvaluationResult> evaluation) {
+        List<Permission> permissions = evaluation.stream().map(new Function<EvaluationResult, Permission>() {
+            @Override
+            public Permission apply(EvaluationResult evaluationResult) {
+                ResourcePermission permission = evaluationResult.getPermission();
+                Set<String> scopes = permission.getScopes().stream().map(new Function<Scope, String>() {
+                    @Override
+                    public String apply(Scope scope) {
+                        return scope.getName();
+                    }
+                }).collect(Collectors.toSet());
+                return new Permission(permission.getResource().getId(), scopes);
+            }
+        }).collect(Collectors.toList());
         return new JWSBuilder().jsonContent(new RequestingPartyToken(
                 identity.getId(),
-                new Permission(ticket.getResourceSetId(), ticket.getScopes()))).rsa256(this.realm.getPrivateKey()
+                permissions.toArray(new Permission[permissions.size()]))).rsa256(this.realm.getPrivateKey()
         );
     }
 

@@ -1,11 +1,8 @@
 package org.keycloak.authz.server.admin.resource.representation;
 
-import java.util.Arrays;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.codehaus.jackson.annotate.JsonProperty;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

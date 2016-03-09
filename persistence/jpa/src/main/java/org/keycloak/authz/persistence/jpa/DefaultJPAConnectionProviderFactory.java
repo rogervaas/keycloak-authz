@@ -2,17 +2,20 @@ package org.keycloak.authz.persistence.jpa;
 
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
 import org.keycloak.Config;
 import org.keycloak.connections.jpa.DefaultJpaConnectionProvider;
 import org.keycloak.connections.jpa.JpaConnectionProvider;
 import org.keycloak.connections.jpa.JpaConnectionProviderFactory;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.provider.ServerInfoAwareProviderFactory;
 import org.kohsuke.MetaInfServices;
 
 import javax.naming.InitialContext;
@@ -24,10 +27,11 @@ import javax.sql.DataSource;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @MetaInfServices(JpaConnectionProviderFactory.class)
-public class DefaultJPAConnectionProviderFactory implements JpaConnectionProviderFactory {
+public class DefaultJPAConnectionProviderFactory implements JpaConnectionProviderFactory, ServerInfoAwareProviderFactory {
 
     public static final String CONNECTION_PROVIDER_ID = "keycloak-authz-admin-jpa";
     private EntityManagerFactory entityManagerFactory;
+    private Config.Scope config;
 
     @Override
     public Map<String, String> getOperationalInfo() {
@@ -56,12 +60,34 @@ public class DefaultJPAConnectionProviderFactory implements JpaConnectionProvide
     }
 
     @Override
+    public Connection getConnection() {
+        try {
+            String dataSourceLookup = config.get("dataSource");
+            if (dataSourceLookup != null) {
+                DataSource dataSource = (DataSource) new InitialContext().lookup(dataSourceLookup);
+                return dataSource.getConnection();
+            } else {
+                Class.forName(config.get("driver"));
+                return DriverManager.getConnection(config.get("url"), config.get("user"), config.get("password"));
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to connect to database", e);
+        }
+    }
+
+    @Override
+    public String getSchema() {
+        return config.get("schema");
+    }
+
+    @Override
     public JpaConnectionProvider create(KeycloakSession session) {
         return new DefaultJpaConnectionProvider(this.entityManagerFactory.createEntityManager());
     }
 
     @Override
     public void init(Config.Scope config) {
+        this.config = config;
         this.entityManagerFactory = createEntityManagerFactory();
     }
 

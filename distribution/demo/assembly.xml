@@ -10,7 +10,7 @@
 
     <fileSets>
         <fileSet>
-            <directory>${project.build.directory}/keycloak-authz-server-dist-${project.version}</directory>
+            <directory>${project.build.directory}/keycloak-${project.version}</directory>
             <includes>
                 <include>**/**</include>
             </includes>

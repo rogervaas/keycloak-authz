@@ -137,7 +137,7 @@ public class ScopeResource {
     @Produces("application/json")
     public Response findAll() {
         return Response.ok(
-                this.authorizationManager.getStoreFactory().scope().findByServer(this.resourceServer.getId()).stream()
+                this.authorizationManager.getStoreFactory().scope().findByResourceServer(this.resourceServer.getId()).stream()
                         .map(scope -> Models.toRepresentation(scope))
                         .collect(Collectors.toList()))
                 .build();

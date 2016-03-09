@@ -19,7 +19,8 @@ package org.keycloak.authz.server.uma.config;
 
 import java.net.URI;
 import java.util.Set;
-import org.codehaus.jackson.annotate.JsonProperty;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.keycloak.authz.server.uma.Version;
 
 /**

@@ -17,7 +17,7 @@
  */
 package org.keycloak.authz.server.admin.resource;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.Policy;
@@ -166,7 +166,7 @@ public class PolicyResource {
     @Produces("application/json")
     public Response findAll() {
         return Response.ok(
-                authorizationManager.getStoreFactory().policy().findByServer(resourceServer.getId()).stream()
+                authorizationManager.getStoreFactory().policy().findByResourceServer(resourceServer.getId()).stream()
                         .map((Function<Policy, PolicyRepresentation>) policy -> {
                             return Models.toRepresentation(policy, this.authorizationManager);
                         })

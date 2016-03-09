@@ -17,8 +17,6 @@
  */
 package org.keycloak.authz.server.admin.resource;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
@@ -40,6 +38,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -111,16 +111,19 @@ public class ResourceSetResource {
     @Path("{id}")
     @DELETE
     public Response delete(@PathParam("id") String id) {
+        Resource resource = this.authorizationManager.getStoreFactory().resource().findById(id);
+
+        if (resource == null) {
+            return Response.status(Response.Status.NOT_FOUND).build();
+        }
+
         List<Policy> policies = this.authorizationManager.getStoreFactory().policy().findByResource(id);
 
         for (Policy policyModel : policies) {
             if (policyModel.getResources().size() == 1) {
                 this.authorizationManager.getStoreFactory().policy().delete(policyModel.getId());
             } else {
-                Resource model = this.authorizationManager.getStoreFactory().resource().findById(id);
-
-                policyModel.removeResource(model);
-
+                policyModel.removeResource(resource);
                 this.authorizationManager.getStoreFactory().policy().save(policyModel);
             }
         }
@@ -147,7 +150,7 @@ public class ResourceSetResource {
     @Produces("application/json")
     public Response findAll() {
         return Response.ok(
-                this.authorizationManager.getStoreFactory().resource().findByServer(this.resourceServer.getId()).stream()
+                this.authorizationManager.getStoreFactory().resource().findByResourceServer(this.resourceServer.getId()).stream()
                         .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                         .collect(Collectors.toList()))
                 .build();

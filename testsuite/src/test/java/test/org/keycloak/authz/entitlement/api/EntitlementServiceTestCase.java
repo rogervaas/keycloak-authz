@@ -1,13 +1,14 @@
 package test.org.keycloak.authz.entitlement.api;
 
-import java.net.URI;
-import java.util.Map;
 import org.junit.Test;
-import org.keycloak.admin.client.Keycloak;
 import org.keycloak.authz.client.AuthzClient;
+import org.keycloak.authz.client.representation.EntitlementResponse;
 import org.keycloak.authz.client.resource.EntitlementResource;
 import org.keycloak.authz.server.entitlement.resource.EntitlementToken;
+import org.keycloak.authz.server.uma.protection.permission.PermissionTicket;
 import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.jose.jws.crypto.RSAProvider;
+import org.keycloak.services.ErrorResponseException;
 
 import javax.ws.rs.core.Response;
 
@@ -18,18 +19,18 @@ public class EntitlementServiceTestCase {
 
     @Test
     public void testObtainPermissionTicket() throws Exception {
-        AuthzClient client = AuthzClient.fromConfig(URI.create("http://localhost:8080/auth/realms/photoz/authz/uma_configuration"));
-        EntitlementResource entitlement = client.entitlement("alice", "alice", "photoz-restful-api", "06cb5239-8ade-4c06-a65b-2aadb4e8ee51");
-        Response all = entitlement.findAll();
-        Map map = all.readEntity(Map.class);
-        EntitlementToken token = new JWSInput(map.get("entitlement_token").toString()).readJsonContent(EntitlementToken.class);
+        AuthzClient client = AuthzClient.create();
+        EntitlementResource entitlement = client.entitlement("alice", "alice", "photoz-restful-api", "secret");
+        EntitlementResponse all = entitlement.get("photoz-restful-api");
+        String rpt = all.getRpt();
 
-        token.toString();
-    }
+        try {
+            JWSInput jws = new JWSInput(rpt);
+            EntitlementToken entitlementToken = jws.readJsonContent(EntitlementToken.class);
 
-    private Keycloak createKeycloakAdminClient() {
-        return Keycloak.getInstance("http://localhost:8080/auth", "photoz",
-                "alice", "alice",
-                "photoz-restful-api", "06cb5239-8ade-4c06-a65b-2aadb4e8ee51");
+            entitlementToken.toString();
+        } catch (Exception e) {
+            throw new ErrorResponseException("invalid_ticket", "Unexpected error while validating ticket.", Response.Status.BAD_REQUEST);
+        }
     }
 }

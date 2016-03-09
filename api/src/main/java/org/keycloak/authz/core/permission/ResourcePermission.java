@@ -22,6 +22,8 @@ import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.Scope;
 
 /**
+ * Represents a permission for a given resource.
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class ResourcePermission {

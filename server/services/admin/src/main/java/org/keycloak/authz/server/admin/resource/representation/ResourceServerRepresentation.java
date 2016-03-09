@@ -37,9 +37,6 @@ public class ResourceServerRepresentation {
     private List<PolicyRepresentation> policies;
     private List<ScopeRepresentation> scopes;
 
-    public ResourceServerRepresentation() {
-    }
-
     public void setId(String id) {
         this.id = id;
     }

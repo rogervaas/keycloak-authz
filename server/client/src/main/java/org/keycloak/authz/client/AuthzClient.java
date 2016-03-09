@@ -17,7 +17,7 @@
  */
 package org.keycloak.authz.client;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.jboss.resteasy.client.jaxrs.ResteasyClient;
 import org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder;
 import org.jboss.resteasy.client.jaxrs.ResteasyWebTarget;
@@ -31,6 +31,7 @@ import org.keycloak.authz.client.resource.ResourceServerResource;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.Form;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -59,11 +60,22 @@ public class AuthzClient {
             throw new IllegalArgumentException("Configuration URL can not be null.");
         }
 
+        Response response = null;
+
         try {
-            this.serverConfiguration = new ResteasyClientBuilder().build().target(configurationUrl)
-                    .request().get().readEntity(Configuration.class);
+            response = new ResteasyClientBuilder().build().target(configurationUrl).request().get();
+
+            response.bufferEntity();
+
+            this.serverConfiguration = response.readEntity(Configuration.class);
         } catch (Exception e) {
-            throw new RuntimeException("Unexpected error when trying to obtain the configuration from the authorization server[" + configurationUrl  + "].", e);
+            String messageFromServer = "No message from server.";
+
+            if (response != null) {
+                messageFromServer = response.readEntity(String.class);
+            }
+
+            throw new RuntimeException("Unexpected error when trying to obtain the configuration from the authorization server[" + configurationUrl  + "]. Server responded with: " + messageFromServer + ".", e);
         }
 
         this.clientConfiguration = clientConfiguration;
@@ -151,8 +163,8 @@ public class AuthzClient {
         return this.serverConfiguration;
     }
 
-    public AdminClient admin(String userName, String password, String clientId, String clientSecret) {
-        return new AdminClient(userName, password, clientId, clientSecret);
+    public AdminClient admin(String userName, String password, String clientId) {
+        return new AdminClient(userName, password, clientId);
     }
 
     private ProtectionClient obtainPat(String clientId, String clientSecret) {
@@ -193,19 +205,17 @@ public class AuthzClient {
         private final String userName;
         private final String password;
         private final String clientId;
-        private final String clientSecret;
 
-        public AdminClient(String userName, String password, String clientId, String clientSecret) {
+        public AdminClient(String userName, String password, String clientId) {
             this.userName = userName;
             this.password = password;
             this.clientId = clientId;
-            this.clientSecret = clientSecret;
         }
 
         public ResourceServerResource resourceServer() {
             Keycloak keycloak = Keycloak.getInstance(serverConfiguration.getServerUrl().toString(), serverConfiguration.getRealm(),
                     this.userName, this.password,
-                    this.clientId, this.clientSecret);
+                    this.clientId);
 
             ResteasyClient client = new ResteasyClientBuilder().build();
             URI resourceSetRegistrationEndpoint = URI.create(serverConfiguration.getServerUrl() + "/admin/realms/" + serverConfiguration.getRealm() + "/authz");

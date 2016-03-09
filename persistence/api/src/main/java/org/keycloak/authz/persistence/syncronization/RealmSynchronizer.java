@@ -17,9 +17,9 @@ public class RealmSynchronizer implements Synchronizer<RealmModel.RealmRemovedEv
                 @Override
                 public void accept(ResourceServer resourceServer) {
                     String id = resourceServer.getId();
-                    persistenceProvider.getResourceStore().findByServer(id).forEach(resource -> persistenceProvider.getResourceStore().delete(resource.getId()));
-                    persistenceProvider.getScopeStore().findByServer(id).forEach(scope -> persistenceProvider.getScopeStore().delete(scope.getId()));
-                    persistenceProvider.getPolicyStore().findByServer(id).forEach(scope -> persistenceProvider.getPolicyStore().delete(scope.getId()));
+                    persistenceProvider.getResourceStore().findByResourceServer(id).forEach(resource -> persistenceProvider.getResourceStore().delete(resource.getId()));
+                    persistenceProvider.getScopeStore().findByResourceServer(id).forEach(scope -> persistenceProvider.getScopeStore().delete(scope.getId()));
+                    persistenceProvider.getPolicyStore().findByResourceServer(id).forEach(scope -> persistenceProvider.getPolicyStore().delete(scope.getId()));
                     persistenceProvider.getResourceServerStore().delete(id);
                 }
             });

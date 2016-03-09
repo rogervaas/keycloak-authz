@@ -17,7 +17,7 @@
  */
 package org.keycloak.authz.server.uma.protection.resource;
 
-import org.codehaus.jackson.annotate.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
 import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
 
 /**

@@ -1,6 +1,6 @@
 package org.keycloak.authz.policy.enforcer.servlet;
 
-import org.codehaus.jackson.map.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.authz.client.AuthzClient;
 import org.keycloak.authz.client.representation.AuthorizationRequest;
@@ -14,6 +14,7 @@ import org.keycloak.authz.client.representation.ResourceRepresentation;
 import org.keycloak.authz.client.representation.ScopeRepresentation;
 import org.keycloak.authz.client.resource.AuthorizationResource;
 import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.jose.jws.JWSInputException;
 
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -140,7 +141,7 @@ public class AuthorizationEnforcementFilter implements Filter {
 
                     try {
                         authzToken = extractRequestingPartyToken(rpt);
-                    } catch (IOException e) {
+                    } catch (JWSInputException e) {
                         throw new RuntimeException("Could not parse authorization token.", e);
                     }
 
@@ -167,7 +168,7 @@ public class AuthorizationEnforcementFilter implements Filter {
 
     }
 
-    public RequestingPartyToken extractRequestingPartyToken(String token) throws IOException {
+    public RequestingPartyToken extractRequestingPartyToken(String token) throws JWSInputException {
         return new JWSInput(token).readJsonContent(RequestingPartyToken.class);
     }
 }
