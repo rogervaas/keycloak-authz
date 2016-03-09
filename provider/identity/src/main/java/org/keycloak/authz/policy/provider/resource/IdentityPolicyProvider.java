@@ -25,6 +25,7 @@ import org.keycloak.models.RoleModel;
 import org.keycloak.util.JsonSerialization;
 
 import java.io.IOException;
+import java.util.List;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -74,6 +75,7 @@ public class IdentityPolicyProvider implements PolicyProvider {
                 } else {
                     for (String roleId : roleIds) {
                         RoleModel role = context.getRealm().getRoleById(roleId);
+
                         if (role != null && context.getIdentity().hasRole(role.getName())) {
                             roleGranted = true;
                             break;

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 cp api/target/keycloak-authz-api-1.0-SNAPSHOT.jar /pedroigor/java/workspace/jboss/keycloak/keycloak-authz/distribution/demo/target/keycloak-1.0-SNAPSHOT/modules/system/layers/keycloak-authz/org/keycloak/keycloak-authz-server/main/
 cp server/services/uma/target/keycloak-authz-server-uma-services-1.0-SNAPSHOT.jar /pedroigor/java/workspace/jboss/keycloak/keycloak-authz/distribution/demo/target/keycloak-1.0-SNAPSHOT/modules/system/layers/keycloak-authz/org/keycloak/keycloak-authz-server/main
+cp server/services/core/target/keycloak-authz-server-services-core-1.0-SNAPSHOT.jar /pedroigor/java/workspace/jboss/keycloak/keycloak-authz/distribution/demo/target/keycloak-1.0-SNAPSHOT/modules/system/layers/keycloak-authz/org/keycloak/keycloak-authz-server/main
 cp server/services/entitlement/target/keycloak-authz-server-entitlement-services-1.0-SNAPSHOT.jar /pedroigor/java/workspace/jboss/keycloak/keycloak-authz/distribution/demo/target/keycloak-1.0-SNAPSHOT/modules/system/layers/keycloak-authz/org/keycloak/keycloak-authz-server/main
 cp server/services/admin/target/keycloak-authz-server-admin-services-1.0-SNAPSHOT.jar /pedroigor/java/workspace/jboss/keycloak/keycloak-authz/distribution/demo/target/keycloak-1.0-SNAPSHOT/modules/system/layers/keycloak-authz/org/keycloak/keycloak-authz-server/main
 cp server/client/target/keycloak-authz-client-1.0-SNAPSHOT.jar /pedroigor/java/workspace/jboss/keycloak/keycloak-authz/distribution/demo/target/keycloak-1.0-SNAPSHOT/modules/system/layers/base/org/keycloak/keycloak-authz-client/main

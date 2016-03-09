@@ -17,11 +17,6 @@
  */
 package org.keycloak.authz.server.entitlement.resource;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.ServiceLoader;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.Config;
 import org.keycloak.authz.core.Authorization;
@@ -29,8 +24,8 @@ import org.keycloak.authz.core.Identity;
 import org.keycloak.authz.core.policy.spi.PolicyProviderFactory;
 import org.keycloak.authz.core.store.spi.PersistenceProvider;
 import org.keycloak.authz.persistence.PersistenceProviderFactory;
-import org.keycloak.authz.server.entitlement.DefaultIdentity;
 import org.keycloak.authz.server.entitlement.KeycloakAuthorizationManager;
+import org.keycloak.authz.server.services.core.KeycloakIdentity;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakTransactionManager;
@@ -38,6 +33,12 @@ import org.keycloak.models.RealmModel;
 import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 import org.kohsuke.MetaInfServices;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.ServiceLoader;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -53,9 +54,9 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
         return new RealmResourceProvider() {
             public Object getResource(final String pathName) {
                 if (pathName.equals("entitlement")) {
-                    EntitlementResource resource = new EntitlementResource(realm);
+                    EntitlementResource resource = new EntitlementResource(realm, keycloakSession);
 
-                    ResteasyProviderFactory.getInstance().pushContext(Identity.class, DefaultIdentity.create(realm, keycloakSession));
+                    ResteasyProviderFactory.getInstance().pushContext(Identity.class, KeycloakIdentity.create(realm, keycloakSession));
                     ResteasyProviderFactory.getInstance().pushContext(Authorization.class, createAuthorizationManager(keycloakSession, realm));
                     ResteasyProviderFactory.getInstance().injectProperties(resource);
 

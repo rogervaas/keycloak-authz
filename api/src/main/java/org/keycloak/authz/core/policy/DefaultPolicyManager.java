@@ -83,32 +83,17 @@ public class DefaultPolicyManager implements PolicyManager {
                     PolicyProvider provider = getProviderFactory(associatedPolicy.getType()).create(associatedPolicy);
 
                     if (provider != null) {
-                        Evaluation evaluation = new Evaluation() {
-                            @Override
-                            public ResourcePermission getPermission() {
-                                return permission;
-                            }
-
-                            @Override
-                            public EvaluationContext getContext() {
-                                return context;
-                            }
-
+                        Evaluation evaluation = new Evaluation(permission, context) {
                             @Override
                             public void grant() {
                                 policyResult.policy(associatedPolicy).status(Status.GRANTED);
                                 decisions.put(associatedPolicy, true);
                             }
-
-                            @Override
-                            public boolean isGranted() {
-                                return decisions.getOrDefault(associatedPolicy, false);
-                            }
                         };
 
                         provider.evaluate(evaluation);
 
-                        if (!evaluation.isGranted()) {
+                        if (!decisions.getOrDefault(associatedPolicy, false)) {
                             policyResult.policy(associatedPolicy).status(Status.DENIED);
                             decisions.put(associatedPolicy, false);
                         }

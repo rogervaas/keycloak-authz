@@ -18,27 +18,58 @@
 package org.keycloak.authz.core.policy;
 
 import org.keycloak.authz.core.Identity;
-import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.models.RealmModel;
 
 import java.util.List;
 
 /**
+ * The evaluation context provides a contract from where policy providers will base their decisions. It represents all the
+ * permissions that need to be checked and also provides methods for retrieving information from the runtime environment,
+ * which can be used by different access control mechanisms.
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface EvaluationContext {
 
+    /**
+     * Returns a list with all the requested permissions and that must be evaluated by the underlying policy providers.
+     *
+     * @return a list with all the permissions that must be evaluated
+     */
     List<ResourcePermission> getAllPermissions();
-    boolean hasResource(String resourceName);
-    boolean hasScope(String scopeName);
-    boolean hasPermission(String resourceName, String... scopes);
-    Resource getResource(String resourceName);
-    Scope getScope(String scopeName);
+
+    /**
+     * Returns the {@link Identity} that represents an entity (person or non-person) to which the permissions must be granted, or not.
+     *
+     * @return the identity to which the permissions must be granted, or not
+     */
     Identity getIdentity();
+
+    /**
+     * Returns the {@link RealmModel} representing the security domain in which the evaluation must be done.
+     *
+     * @return the realm representing the security domain in which the evaluation must be done
+     */
     RealmModel getRealm();
+
+    /**
+     * Returns the {@link ExecutionContext} from where information from the runtime environment can be obtained and used
+     * during the evaluation of policies.
+     *
+     * @return the execution context from where information from the runtime environment can be obtained
+     */
     ExecutionContext getExecutionContext();
+
+    /**
+     * Grants all the requested permissions to the called.
+     */
     void grant();
+
+    /**
+     * Indicates if the requested permissions were granted or not. The permissions are only granted after calling {@link #grant()}.
+     *
+     * @return true if permissions were granted to the caller. Otherwise it returns false.
+     */
     boolean isGranted();
 }

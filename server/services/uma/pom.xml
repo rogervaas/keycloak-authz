@@ -25,6 +25,12 @@
 
         <dependency>
             <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-authz-server-services-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.keycloak</groupId>
             <artifactId>keycloak-authz-server-admin-services</artifactId>
             <version>${project.version}</version>
         </dependency>

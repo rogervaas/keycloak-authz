@@ -22,8 +22,8 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Identity;
 import org.keycloak.authz.core.model.ResourceServer;
+import org.keycloak.authz.server.services.core.KeycloakIdentity;
 import org.keycloak.authz.server.uma.UmaAuthorizationManager;
-import org.keycloak.authz.server.uma.UmaIdentity;
 import org.keycloak.authz.server.uma.authorization.AuthorizationService;
 import org.keycloak.authz.server.uma.config.ConfigurationService;
 import org.keycloak.authz.server.uma.protection.permission.PermissionService;
@@ -106,7 +106,7 @@ public class RootResource {
     }
 
     private Identity createIdentity() {
-        return UmaIdentity.create(realm, keycloakSession);
+        return KeycloakIdentity.create(realm, keycloakSession);
     }
 
     private ResourceServer getResourceServer(Identity identity) {

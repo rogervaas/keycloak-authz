@@ -15,23 +15,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.authz.server.entitlement;
+package org.keycloak.authz.server.services.core;
 
-import java.util.Set;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.keycloak.authz.core.Identity;
+import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.models.ClientSessionModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
-import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.representations.AccessToken;
+import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.managers.AppAuthManager;
 import org.keycloak.services.managers.AuthenticationManager;
+
+import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class DefaultIdentity implements Identity {
+public class KeycloakIdentity implements Identity {
 
     private final AccessToken accessToken;
     private final KeycloakSession keycloakSession;
@@ -40,10 +50,10 @@ public class DefaultIdentity implements Identity {
         AccessToken token = getAccessToken(keycloakSession, realm);
 
         if (token == null) {
-            throw new RuntimeException("Invalid or non-existent access token.");
+            throw new ErrorResponseException("invalid_bearer_token", "Could not obtain bearer access_token from request.", Response.Status.FORBIDDEN);
         }
 
-        return new DefaultIdentity(token, keycloakSession);
+        return new KeycloakIdentity(token, keycloakSession);
     }
 
     private static AccessToken getAccessToken(KeycloakSession keycloakSession, RealmModel realm) {
@@ -57,7 +67,7 @@ public class DefaultIdentity implements Identity {
         return null;
     }
 
-    DefaultIdentity(AccessToken accessToken, KeycloakSession keycloakSession) {
+    private KeycloakIdentity(AccessToken accessToken, KeycloakSession keycloakSession) {
         this.accessToken = accessToken;
         this.keycloakSession = keycloakSession;
     }
@@ -79,28 +89,61 @@ public class DefaultIdentity implements Identity {
     }
 
     @Override
-    public boolean hasRole(String scope) {
-        AccessToken.Access realmAccess = this.accessToken.getRealmAccess();
+    public Map<String, List<String>> getAttributes() {
+        HashMap<String, List<String>> attributes = new HashMap<>();
+        AppAuthManager authManager = new AppAuthManager();
+        String token = authManager.extractAuthorizationHeaderToken(this.keycloakSession.getContext().getRequestHeaders());
 
-        if (realmAccess != null) {
-            Set<String> roles = realmAccess.getRoles();
+        try {
+            String claims = new JWSInput(token).readContentAsString();
+            ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(claims);
+            Iterator<String> iterator = objectNode.fieldNames();
+            List<String> roleNames = new ArrayList<>();
 
-            if (roles != null && roles.contains(scope)) {
-                return true;
+            while (iterator.hasNext()) {
+                String fieldName = iterator.next();
+                JsonNode fieldValue = objectNode.get(fieldName);
+                List<String> values = new ArrayList<>();
+
+                values.add(fieldValue.toString());
+
+                if (fieldName.equals("realm_access")) {
+                    JsonNode grantedRoles = fieldValue.get("roles");
+
+                    if (grantedRoles != null) {
+                        Iterator<JsonNode> rolesIt = grantedRoles.iterator();
+
+                        while (rolesIt.hasNext()) {
+                            roleNames.add(rolesIt.next().asText());
+                        }
+                    }
+                }
+
+                if (fieldName.equals("resource_access")) {
+                    Iterator<JsonNode> resourceAccessIt = fieldValue.iterator();
+
+                    while (resourceAccessIt.hasNext()) {
+                        JsonNode grantedRoles = resourceAccessIt.next().get("roles");
+
+                        if (grantedRoles != null) {
+                            Iterator<JsonNode> rolesIt = grantedRoles.iterator();
+
+                            while (rolesIt.hasNext()) {
+                                roleNames.add(rolesIt.next().asText());
+                            }
+                        }
+                    }
+                }
+
+                attributes.put(fieldName, values);
             }
+
+            attributes.put("roles", roleNames);
+        } catch (Exception e) {
+            throw new RuntimeException("Error while reading attributes from security token.", e);
         }
 
-        ClientSessionModel clientSession = this.keycloakSession.sessions().getClientSession(this.accessToken.getClientSession());
-
-        for (String roleId : clientSession.getRoles()) {
-            RoleModel id = this.keycloakSession.realms().getRoleById(roleId, clientSession.getRealm());
-
-            if (scope.equals(id.getName())) {
-                return true;
-            }
-        }
-
-        return false;
+        return attributes;
     }
 
     @Override

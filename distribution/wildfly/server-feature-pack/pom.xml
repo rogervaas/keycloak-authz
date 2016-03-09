@@ -43,12 +43,22 @@
         <!-- Keycloak AuthZ -->
         <dependency>
             <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-authz-server-services-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
             <artifactId>keycloak-authz-server-uma-services</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-authz-server-admin-services</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-authz-server-entitlement-services</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -79,11 +89,6 @@
         <dependency>
             <groupId>org.keycloak</groupId>
             <artifactId>keycloak-authz-scope</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-authz-server-entitlement-services</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

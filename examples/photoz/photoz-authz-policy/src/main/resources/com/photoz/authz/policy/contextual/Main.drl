@@ -7,7 +7,8 @@ rule "Authorize Resource Owner"
     when
        $evaluation : Evaluation(
            $executionContext: context.executionContext,
-           $executionContext.hasAttribute("kc.authz.context.authc.method", "otp")
+           $executionContext.hasAttribute("kc.authz.context.authc.method", "otp"),
+           $executionContext.hasAttribute("someAttribute", "you_can_access")
        )
     then
         $evaluation.grant();

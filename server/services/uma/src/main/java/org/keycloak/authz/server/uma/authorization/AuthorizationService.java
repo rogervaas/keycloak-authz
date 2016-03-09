@@ -27,14 +27,17 @@ import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
 import org.keycloak.authz.core.policy.ExecutionContext;
-import org.keycloak.authz.server.uma.UmaIdentity;
+import org.keycloak.authz.server.services.core.KeycloakIdentity;
 import org.keycloak.authz.server.uma.protection.permission.PermissionTicket;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.crypto.RSAProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.services.ErrorResponseException;
+import org.keycloak.services.managers.AppAuthManager;
+import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.resources.Cors;
 
 import javax.ws.rs.Consumes;
@@ -77,7 +80,7 @@ public class AuthorizationService {
     @Consumes("application/json")
     @Produces("application/json")
     public Response authorize(AuthorizationRequest request) {
-        Identity identity = UmaIdentity.create(this.realm, this.keycloakSession);
+        Identity identity = KeycloakIdentity.create(this.realm, this.keycloakSession);
 
         if (!identity.hasRole("uma_authorization")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_authorization scope.", Response.Status.FORBIDDEN);
@@ -104,11 +107,7 @@ public class AuthorizationService {
 
         ResourcePermission permission = new ResourcePermission(this.authorizationManager.getStoreFactory().resource().findById(ticket.getResourceSetId()), scopes);
 
-        return new DefaultEvaluationContext(identity, this.realm, Arrays.asList(permission), new ExecutionContext() {
-            public boolean hasAttribute(final String name, final String... values) {
-                return false;
-            }
-        });
+        return new DefaultEvaluationContext(identity, this.realm, Arrays.asList(permission), ExecutionContext.EMPTY);
     }
 
     private String createRequestingPartyToken(Identity identity, List<EvaluationResult> evaluation) {

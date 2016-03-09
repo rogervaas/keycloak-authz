@@ -17,21 +17,15 @@
  */
 package org.keycloak.authz.server.admin.resource;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.policy.DefaultEvaluationContext;
-import org.keycloak.authz.core.policy.ExecutionContext;
 import org.keycloak.authz.core.Identity;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
+import org.keycloak.authz.core.policy.ExecutionContext;
 import org.keycloak.authz.core.policy.PolicyManager;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
@@ -45,6 +39,15 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -93,24 +96,27 @@ public class PolicyEvaluateResource {
 
         DefaultEvaluationContext context = new DefaultEvaluationContext(null, this.realm, permissions, new ExecutionContext() {
             @Override
-            public boolean hasAttribute(String name, String... values) {
-                Map<String, String> attributes = representation.getContext().get("attributes");
-                String existingValues = attributes.get(name);
-                if (existingValues != null) {
-                    int matchCount = 0;
-                    for (String givenValue : values) {
-                        for (String value : existingValues.split(",")) {
-                            if (givenValue.equals(value)) {
-                                matchCount++;
-                                break;
-                            }
-                        }
-                    }
-                    if (matchCount == values.length) {
-                        return true;
-                    }
-                }
-                return false;
+            public Map<String, List<String>> getAttributes() {
+                Map<String, String> givenAttributes = representation.getContext().get("attributes");
+
+                return givenAttributes.entrySet().stream()
+                        .collect(Collectors.toMap(
+                                (Function<Map.Entry<String, String>, String>) Map.Entry<String, String>::getKey,
+                                (Function<Map.Entry<String, String>, List<String>>) entry -> {
+                                    String entryValue = entry.getValue();
+
+                                    if (entryValue == null) {
+                                        return Collections.emptyList();
+                                    }
+
+                                    List<String> attributes = new ArrayList();
+
+                                    for (String value : entryValue.split(",")) {
+                                        attributes.add(value);
+                                    }
+
+                                    return attributes;
+                                }));
             }
         }) {
             @Override
@@ -127,20 +133,17 @@ public class PolicyEvaluateResource {
                     }
 
                     @Override
-                    public boolean hasRole(String roleName) {
-                        RoleModel role = realm.getRole(roleName);
+                    public Map<String, List<String>> getAttributes() {
+                        HashMap<String, List<String>> attributes = new HashMap<>();
+                        UserModel userModel = keycloakSession.users().getUserById(getId(), realm);
 
-                        if (role != null) {
-                            UserModel userById = keycloakSession.users().getUserById(getId(), realm);
-
-                            if (userById != null) {
-                                return userById.hasRole(role);
-                            } else {
-                                return representation.getRoleIds().contains(role.getName());
-                            }
+                        if (userModel != null) {
+                            Set<RoleModel> roleMappings = userModel.getRoleMappings();
+                            List<String> roles = roleMappings.stream().map(RoleModel::getName).collect(Collectors.toList());
+                            attributes.put("roles", roles);
                         }
 
-                        return false;
+                        return attributes;
                     }
 
                     @Override

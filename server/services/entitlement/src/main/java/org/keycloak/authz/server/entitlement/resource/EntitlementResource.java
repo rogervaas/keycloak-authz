@@ -17,29 +17,21 @@
  */
 package org.keycloak.authz.server.entitlement.resource;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.Identity;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.policy.DefaultEvaluationContext;
-import org.keycloak.authz.core.Identity;
 import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
 import org.keycloak.authz.core.policy.ExecutionContext;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.models.ClientModel;
+import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.resources.Cors;
@@ -50,6 +42,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -57,6 +57,7 @@ import javax.ws.rs.core.Response;
 public class EntitlementResource {
 
     private final RealmModel realm;
+    private final KeycloakSession keycloakSession;
 
     @Context
     private Authorization authorizationManager;
@@ -67,8 +68,9 @@ public class EntitlementResource {
     @Context
     private HttpRequest request;
 
-    EntitlementResource(RealmModel realm) {
+    EntitlementResource(RealmModel realm, KeycloakSession keycloakSession) {
         this.realm = realm;
+        this.keycloakSession = keycloakSession;
     }
 
     @OPTIONS
@@ -79,7 +81,7 @@ public class EntitlementResource {
     @GET
     @Produces("application/json")
     public Response resource(@QueryParam("resourceServerId") String resourceServerId) {
-        if (!identity.hasRole("kc_entitlement")) {
+        if (!this.identity.hasRole("kc_entitlement")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires kc_entitlement scope.", Response.Status.FORBIDDEN);
         }
 
@@ -139,10 +141,6 @@ public class EntitlementResource {
     }
 
     private EvaluationContext createEvaluationContext(Identity identity, List<ResourcePermission> permissions) {
-        return new DefaultEvaluationContext(identity, this.realm, permissions, new ExecutionContext() {
-            public boolean hasAttribute(final String name, final String... values) {
-                return false;
-            }
-        });
+        return new DefaultEvaluationContext(identity, this.realm, permissions, ExecutionContext.EMPTY);
     }
 }

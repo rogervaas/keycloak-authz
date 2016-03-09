@@ -17,16 +17,35 @@
  */
 package org.keycloak.authz.core;
 
+import java.util.List;
+import java.util.Map;
+
 /**
+ * <p>Represents an security identity, which can be a person or non-person entity.
+ *
+ * <p>An identity plays an important role during the evaluation of policies as they represent the entity which one or more permissions
+ * should be granted, or not. Beside that they also provides additional information and attributes that can be relevant to the different
+ * access control methods involved.
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface Identity {
 
+    /**
+     * Returns the unique identifier of the identity.
+     *
+     * @return the unique identifier of the identity
+     */
     String getId();
 
     String getResourceServerId();
 
-    boolean hasRole(String scope);
+    default boolean hasRole(String role) {
+        List<String> roles = getAttributes().get("roles");
+        return roles != null && roles.contains(role);
+    }
+
+    Map<String, List<String>> getAttributes();
 
     boolean isResourceServer();
 }

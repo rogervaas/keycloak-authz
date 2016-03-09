@@ -18,17 +18,10 @@
 package org.keycloak.authz.core.policy;
 
 import org.keycloak.authz.core.Identity;
-import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.models.RealmModel;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.function.Function;
-import java.util.function.Predicate;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -51,64 +44,6 @@ public class DefaultEvaluationContext implements EvaluationContext {
     @Override
     public List<ResourcePermission> getAllPermissions() {
         return this.permissions;
-    }
-
-    @Override
-    public boolean hasResource(String resourceName) {
-        return this.permissions.stream().filter(resourcePermission -> resourcePermission.getResource().getName().equals(resourceName))
-                .findFirst().isPresent();
-    }
-
-    @Override
-    public boolean hasScope(String scopeName) {
-        return this.permissions.stream().filter(resourcePermission -> resourcePermission.getScopes().stream().filter(scope -> scope.getName().equals(scopeName)).findFirst().isPresent())
-                .findFirst().isPresent();
-    }
-
-    @Override
-    public boolean hasPermission(String resourceName, String... scopes) {
-        return this.permissions.stream().filter(new Predicate<ResourcePermission>() {
-            @Override
-            public boolean test(ResourcePermission resourcePermission) {
-                if (!resourcePermission.getResource().getName().equals(resourceName)) {
-                    return false;
-                }
-
-                return resourcePermission.getScopes().stream().map(new Function<Scope, String>() {
-                    @Override
-                    public String apply(Scope scope) {
-                        return scope.getName();
-                    }
-                }).collect(Collectors.toList()).containsAll(Arrays.asList(scopes));
-            }
-        }).findFirst().isPresent();
-    }
-
-    @Override
-    public Resource getResource(String resourceName) {
-        ResourcePermission permission = this.permissions.stream().filter(resourcePermission -> resourcePermission.getResource().getName().equals(resourceName))
-                .findFirst().orElse(null);
-
-        if (permission == null) {
-            return permission.getResource();
-        }
-
-        return null;
-    }
-
-    @Override
-    public Scope getScope(String scopeName) {
-        return this.permissions.stream().flatMap(new Function<ResourcePermission, Stream<Scope>>() {
-            @Override
-            public Stream<Scope> apply(ResourcePermission resourcePermission) {
-                return resourcePermission.getScopes().stream();
-            }
-        }).filter(new Predicate<Scope>() {
-            @Override
-            public boolean test(Scope scope) {
-                return scope.getName().equals(scopeName);
-            }
-        }).findAny().orElse(null);
     }
 
     @Override

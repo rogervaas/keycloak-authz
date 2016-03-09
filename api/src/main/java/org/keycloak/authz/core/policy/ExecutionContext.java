@@ -17,11 +17,28 @@
  */
 package org.keycloak.authz.core.policy;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Predicate;
+
 /**
+ * This interface serves as a bridge between the policy evaluation runtime and the environment in which it is running. When evaluating
+ * policies, this interface can be used to query information from the execution environment/context and enrich decisions.
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface ExecutionContext {
 
-    boolean hasAttribute(String name, String... values);
+    ExecutionContext EMPTY = Collections::emptyMap;
+
+    Map<String, List<String>> getAttributes();
+
+    default boolean hasAttribute(String name, String... values) {
+        return getAttributes().entrySet().stream()
+                .filter(entry -> entry.getKey().equals(name))
+                .filter(entry -> entry.getValue().containsAll(Arrays.asList(values))).findFirst().isPresent();
+    }
 
 }
