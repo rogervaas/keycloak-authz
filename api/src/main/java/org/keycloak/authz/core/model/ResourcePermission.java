@@ -19,8 +19,6 @@ package org.keycloak.authz.core.model;
 
 import java.util.Collections;
 import java.util.List;
-import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.model.Scope;
 
 /**
  * Represents a permission for a given resource.

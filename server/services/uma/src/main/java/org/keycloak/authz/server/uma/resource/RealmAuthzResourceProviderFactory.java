@@ -150,7 +150,8 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
     private Configuration createConfiguration(RealmModel realm) {
         return Configuration.fromDefault("http://localhost:8080/auth/", realm.getName(),
                 URI.create("http://localhost:8080/auth/realms/" + realm.getName() + "/protocol/openid-connect/token"),
-                URI.create("http://localhost:8080/auth/realms/" + realm.getName() + "/protocol/openid-connect/token"));
+                URI.create("http://localhost:8080/auth/realms/" + realm.getName() + "/protocol/openid-connect/token"),
+                realm.getPublicKeyPem());
     }
 
     private AccessToken getAccessToken(KeycloakSession keycloakSession, RealmModel realm) {

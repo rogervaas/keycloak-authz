@@ -89,7 +89,7 @@ module.factory('authInterceptor', function ($q, Identity) {
         request: function (config) {
             var deferred = $q.defer();
             if (Identity.authc.token) {
-                Identity.authz.updateToken(5).success(function () {
+                Identity.authz.updateToken(60).success(function () {
                     config.headers = config.headers || {};
 
                     if (Identity.uma && Identity.uma.rpt) {
@@ -139,15 +139,17 @@ module.factory('errorInterceptor', function ($q, $injector) {
                 logout();
             } else if (response.status == 403) {
                 console.log("Forbidden");
-                Identity.uma = null;
 
                 var authenticateHeader = response.headers("WWW-Authenticate");
 
                 if (authenticateHeader) {
                     var deferred = $q.defer();
                     var data = JSON.stringify({
-                        ticket: response.data.ticket
+                        ticket: response.data.ticket,
+                        rpt: Identity.uma ? Identity.uma.rpt.rpt : ""
                     });
+
+                    Identity.uma = null;
 
                     $injector.get("$http").post('http://localhost:8080/auth/realms/photoz/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
                             .then(function(authzResponse) {

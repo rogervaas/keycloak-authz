@@ -21,4 +21,10 @@ public class Tokens {
 
         return null;
     }
+
+    public static String getAccessTokenAsString(KeycloakSession keycloakSession) {
+        AppAuthManager authManager = new AppAuthManager();
+
+        return authManager.extractAuthorizationHeaderToken(keycloakSession.getContext().getRequestHeaders());
+    }
 }

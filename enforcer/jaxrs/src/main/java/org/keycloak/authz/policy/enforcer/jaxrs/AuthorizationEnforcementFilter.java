@@ -1,6 +1,8 @@
 package org.keycloak.authz.policy.enforcer.jaxrs;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.keycloak.KeycloakPrincipal;
+import org.keycloak.KeycloakSecurityContext;
 import org.keycloak.authz.client.AuthzClient;
 import org.keycloak.authz.client.representation.ErrorResponse;
 import org.keycloak.authz.client.representation.Permission;
@@ -10,7 +12,12 @@ import org.keycloak.authz.client.representation.RequestingPartyToken;
 import org.keycloak.authz.client.representation.ResourceRepresentation;
 import org.keycloak.authz.policy.enforcer.jaxrs.annotation.Enforce;
 import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedResource;
+import org.keycloak.common.VerificationException;
+import org.keycloak.common.util.PemUtils;
 import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.jose.jws.JWSInputException;
+import org.keycloak.jose.jws.crypto.RSAProvider;
+import org.keycloak.representations.AccessToken;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -28,7 +35,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -81,20 +87,8 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
         ResourceRepresentation protectedResource = targetResource.getResource();
         RequestingPartyToken currentRpt = extractRequestingPartyToken(requestContext);
 
-        if (currentRpt == null || !currentRpt.isValid()) {
-            requestContext.abortWith(obtainPermissionTicket(protectedResource.getId(), requiredScopes.toArray(new String[requiredScopes.size()])));
-            return;
-        }
-
-        requestContext.setSecurityContext(createSecurityContext(currentRpt));
-
-        for (RequestingPartyToken r: targetResource.getPermissions().stream().filter(cachedRpt -> cachedRpt.getRequestingPartyId().equals(currentRpt.getRequestingPartyId())).collect(Collectors.toList())) {
-            if (isAuthorized(protectedResource, requiredScopes, r)) {
-                return;
-            }
-        }
-
-        if (isAuthorized(protectedResource, requiredScopes, currentRpt)) {
+        if (currentRpt != null && isAuthorized(protectedResource, requiredScopes, currentRpt)) {
+            requestContext.setSecurityContext(createSecurityContext(currentRpt));
             targetResource.getPermissions().add(currentRpt);
         } else {
             requestContext.abortWith(obtainPermissionTicket(protectedResource.getId(), requiredScopes.toArray(new String[requiredScopes.size()])));
@@ -146,14 +140,16 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
         return uri;
     }
 
-    private boolean isAuthorized(ResourceRepresentation protectedResource, Set<String> requiredScopes, RequestingPartyToken r) {
-        for (Permission permission : r.getPermissions()) {
-            String resourceId = protectedResource.getId();
-            if (permission.getResourceSetId().equals(resourceId)) {
-                Set<String> allowedScopes = permission.getScopes();
+    private boolean isAuthorized(ResourceRepresentation protectedResource, Set<String> requiredScopes, RequestingPartyToken rpt) {
+        if (rpt.isValid()) {
+            for (Permission permission : rpt.getPermissions()) {
+                String resourceId = protectedResource.getId();
+                if (permission.getResourceSetId().equals(resourceId)) {
+                    Set<String> allowedScopes = permission.getScopes();
 
-                if ((allowedScopes.isEmpty() && requiredScopes.isEmpty()) || allowedScopes.containsAll(requiredScopes)) {
-                    return true;
+                    if ((allowedScopes.isEmpty() && requiredScopes.isEmpty()) || allowedScopes.containsAll(requiredScopes)) {
+                        return true;
+                    }
                 }
             }
         }
@@ -170,22 +166,47 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
             }
 
             String expectedRpt = authorizationHeader.substring("Bearer".length() + 1);
-            return new JWSInput(expectedRpt).readJsonContent(RequestingPartyToken.class);
+            JWSInput jwsInput = new JWSInput(expectedRpt);
+
+            try {
+                if (!RSAProvider.verify(jwsInput, PemUtils.decodePublicKey(authzClient.getServerConfiguration().getRealmPublicKey()))) {
+                    return null;
+                }
+            } catch (Exception e) {
+                throw new VerificationException("Token signature not validated.", e);
+            }
+
+            RequestingPartyToken rpt = jwsInput.readJsonContent(RequestingPartyToken.class);
+
+            if (!rpt.isValid()) {
+                return null;
+            }
+
+            return rpt;
         } catch (Exception e) {
             throw new RuntimeException("Failed to extract bearer token from request.", e);
         }
     }
 
     private  SecurityContext createSecurityContext(final RequestingPartyToken rpt) {
+        String accessTokenString = rpt.getAccessToken();
+        AccessToken accessToken;
+
+        try {
+            accessToken = new JWSInput(accessTokenString).readJsonContent(AccessToken.class);
+        } catch (JWSInputException e) {
+            throw new RuntimeException("Error building principal.", e);
+        }
+
         return new SecurityContext() {
             @Override
             public Principal getUserPrincipal() {
-                return rpt::getRequestingPartyId;
+                return new KeycloakPrincipal<>(rpt.getRequestingPartyId(), new KeycloakSecurityContext(accessTokenString, accessToken, null, null));
             }
 
             @Override
             public boolean isUserInRole(String role) {
-                return false;
+                return accessToken.getRealmAccess().isUserInRole(role);
             }
 
             @Override

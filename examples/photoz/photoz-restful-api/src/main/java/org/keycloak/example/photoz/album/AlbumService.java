@@ -1,5 +1,6 @@
 package org.keycloak.example.photoz.album;
 
+import org.keycloak.KeycloakPrincipal;
 import org.keycloak.authz.client.AuthzClient;
 import org.keycloak.authz.client.representation.ResourceRepresentation;
 import org.keycloak.authz.client.representation.ScopeRepresentation;
@@ -22,6 +23,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import java.security.Principal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -53,7 +55,9 @@ public class AlbumService {
     @Consumes("application/json")
     @Enforce(scopes= AlbumService.SCOPE_ALBUM_CREATE)
     public Response create(@Context SecurityContext securityContext, Album album) {
-        album.setUserId(securityContext.getUserPrincipal().getName());
+        KeycloakPrincipal  userPrincipal = (KeycloakPrincipal) securityContext.getUserPrincipal();
+
+        album.setUserId(userPrincipal.getName());
 
         this.entityManager.persist(album);
 

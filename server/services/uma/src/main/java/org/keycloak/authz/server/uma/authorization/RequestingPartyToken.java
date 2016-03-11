@@ -31,22 +31,29 @@ public class RequestingPartyToken extends JsonWebToken {
 
     private final List<Permission> permissions;
     private final String requestingPartyId;
+    private final String accessToken;
 
     public RequestingPartyToken() {
         this.permissions = null;
         this.requestingPartyId = null;
+        this.accessToken = null;
     }
 
-    public RequestingPartyToken(String requestingPartyId, AccessToken accessToken, Permission... permissions) {
+    public RequestingPartyToken(String requestingPartyId, AccessToken accessToken, String accessTokenString, Permission... permissions) {
         if (requestingPartyId == null) {
             throw new IllegalArgumentException("Requesting party identifier is null.");
         }
+
         this.requestingPartyId = requestingPartyId;
+
         if (permissions != null) {
             this.permissions = new ArrayList<>(Arrays.asList(permissions));
         } else {
             this.permissions = null;
         }
+
+        this.accessToken = accessTokenString;
+
         type("rpt");
         expiration(accessToken.getExpiration());
         notBefore(accessToken.getNotBefore());
@@ -60,5 +67,9 @@ public class RequestingPartyToken extends JsonWebToken {
 
     public String getRequestingPartyId() {
         return this.requestingPartyId;
+    }
+
+    public String getAccessToken() {
+        return this.accessToken;
     }
 }

@@ -28,10 +28,12 @@ import org.keycloak.authz.server.uma.Version;
  */
 public class Configuration {
 
+    private String realmPublicKey;
+
     public static final Configuration fromDefault(String authzServerUri,
                                                   String realm,
                                                   URI authorizationEndpoint,
-                                                  URI tokenEndpoint) {
+                                                  URI tokenEndpoint, String publicKeyPem) {
         Configuration configuration = new Configuration();
         configuration.setVersion(Version.CURRENT);
 
@@ -46,6 +48,7 @@ public class Configuration {
         configuration.setRptEndpoint(URI.create(authzServerUri + "/realms/" + realm + "/authz/authorize"));
         configuration.setTokenEndpoint(tokenEndpoint);
         configuration.setResourceSetRegistrationEndpoint(URI.create(authzServerUri + "/realms/" + realm + "/authz/resource_set"));
+        configuration.setRealmPublicKey(publicKeyPem);
 
         return configuration;
     }
@@ -244,5 +247,13 @@ public class Configuration {
 
     public void setServerUrl(URI serverUrl) {
         this.serverUrl = serverUrl;
+    }
+
+    public void setRealmPublicKey(String realmPublicKey) {
+        this.realmPublicKey = realmPublicKey;
+    }
+
+    public String getRealmPublicKey() {
+        return realmPublicKey;
     }
 }

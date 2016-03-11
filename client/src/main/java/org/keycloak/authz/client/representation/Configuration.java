@@ -77,6 +77,8 @@ public class Configuration {
      */
     private String realm;
 
+    private String realmPublicKey;
+
     private URI serverUrl;
 
     public String getVersion() {
@@ -213,6 +215,14 @@ public class Configuration {
 
     public void setRealm(final String realm) {
         this.realm = realm;
+    }
+
+    public String getRealmPublicKey() {
+        return this.realmPublicKey;
+    }
+
+    public void setRealmPublicKey(String realmPublicKey) {
+        this.realmPublicKey = realmPublicKey;
     }
 
     public URI getServerUrl() {

@@ -30,20 +30,11 @@ public class RequestingPartyToken extends JsonWebToken {
 
     private final List<Permission> permissions;
     private final String requestingPartyId;
+    private String accessToken;
 
     public RequestingPartyToken() {
         this.permissions = null;
         this.requestingPartyId = null;
-    }
-
-    public RequestingPartyToken(String requestingPartyId, Permission... permissions) {
-        this.requestingPartyId = requestingPartyId;
-        if (permissions != null) {
-            this.permissions = new ArrayList<>(Arrays.asList(permissions));
-        } else {
-            this.permissions = null;
-        }
-        type("rpt");
     }
 
     public List<Permission> getPermissions() {
@@ -56,5 +47,9 @@ public class RequestingPartyToken extends JsonWebToken {
 
     public boolean isValid() {
         return getType() != null && getType().equals("rpt") &&  isActive();
+    }
+
+    public String getAccessToken() {
+        return this.accessToken;
     }
 }
