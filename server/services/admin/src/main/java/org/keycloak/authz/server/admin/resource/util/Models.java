@@ -61,14 +61,14 @@ public final class Models {
     }
 
     public static Scope toModel(ScopeRepresentation scope, ResourceServer resourceServer, Authorization authorizationManager) {
-        Scope model = authorizationManager.getStoreFactory().scope().findByName(scope.getName());
+        Scope model = authorizationManager.getStoreFactory().getScopeStore().findByName(scope.getName());
 
         if (model == null) {
-            model = authorizationManager.getStoreFactory().scope().create(scope.getName(), resourceServer);
+            model = authorizationManager.getStoreFactory().getScopeStore().create(scope.getName(), resourceServer);
 
             model.setIconUri(scope.getIconUri());
 
-            authorizationManager.getStoreFactory().scope().save(model);
+            authorizationManager.getStoreFactory().getScopeStore().save(model);
         }
 
         return model;
@@ -79,7 +79,8 @@ public final class Models {
 
         server.setId(model.getId());
         server.setClientId(model.getClientId());
-        server.setName(realm.getClientById(model.getClientId()).getClientId());
+        ClientModel clientById = realm.getClientById(model.getClientId());
+        server.setName(clientById.getClientId());
         server.setAllowRemotePolicyManagement(model.isAllowRemotePolicyManagement());
         server.setAllowRemoteResourceManagement(model.isAllowRemoteResourceManagement());
         server.setPolicyEnforcementMode(model.getPolicyEnforcementMode());
@@ -94,7 +95,7 @@ public final class Models {
             throw new ErrorResponseException(ErrorCode.INVALID_CLIENT_ID, "Client with id [" + server.getClientId() + "] not found in realm [" + realm.getName()  + "].", Response.Status.BAD_REQUEST);
         }
 
-        ResourceServer existingResourceServer = authorizationManager.getStoreFactory().resourceServer().findByClient(client.getId());
+        ResourceServer existingResourceServer = authorizationManager.getStoreFactory().getResourceServerStore().findByClient(client.getId());
 
         if (existingResourceServer != null) {
             throw new ErrorResponseException(ErrorCode.INVALID_CLIENT_ID, "Resource server already exists with client id [" + server.getClientId() + "].", Response.Status.BAD_REQUEST);
@@ -104,7 +105,7 @@ public final class Models {
             server.setName(client.getName());
         }
 
-        ResourceServer model = authorizationManager.getStoreFactory().resourceServer().create(client);
+        ResourceServer model = authorizationManager.getStoreFactory().getResourceServerStore().create(client);
 
         model.setAllowRemotePolicyManagement(server.isAllowRemotePolicyManagement());
         model.setAllowRemoteResourceManagement(server.isAllowRemoteResourceManagement());
@@ -123,7 +124,7 @@ public final class Models {
         representation.setDecisionStrategy(model.getDecisionStrategy());
         representation.setConfig(new HashMap<>(model.getConfig()));
 
-        List<Policy> policies = authorizationManager.getStoreFactory().policy().findDependentPolicies(model.getId());
+        List<Policy> policies = authorizationManager.getStoreFactory().getPolicyStore().findDependentPolicies(model.getId());
 
         representation.setDependentPolicies(policies.stream().map(new Function<Policy, PolicyRepresentation>() {
             @Override
@@ -141,7 +142,7 @@ public final class Models {
     }
 
     public static Policy toModel(PolicyRepresentation policy, ResourceServer resourceServer, Authorization authorizationManager) {
-        Policy model = authorizationManager.getStoreFactory().policy().create(policy.getName(), policy.getType(), resourceServer);
+        Policy model = authorizationManager.getStoreFactory().getPolicyStore().create(policy.getName(), policy.getType(), resourceServer);
 
         model.setDescription(policy.getDescription());
         model.setDecisionStrategy(policy.getDecisionStrategy());
@@ -163,7 +164,7 @@ public final class Models {
 
         owner.setId(model.getOwner());
 
-        if (owner.getId().equals(resourceServer.getId())) {
+        if (owner.getId().equals(resourceServer.getClientId())) {
             ClientModel clientModel = realm.getClientById(resourceServer.getClientId());
             owner.setName(clientModel.getClientId());
         } else {
@@ -194,8 +195,8 @@ public final class Models {
         Set<Policy> policies = new HashSet<>();
 
         policies.addAll(model.getPolicies());
-        policies.addAll(authorizationManager.getStoreFactory().policy().findByResourceType(resource.getType()));
-        policies.addAll(authorizationManager.getStoreFactory().policy().findByScopeName(resource.getScopes().stream().map(scope -> scope.getName()).collect(Collectors.toList())));
+        policies.addAll(authorizationManager.getStoreFactory().getPolicyStore().findByResourceType(resource.getType()));
+        policies.addAll(authorizationManager.getStoreFactory().getPolicyStore().findByScopeName(resource.getScopes().stream().map(scope -> scope.getName()).collect(Collectors.toList())));
 
         for (Policy policyModel : policies) {
             PolicyRepresentation policy = new PolicyRepresentation();
@@ -217,14 +218,14 @@ public final class Models {
 
         if (owner == null) {
             owner = new ResourceOwnerRepresentation();
-            owner.setId(resourceServer.getId());
+            owner.setId(resourceServer.getClientId());
         }
 
         if (owner.getId() == null) {
             throw new ErrorResponseException("invalid_owner", "No owner specified for resource [" + resource.getName() + "].", Response.Status.BAD_REQUEST);
         }
 
-        Resource model = authorizationManager.getStoreFactory().resource().create(resource.getName(), resourceServer, owner.getId());
+        Resource model = authorizationManager.getStoreFactory().getResourceStore().create(resource.getName(), resourceServer, owner.getId());
 
         model.setType(resource.getType());
         model.setUri(resource.getUri());

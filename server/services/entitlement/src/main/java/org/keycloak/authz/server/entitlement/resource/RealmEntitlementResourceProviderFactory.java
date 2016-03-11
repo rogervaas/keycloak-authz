@@ -20,11 +20,11 @@ package org.keycloak.authz.server.entitlement.resource;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.Config;
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.Identity;
-import org.keycloak.authz.core.policy.spi.PolicyProviderFactory;
-import org.keycloak.authz.core.store.spi.PersistenceProvider;
+import org.keycloak.authz.core.identity.Identity;
+import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
+import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.authz.persistence.PersistenceProviderFactory;
-import org.keycloak.authz.server.entitlement.KeycloakAuthorizationManager;
+import org.keycloak.authz.server.services.core.KeycloakAuthorizationManager;
 import org.keycloak.authz.server.services.core.KeycloakIdentity;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
@@ -131,7 +131,7 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
             transaction.begin();
 
             ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach(providerFactory -> {
-                PersistenceProvider persistenceProvider = this.persistenceProviderFactory.create(session);
+                StoreFactory persistenceProvider = this.persistenceProviderFactory.create(session);
 
                 providerFactory.init(persistenceProvider.getPolicyStore());
 

@@ -17,7 +17,9 @@
  */
 package test.org.keycloak.authz.uma.api.protection;
 
+import org.junit.Before;
 import org.junit.Test;
+import org.keycloak.admin.client.Keycloak;
 import org.keycloak.authz.client.AuthzClient;
 import org.keycloak.authz.client.representation.RegistrationResponse;
 import org.keycloak.authz.client.representation.ResourceRepresentation;
@@ -25,8 +27,7 @@ import org.keycloak.authz.client.representation.ScopeRepresentation;
 import org.keycloak.authz.client.resource.ProtectedResource;
 
 import javax.ws.rs.NotFoundException;
-import java.net.URI;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,7 +36,16 @@ import static org.junit.Assert.*;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class ResourceServiceTestCase {
+public class ResourceServiceTestCase extends AbstractProtectionTestCase {
+
+    private Keycloak keycloak;
+    private AuthzClient authzClient;
+
+    @Before
+    public void onBefore() {
+        this.authzClient = AuthzClient.create();
+        this.keycloak = Keycloak.getInstance(authzClient.getServerConfiguration().getServerUrl().toString(), "master", "admin", "admin", "admin-cli");
+    }
 
     /**
      * <p>Considers that the client is an resource server that is also the owner of the resources. In this case, we're covering
@@ -46,25 +56,15 @@ public class ResourceServiceTestCase {
      */
     @Test
     public void testCreateResourceServerIsResourceOwner() {
-        String resourceName = "Admin Resources";
-        String resourceUri = "http://photoz.example.com/admin/*";
-        String resourceType = "http://www.keycloak-authz.org/rtype/uri";
+        String resourceName = "Resource Server's Resource";
+        String resourceUri = "http://photoz.example.com/resources/*";
+        String resourceType = "http://www.keycloak-authz.org/rtype/internal";
+        String resourceIcon = "http://www.keycloak-authz.org/icon";
         Set<ScopeRepresentation> scopes = new HashSet<>();
 
-        scopes.add(new ScopeRepresentation("http://photoz.example.com/dev/scopes/admin"));
+        scopes.add(new ScopeRepresentation("http://photoz.example.com/dev/scopes/internal"));
 
-        ResourceRepresentation resourceDescription = new ResourceRepresentation(resourceName, scopes,
-                resourceUri,
-                resourceType);
-        ProtectedResource resource = createAuthzClient()
-                .protection()
-                .resource();
-        RegistrationResponse response = resource.create(resourceDescription);
-        String resourceId = response.getId();
-
-        assertNotNull(resourceId);
-
-        ResourceRepresentation newResourceDescription = resource.findById(resourceId).getResourceDescription();
+        ResourceRepresentation newResourceDescription = createResource(resourceName, resourceUri, resourceType, resourceIcon, null, scopes);
 
         assertNotNull(newResourceDescription.getId());
         assertEquals(resourceName, newResourceDescription.getName());
@@ -95,24 +95,13 @@ public class ResourceServiceTestCase {
         String resourceUri = "http://photoz.example.com/jdoe/family_album";
         String resourceType = "http://www.keycloak-authz.org/rtype/photoalbum";
         String resourceIcon = "http://photoz.example.com/jdoe/family_album/icon";
+        String resourceOwner = getOwnerId("jdoe");
         Set<ScopeRepresentation> scopes = new HashSet<>();
 
         scopes.add(new ScopeRepresentation("http://photoz.example.com/dev/scopes/view", "http://photoz.example.com/icons/reading-glasses"));
         scopes.add(new ScopeRepresentation("http://photoz.example.com/dev/scopes/all", "http://photoz.example.com/icons/permit-all"));
 
-        ResourceRepresentation resourceDescription = new ResourceRepresentation(resourceName, scopes,
-                resourceUri,
-                resourceType,
-                resourceIcon);
-        ProtectedResource resource = createAuthzClient()
-                .protection("jdoe", "jdoe")
-                .resource();
-        RegistrationResponse response = resource.create(resourceDescription);
-        String resourceId = response.getId();
-
-        assertNotNull(resourceId);
-
-        ResourceRepresentation newResourceDescription = resource.findById(resourceId).getResourceDescription();
+        ResourceRepresentation newResourceDescription = createResource(resourceName, resourceUri, resourceType, resourceIcon, resourceOwner, scopes);
 
         assertNotNull(newResourceDescription.getId());
         assertEquals(resourceName, newResourceDescription.getName());
@@ -126,21 +115,27 @@ public class ResourceServiceTestCase {
         assertTrue(registeredScopes.containsAll(scopes));
     }
 
+    public String getOwnerId(String userName) {
+        return this.keycloak.realm("photoz").users().search(userName, null, null, null, null, null).get(0).getId();
+    }
+
     @Test
     public void testListOwnerResources() {
-        ProtectedResource resource = createAuthzClient()
-                .protection("jdoe", "jdoe")
-                .resource();
+        ProtectedResource resource = authzClient.protection().resource();
+        String ownerId = getOwnerId("jdoe");
+        Set<String> search = resource.search("owner=" + ownerId);
 
-        resource.deleteAll();
+        if (search != null) {
+            search.forEach(resource::delete);
+        }
 
         for (int i = 0; i < 10; i++) {
-            resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
+            createResource("Jdoe Party Album " + i, null, null, null, ownerId, null);
         }
 
         Set<String> resourceNames = new HashSet<>();
 
-        for (String id : resource.findAll()) {
+        for (String id : resource.search("owner=" + ownerId)) {
             ResourceRepresentation description = resource.findById(id).getResourceDescription();
 
             assertTrue(description.getName().startsWith("Jdoe Party Album"));
@@ -152,49 +147,31 @@ public class ResourceServiceTestCase {
 
     @Test(expected = NotFoundException.class)
     public void testDeleteOwnerResources() {
-        ProtectedResource resource = createAuthzClient()
-                .protection("jdoe", "jdoe")
-                .resource();
+        ResourceRepresentation resource = createResource("Jdoe Party Album to Delete", null, null, null, getOwnerId("jdoe"), null);
+        String resourceId = resource.getId();
+        ProtectedResource resourceService = this.authzClient.protection().resource();
+        ResourceRepresentation description = resourceService.findById(resourceId).getResourceDescription();
 
-        resource.deleteAll();
+        assertTrue(description.getName().equals("Jdoe Party Album to Delete"));
 
-        resource.create(newResource("Jdoe Party Album", new ScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
+        resourceService.delete(resourceId);
 
-        Set<String> rsids = resource.findAll();
-
-        assertEquals(1, rsids.size());
-
-        String resourceId = rsids.iterator().next();
-        ResourceRepresentation description = resource.findById(resourceId).getResourceDescription();
-
-        assertTrue(description.getName().equals("Jdoe Party Album"));
-
-        resource.delete(resourceId);
-
-        assertNull(resource.findById(resourceId).getId());
-    }
-
-    @Test (expected = NotFoundException.class)
-    public void testDeleteResourceNotFound() {
-        ProtectedResource resource = createAuthzClient()
-                .protection("jdoe", "jdoe")
-                .resource();
-
-        resource.delete("invalid_resource_id");
+        assertNull(resourceService.findById(resourceId).getId());
     }
 
     @Test
-    public void testDeleteAllOwnerResources() {
-        ProtectedResource resource = createAuthzClient()
-                .protection("jdoe", "jdoe")
-                .resource();
+    public void testDeleteAllResources() {
+        ProtectedResource resource = this.authzClient.protection().resource();
+        Set<String> search = resource.findAll();
 
-        resource.deleteAll();
+        if (search != null) {
+            search.forEach(resource::delete);
+        }
 
         Set<String> rsids = new HashSet<>();
 
         for (int i = 0; i < 10; i++) {
-            rsids.add(resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all"))).getId());
+            rsids.add(createResource("Jdoe Party Album " + i, null, null, null, null, null).getId());
         }
 
         resource.deleteAll();
@@ -208,57 +185,5 @@ public class ResourceServiceTestCase {
                 fail("Unexpected exception.");
             }
         }
-    }
-
-    @Test
-    public void testSearchOwnerIsPersion() {
-        ProtectedResource resource = createAuthzClient()
-                .protection("jdoe", "jdoe")
-                .resource();
-
-        resource.deleteAll();
-
-        for (int i = 0; i < 10; i++) {
-            resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
-        }
-
-        Set<String> resourceNames = new HashSet<>();
-
-        for (String id : resource.search("all")) {
-            ResourceRepresentation description = resource.findById(id).getResourceDescription();
-
-            assertTrue(description.getName().startsWith("Jdoe Party Album"));
-            assertTrue(resourceNames.add(description.getName()));
-        }
-
-        assertEquals(10, resourceNames.size());
-    }
-
-    @Test
-    public void testSearchResourceServer() {
-        ProtectedResource resource = createAuthzClient()
-                .protection("jdoe", "jdoe")
-                .resource();
-
-        resource.deleteAll();
-
-        Set<String> ownerResources = new HashSet<>();
-
-        for (int i = 0; i < 10; i++) {
-            RegistrationResponse registrationResponse = resource.create(newResource("Jdoe Party Album " + i, new ScopeRepresentation("http://photoz.example.com/dev/scopes/all")));
-            ownerResources.add(registrationResponse.getId());
-        }
-
-        resource = createAuthzClient()
-                .protection()
-                .resource();
-
-        Set<String> allServerResources = resource.search("all");
-
-        ownerResources.stream().forEach(expectedRsId -> assertTrue(allServerResources.contains(expectedRsId)));
-    }
-
-    private ResourceRepresentation newResource(String name, ScopeRepresentation... scopes) {
-        return new ResourceRepresentation(name, new HashSet<>(Arrays.asList(scopes)));
     }
 }

@@ -17,28 +17,26 @@
  */
 package org.keycloak.authz.server.admin.resource;
 
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.keycloak.Config;
+import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
+import org.keycloak.authz.core.store.StoreFactory;
+import org.keycloak.authz.persistence.PersistenceProviderFactory;
+import org.keycloak.authz.server.services.core.KeycloakAuthorizationManager;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.KeycloakSessionFactory;
+import org.keycloak.models.KeycloakTransactionManager;
+import org.keycloak.models.RealmModel;
+import org.keycloak.services.resource.admin.RealmAdminResourceProvider;
+import org.keycloak.services.resource.admin.RealmAdminResourceProviderFactory;
+import org.kohsuke.MetaInfServices;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
-import org.jboss.resteasy.spi.ResteasyProviderFactory;
-import org.keycloak.Config;
-import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.policy.spi.PolicyProviderFactory;
-import org.keycloak.authz.core.store.spi.PersistenceProvider;
-import org.keycloak.authz.persistence.PersistenceProviderFactory;
-import org.keycloak.authz.server.admin.KeycloakAuthorizationManager;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.KeycloakSessionFactory;
-import org.keycloak.models.KeycloakTransactionManager;
-import org.keycloak.models.RealmModel;
-import org.keycloak.representations.AccessToken;
-import org.keycloak.services.managers.AppAuthManager;
-import org.keycloak.services.managers.AuthenticationManager;
-import org.keycloak.services.resource.admin.RealmAdminResourceProvider;
-import org.keycloak.services.resource.admin.RealmAdminResourceProviderFactory;
-import org.kohsuke.MetaInfServices;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -130,7 +128,7 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
             transaction.begin();
 
             ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach(providerFactory -> {
-                PersistenceProvider persistenceProvider = this.persistenceProviderFactory.create(session);
+                StoreFactory persistenceProvider = this.persistenceProviderFactory.create(session);
 
                 providerFactory.init(persistenceProvider.getPolicyStore());
 
@@ -143,16 +141,5 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
         } finally {
             session.close();
         }
-    }
-
-    private AccessToken getAccessToken(KeycloakSession keycloakSession, RealmModel realm) {
-        AppAuthManager authManager = new AppAuthManager();
-        AuthenticationManager.AuthResult authResult = authManager.authenticateBearerToken(keycloakSession, realm, keycloakSession.getContext().getUri(), keycloakSession.getContext().getConnection(), keycloakSession.getContext().getRequestHeaders());
-
-        if (authResult != null) {
-            return authResult.getToken();
-        }
-
-        return null;
     }
 }

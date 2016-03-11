@@ -20,11 +20,12 @@ package org.keycloak.authz.server.uma.resource;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.OAuthErrorException;
-import org.keycloak.authz.core.Identity;
+import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.server.services.core.KeycloakIdentity;
-import org.keycloak.authz.server.uma.UmaAuthorizationManager;
 import org.keycloak.authz.server.uma.authorization.AuthorizationService;
+import org.keycloak.authz.server.uma.config.Configuration;
 import org.keycloak.authz.server.uma.config.ConfigurationService;
 import org.keycloak.authz.server.uma.protection.permission.PermissionService;
 import org.keycloak.authz.server.uma.protection.resource.ResourceService;
@@ -43,18 +44,18 @@ import javax.ws.rs.core.Response;
 public class RootResource {
 
     private final RealmModel realm;
-
-    private final UmaAuthorizationManager authorizationManager;
-
+    private final Authorization authorizationManager;
     private final KeycloakSession keycloakSession;
+    private final Configuration configuration;
 
     @Context
     private HttpRequest request;
 
-    public RootResource(RealmModel realm, UmaAuthorizationManager authorizationManager, KeycloakSession keycloakSession) {
+    public RootResource(RealmModel realm, Authorization authorizationManager, KeycloakSession keycloakSession, Configuration configuration) {
         this.realm = realm;
         this.authorizationManager = authorizationManager;
         this.keycloakSession = keycloakSession;
+        this.configuration = configuration;
     }
 
     @Path("/resource_set")
@@ -98,7 +99,7 @@ public class RootResource {
 
     @Path("/uma_configuration")
     public ConfigurationService configuration() {
-        ConfigurationService resource = new ConfigurationService(this.authorizationManager);
+        ConfigurationService resource = new ConfigurationService(this.configuration);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -110,13 +111,13 @@ public class RootResource {
     }
 
     private ResourceServer getResourceServer(Identity identity) {
-        ClientModel clientApplication = realm.getClientById(identity.getResourceServerId());
+        ClientModel clientApplication = realm.getClientById(identity.getId());
 
         if (clientApplication == null) {
-            throw new ErrorResponseException("invalid_clientId", "Client application with id [" + identity.getResourceServerId() + "] does not exist in realm [" + this.realm.getName() + "]", Response.Status.BAD_REQUEST);
+            throw new ErrorResponseException("invalid_clientId", "Client application with id [" + identity.getId() + "] does not exist in realm [" + this.realm.getName() + "]", Response.Status.BAD_REQUEST);
         }
 
-        ResourceServer resourceServer = this.authorizationManager.getStoreFactory().resourceServer().findByClient(identity.getResourceServerId());
+        ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(identity.getId());
 
         if (resourceServer == null) {
             throw new ErrorResponseException("invalid_clientId", "Client application [" + clientApplication.getClientId() + "] is not registered as resource server.", Response.Status.FORBIDDEN);

@@ -66,7 +66,7 @@ public class ResourceSetResource {
     @Consumes("application/json")
     @Produces("application/json")
     public Response create(ResourceRepresentation resource) {
-        Resource existingResource = this.authorizationManager.getStoreFactory().resource().findByName(resource.getName());
+        Resource existingResource = this.authorizationManager.getStoreFactory().getResourceStore().findByName(resource.getName());
 
         if (existingResource != null && existingResource.getResourceServer().getId().equals(this.resourceServer.getId())) {
             return ErrorResponse.exists("Resource with name [" + resource.getName() + "] already exists.");
@@ -74,7 +74,7 @@ public class ResourceSetResource {
 
         Resource model = Models.toModel(resource, this.resourceServer, this.authorizationManager);
 
-        this.authorizationManager.getStoreFactory().resource().save(model);
+        this.authorizationManager.getStoreFactory().getResourceStore().save(model);
 
         ResourceRepresentation representation = new ResourceRepresentation();
 
@@ -88,7 +88,7 @@ public class ResourceSetResource {
     @Consumes("application/json")
     @Produces("application/json")
     public Response update(@PathParam("id") String id, ResourceRepresentation resource) {
-        Resource model = this.authorizationManager.getStoreFactory().resource().findById(resource.getId());
+        Resource model = this.authorizationManager.getStoreFactory().getResourceStore().findById(resource.getId());
 
         if (model == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -103,7 +103,7 @@ public class ResourceSetResource {
                 .map((ScopeRepresentation scope) -> Models.toModel(scope, this.resourceServer, this.authorizationManager))
                 .collect(Collectors.toSet()));
 
-        this.authorizationManager.getStoreFactory().resource().save(model);
+        this.authorizationManager.getStoreFactory().getResourceStore().save(model);
 
         return Response.noContent().build();
     }
@@ -111,24 +111,24 @@ public class ResourceSetResource {
     @Path("{id}")
     @DELETE
     public Response delete(@PathParam("id") String id) {
-        Resource resource = this.authorizationManager.getStoreFactory().resource().findById(id);
+        Resource resource = this.authorizationManager.getStoreFactory().getResourceStore().findById(id);
 
         if (resource == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
         }
 
-        List<Policy> policies = this.authorizationManager.getStoreFactory().policy().findByResource(id);
+        List<Policy> policies = this.authorizationManager.getStoreFactory().getPolicyStore().findByResource(id);
 
         for (Policy policyModel : policies) {
             if (policyModel.getResources().size() == 1) {
-                this.authorizationManager.getStoreFactory().policy().delete(policyModel.getId());
+                this.authorizationManager.getStoreFactory().getPolicyStore().remove(policyModel.getId());
             } else {
                 policyModel.removeResource(resource);
-                this.authorizationManager.getStoreFactory().policy().save(policyModel);
+                this.authorizationManager.getStoreFactory().getPolicyStore().save(policyModel);
             }
         }
 
-        this.authorizationManager.getStoreFactory().resource().delete(id);
+        this.authorizationManager.getStoreFactory().getResourceStore().delete(id);
 
         return Response.noContent().build();
     }
@@ -137,7 +137,7 @@ public class ResourceSetResource {
     @GET
     @Produces("application/json")
     public Response findById(@PathParam("id") String id) {
-        Resource model = this.authorizationManager.getStoreFactory().resource().findById(id);
+        Resource model = this.authorizationManager.getStoreFactory().getResourceStore().findById(id);
 
         if (model == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -150,7 +150,7 @@ public class ResourceSetResource {
     @Produces("application/json")
     public Response findAll() {
         return Response.ok(
-                this.authorizationManager.getStoreFactory().resource().findByResourceServer(this.resourceServer.getId()).stream()
+                this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(this.resourceServer.getId()).stream()
                         .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                         .collect(Collectors.toList()))
                 .build();

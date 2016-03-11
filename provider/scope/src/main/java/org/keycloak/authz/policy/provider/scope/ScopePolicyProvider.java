@@ -19,7 +19,7 @@ package org.keycloak.authz.policy.provider.scope;
 
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.policy.Evaluation;
-import org.keycloak.authz.core.policy.spi.PolicyProvider;
+import org.keycloak.authz.core.policy.provider.PolicyProvider;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

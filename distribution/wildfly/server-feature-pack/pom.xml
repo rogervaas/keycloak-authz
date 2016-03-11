@@ -73,12 +73,12 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-authz-persistence-api</artifactId>
+            <artifactId>keycloak-authz-js</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-authz-jpa-provider</artifactId>
+            <artifactId>keycloak-authz-scope</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -88,7 +88,12 @@
         </dependency>
         <dependency>
             <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-authz-scope</artifactId>
+            <artifactId>keycloak-authz-persistence-api</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-authz-jpa-provider</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>

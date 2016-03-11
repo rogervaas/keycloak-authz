@@ -20,11 +20,11 @@ package org.keycloak.authz.server.entitlement.resource;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.Identity;
+import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
@@ -86,10 +86,10 @@ public class EntitlementResource {
         }
 
         ClientModel client = this.realm.getClientByClientId(resourceServerId);
-        ResourceServer resourceServer = this.authorizationManager.getStoreFactory().resourceServer().findByClient(client.getId());
+        ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(client.getId());
         ArrayList<ResourcePermission> permissions = new ArrayList<>();
 
-        permissions.addAll(this.authorizationManager.getStoreFactory().resource().findByResourceServer(resourceServer.getId()).stream()
+        permissions.addAll(this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(resourceServer.getId()).stream()
                 .flatMap(new Function<Resource, Stream<ResourcePermission>>() {
                     @Override
                     public Stream<ResourcePermission> apply(Resource resource) {

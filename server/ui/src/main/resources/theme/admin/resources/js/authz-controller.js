@@ -694,6 +694,38 @@ module.controller('ResourceServerPolicyUserDetailCtrl', function($scope, $route,
     }, realm, $scope);
 });
 
+module.controller('ResourceServerPolicyJSDetailCtrl', function($scope, $route, $location, realm, PolicyController, ResourceServerPolicy, ResourceServerResource) {
+    PolicyController.onInit({
+        getPolicyType : function() {
+            return "js";
+        },
+
+        onInit : function() {
+            $scope.initEditor = function(editor){
+                var session = editor.getSession();
+
+                session.setMode('ace/mode/javascript');
+            };
+        },
+
+        onInitUpdate : function(policy) {
+
+        },
+
+        onUpdate : function() {
+
+        },
+
+        onInitCreate : function(newPolicy) {
+            newPolicy.config = {};
+        },
+
+        onCreate : function() {
+
+        }
+    }, realm, $scope);
+});
+
 module.service("PolicyController", function($http, $route, $location, ResourceServer, ResourceServerPolicy, AuthzDialog, Notifications) {
 
     var PolicyController = {};

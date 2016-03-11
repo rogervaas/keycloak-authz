@@ -17,22 +17,14 @@
  */
 package test.org.keycloak.authz.uma.api.protection;
 
-import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
-import org.keycloak.admin.client.Keycloak;
 import org.keycloak.authz.client.AuthzClient;
-import org.keycloak.authz.client.representation.Configuration;
 import org.keycloak.authz.client.representation.ResourceServerRepresentation;
 import org.keycloak.authz.client.resource.ResourceServerResource;
-import org.keycloak.representations.idm.ClientRepresentation;
 import test.org.keycloak.authz.uma.api.ErrorRepresentation;
 
 import javax.ws.rs.BadRequestException;
 import javax.ws.rs.core.Response;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -40,26 +32,11 @@ import static org.junit.Assert.assertNotNull;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class ResourceServerServiceTestCase {
-
-    private ClientRepresentation clientApplication;
-    private Keycloak keycloakAdminClient;
-
-    @Before
-    public void onSetup() {
-        this.keycloakAdminClient = createKeycloakAdminClient();
-        this.clientApplication = createClientApplication();
-    }
-
-    @After
-    public void onAfter() {
-        this.keycloakAdminClient.realm("photoz").clients().get(this.clientApplication.getId()).remove();
-    }
+public class ResourceServerServiceTestCase extends AbstractProtectionTestCase {
 
     @Test
     public void testCreate() {
-        AuthzClient client = createAuthzClient();
-        AuthzClient.AdminClient admin = client.admin("admin", "admin", "admin-cli");
+        AuthzClient.AdminClient admin = this.authzClient.admin("admin", "admin", "admin-cli");
         ResourceServerResource resourceServer = admin.resourceServer();
         ResourceServerRepresentation server = new ResourceServerRepresentation();
 
@@ -76,8 +53,7 @@ public class ResourceServerServiceTestCase {
 
     @Test
     public void testCreateInvalidClientId() {
-        AuthzClient client = createAuthzClient();
-        AuthzClient.AdminClient admin = client.admin("admin", "admin", "admin-cli");
+        AuthzClient.AdminClient admin = this.authzClient.admin("admin", "admin", "admin-cli");
         ResourceServerResource resourceServer = admin.resourceServer();
         ResourceServerRepresentation server = new ResourceServerRepresentation();
 
@@ -96,8 +72,7 @@ public class ResourceServerServiceTestCase {
 
     @Test
     public void testUpdate() {
-        AuthzClient client = createAuthzClient();
-        AuthzClient.AdminClient admin = client.admin("admin", "admin", "admin-cli");
+        AuthzClient.AdminClient admin = this.authzClient.admin("admin", "admin", "admin-cli");
         ResourceServerResource resourceServer = admin.resourceServer();
         ResourceServerRepresentation server = new ResourceServerRepresentation();
 
@@ -110,49 +85,5 @@ public class ResourceServerServiceTestCase {
         resourceServer.update(newResrouceServer.getId(), newResrouceServer);
 
         ResourceServerRepresentation updated = resourceServer.findById(newResrouceServer.getId());
-    }
-
-    private AuthzClient createAuthzClient() {
-        return AuthzClient.fromConfig(URI.create("http://localhost:8080/auth/realms/photoz/authz/uma_configuration"));
-    }
-
-    private Keycloak createKeycloakAdminClient() {
-        AuthzClient client = createAuthzClient();
-        Configuration configuration = client.getServerConfiguration();
-        return Keycloak.getInstance(configuration.getServerUrl().toString(), configuration.getRealm(),
-                "admin", "admin",
-                "admin-cli");
-    }
-
-    private ClientRepresentation getClientApplication(String clientId) {
-        for (ClientRepresentation client : this.keycloakAdminClient.realm("photoz").clients().findAll()) {
-            if (client.getClientId() != null && client.getClientId().equals(clientId)) {
-                return client;
-            }
-        }
-        return null;
-    }
-
-    private ClientRepresentation createClientApplication() {
-        ClientRepresentation representation = new ClientRepresentation();
-
-        representation.setClientId("resource-server-test");
-        representation.setName("Resource Server Test");
-        representation.setServiceAccountsEnabled(true);
-
-        List<String> redirectUris = new ArrayList<>();
-
-        redirectUris.add("http://localhost:8080/resourceServerTest");
-        representation.setRedirectUris(redirectUris);
-
-        Response response = this.keycloakAdminClient.realm("photoz").clients().create(representation);
-
-        response.close();
-
-        ClientRepresentation client = getClientApplication(representation.getClientId());
-
-        if (client != null) return client;
-
-        throw new RuntimeException("No client application was created.");
     }
 }

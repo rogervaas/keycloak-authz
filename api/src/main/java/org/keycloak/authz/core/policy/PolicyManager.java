@@ -17,20 +17,34 @@
  */
 package org.keycloak.authz.core.policy;
 
+import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
+
 import java.util.List;
 
-import org.keycloak.authz.core.policy.spi.PolicyProviderFactory;
-
 /**
+ * The {@link PolicyManager} acts as a facade for policy evaluation and access to the configured policy providers.
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface PolicyManager {
 
+    /**
+     * Evaluates all registered policies accordingly with the given {@link EvaluationContext}.
+     *
+     * @param context the context that will be used to base policy decisions
+     * @return a list of {@link EvaluationResult} with all decisions taken during the evaluation
+     */
     List<EvaluationResult> evaluate(EvaluationContext context);
 
-    <T extends PolicyProviderFactory> T getProviderFactory(String type);
-
+    /**
+     * Returns a list with all registered {@link PolicyProviderFactory}.
+     *
+     * @return a list containing the registered policy provider factories
+     */
     List<PolicyProviderFactory> getProviderFactories();
 
+    /**
+     * Disposes of this instance and releases any system resources that it is using.
+     */
     void dispose();
 }

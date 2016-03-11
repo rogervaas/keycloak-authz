@@ -67,7 +67,7 @@ public class ScopeResource {
     public Response create(ScopeRepresentation scope) {
         Scope model = toModel(scope, this.resourceServer, this.authorizationManager);
 
-        this.authorizationManager.getStoreFactory().scope().save(model);
+        this.authorizationManager.getStoreFactory().getScopeStore().save(model);
 
         scope.setId(model.getId());
 
@@ -79,7 +79,7 @@ public class ScopeResource {
     @Consumes("application/json")
     @Produces("application/json")
     public Response update(@PathParam("id") String id, ScopeRepresentation scope) {
-        Scope model = this.authorizationManager.getStoreFactory().scope().findById(scope.getId());
+        Scope model = this.authorizationManager.getStoreFactory().getScopeStore().findById(scope.getId());
 
         if (model == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -88,7 +88,7 @@ public class ScopeResource {
         model.setName(scope.getName());
         model.setIconUri(scope.getIconUri());
 
-        this.authorizationManager.getStoreFactory().scope().save(model);
+        this.authorizationManager.getStoreFactory().getScopeStore().save(model);
 
         return Response.noContent().build();
     }
@@ -96,26 +96,26 @@ public class ScopeResource {
     @Path("{id}")
     @DELETE
     public Response delete(@PathParam("id") String id) {
-        List<Resource> resources = this.authorizationManager.getStoreFactory().resource().findByScope(id);
+        List<Resource> resources = this.authorizationManager.getStoreFactory().getResourceStore().findByScope(id);
 
         if (!resources.isEmpty()) {
             return ErrorResponse.exists("Scopes can not be removed while associated with resources.");
         }
 
-        Scope model = this.authorizationManager.getStoreFactory().scope().findById(id);
+        Scope model = this.authorizationManager.getStoreFactory().getScopeStore().findById(id);
 
-        List<Policy> policies = this.authorizationManager.getStoreFactory().policy().findByScopeName(Arrays.asList(model.getName()));
+        List<Policy> policies = this.authorizationManager.getStoreFactory().getPolicyStore().findByScopeName(Arrays.asList(model.getName()));
 
         for (Policy policyModel : policies) {
             if (policyModel.getScopes().size() == 1) {
-                this.authorizationManager.getStoreFactory().policy().delete(policyModel.getId());
+                this.authorizationManager.getStoreFactory().getPolicyStore().remove(policyModel.getId());
             } else {
                 policyModel.removeScope(model);
-                this.authorizationManager.getStoreFactory().policy().save(policyModel);
+                this.authorizationManager.getStoreFactory().getPolicyStore().save(policyModel);
             }
         }
 
-        this.authorizationManager.getStoreFactory().scope().delete(id);
+        this.authorizationManager.getStoreFactory().getScopeStore().delete(id);
 
         return Response.noContent().build();
     }
@@ -124,7 +124,7 @@ public class ScopeResource {
     @GET
     @Produces("application/json")
     public Response findById(@PathParam("id") String id) {
-        Scope model = this.authorizationManager.getStoreFactory().scope().findById(id);
+        Scope model = this.authorizationManager.getStoreFactory().getScopeStore().findById(id);
 
         if (model == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -137,7 +137,7 @@ public class ScopeResource {
     @Produces("application/json")
     public Response findAll() {
         return Response.ok(
-                this.authorizationManager.getStoreFactory().scope().findByResourceServer(this.resourceServer.getId()).stream()
+                this.authorizationManager.getStoreFactory().getScopeStore().findByResourceServer(this.resourceServer.getId()).stream()
                         .map(scope -> Models.toRepresentation(scope))
                         .collect(Collectors.toList()))
                 .build();

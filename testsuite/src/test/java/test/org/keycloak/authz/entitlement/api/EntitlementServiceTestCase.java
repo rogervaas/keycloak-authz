@@ -5,9 +5,7 @@ import org.keycloak.authz.client.AuthzClient;
 import org.keycloak.authz.client.representation.EntitlementResponse;
 import org.keycloak.authz.client.resource.EntitlementResource;
 import org.keycloak.authz.server.entitlement.resource.EntitlementToken;
-import org.keycloak.authz.server.uma.protection.permission.PermissionTicket;
 import org.keycloak.jose.jws.JWSInput;
-import org.keycloak.jose.jws.crypto.RSAProvider;
 import org.keycloak.services.ErrorResponseException;
 
 import javax.ws.rs.core.Response;

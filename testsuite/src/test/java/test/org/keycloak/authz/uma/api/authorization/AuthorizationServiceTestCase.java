@@ -54,14 +54,13 @@ public class AuthorizationServiceTestCase {
         String[] expectedScopes = resource.getScopes().stream()
                 .map(ScopeRepresentation::getName).collect(Collectors.toSet()).toArray(new String[resource.getScopes().size()]);
         PermissionResponse ticket = obtainPermissionTicket(resource.getId(), expectedScopes);
-        AuthorizationResource authorization = this.authzClient
-                .authorization("admin", "admin");
-
+        AuthorizationResource authorization = this.authzClient.authorization("admin", "admin", "photoz-html5-client");
         AuthorizationResponse authorize = authorization.authorize(new AuthorizationRequest(ticket.getTicket()));
         RequestingPartyToken token = new JWSInput(authorize.getRpt()).readJsonContent(RequestingPartyToken.class);
         List<Permission> permissions = token.getPermissions();
 
         assertEquals(1, permissions.size());
+
         Permission permission = permissions.iterator().next();
 
         assertEquals(resource.getId(), permission.getResourceSetId());
@@ -79,7 +78,7 @@ public class AuthorizationServiceTestCase {
                 .map(ScopeRepresentation::getName).collect(Collectors.toSet()).toArray(new String[resource.getScopes().size()]);
         PermissionResponse ticket = obtainPermissionTicket(resource.getId(), expectedScopes);
         AuthorizationResource authorization = this.authzClient
-                .authorization("jdoe", "jdoe");
+                .authorization("jdoe", "jdoe", "photoz-html5-client");
 
         try {
             authorization.authorize(new AuthorizationRequest(ticket.getTicket()));
@@ -92,7 +91,7 @@ public class AuthorizationServiceTestCase {
     @Test
     public void testInvalidTicket() {
         AuthorizationResource authorization = this.authzClient
-                .authorization("jdoe", "jdoe");
+                .authorization("jdoe", "jdoe", "photoz-html5-client");
 
         try {
             authorization.authorize(new AuthorizationRequest("invalid_ticket"));

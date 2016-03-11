@@ -17,8 +17,6 @@
  */
 package org.keycloak.authz.server.uma.config;
 
-import org.keycloak.authz.server.uma.UmaAuthorizationManager;
-
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
@@ -29,15 +27,15 @@ import javax.ws.rs.Produces;
 @Path("/uma_configuration")
 public class ConfigurationService {
 
-    private final UmaAuthorizationManager authorizationManager;
+    private Configuration configuration;
 
-    public ConfigurationService(UmaAuthorizationManager authorizationManager) {
-        this.authorizationManager = authorizationManager;
+    public ConfigurationService(Configuration configuration) {
+        this.configuration = configuration;
     }
 
     @GET
     @Produces("application/json")
-    public Configuration findById(String id) {
-        return this.authorizationManager.configuration();
+    public Configuration showConfiguration() {
+        return this.configuration;
     }
 }

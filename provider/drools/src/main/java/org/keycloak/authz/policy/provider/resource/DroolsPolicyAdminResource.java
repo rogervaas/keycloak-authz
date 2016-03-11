@@ -35,7 +35,7 @@ public class DroolsPolicyAdminResource implements PolicyProviderAdminResource {
     @Override
     public void init(final ResourceServer resourceServer) {
         this.resourceServer = resourceServer;
-        this.provider = authorizationManager.getPolicyManager().getProviderFactory(getType());
+        this.provider = authorizationManager.getProviderFactory(getType());
     }
 
     @Override

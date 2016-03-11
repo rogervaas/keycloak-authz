@@ -21,6 +21,7 @@
         <module>drools</module>
         <module>resource</module>
         <module>scope</module>
+        <module>javascript</module>
     </modules>
 
 </project>

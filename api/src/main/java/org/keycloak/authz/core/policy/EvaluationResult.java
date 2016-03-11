@@ -3,7 +3,7 @@ package org.keycloak.authz.core.policy;
 import java.util.ArrayList;
 import java.util.List;
 import org.keycloak.authz.core.model.Policy;
-import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.model.ResourcePermission;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

@@ -17,6 +17,7 @@
  */
 package org.keycloak.authz.server.uma.authorization;
 
+import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.JsonWebToken;
 
 import java.util.ArrayList;
@@ -36,7 +37,7 @@ public class RequestingPartyToken extends JsonWebToken {
         this.requestingPartyId = null;
     }
 
-    public RequestingPartyToken(String requestingPartyId, Permission... permissions) {
+    public RequestingPartyToken(String requestingPartyId, AccessToken accessToken, Permission... permissions) {
         if (requestingPartyId == null) {
             throw new IllegalArgumentException("Requesting party identifier is null.");
         }
@@ -47,6 +48,10 @@ public class RequestingPartyToken extends JsonWebToken {
             this.permissions = null;
         }
         type("rpt");
+        expiration(accessToken.getExpiration());
+        notBefore(accessToken.getNotBefore());
+        issuedAt(accessToken.getIssuedAt());
+        issuedFor(accessToken.getIssuedFor());
     }
 
     public List<Permission> getPermissions() {

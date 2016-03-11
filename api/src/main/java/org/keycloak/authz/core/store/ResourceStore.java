@@ -17,12 +17,13 @@
  */
 package org.keycloak.authz.core.store;
 
-import java.util.List;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 
+import java.util.List;
+
 /**
- * Defines a contract for a persistent storage implementation that holds data for {@link Resource} instances.
+ * A {@link ResourceStore} is responsible to manage the persistence of {@link Resource} instances.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */

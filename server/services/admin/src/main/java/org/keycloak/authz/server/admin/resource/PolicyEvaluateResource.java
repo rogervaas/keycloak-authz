@@ -18,11 +18,11 @@
 package org.keycloak.authz.server.admin.resource;
 
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.Identity;
+import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Resource;
+import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
 import org.keycloak.authz.core.policy.ExecutionContext;
@@ -40,12 +40,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -83,14 +85,14 @@ public class PolicyEvaluateResource {
                 givenScopes = new HashSet();
             }
 
-            List<Scope> scopes = givenScopes.stream().map(scopeName -> authorizationManager.getStoreFactory().scope().findByName(scopeName))
+            List<Scope> scopes = givenScopes.stream().map(scopeName -> authorizationManager.getStoreFactory().getScopeStore().findByName(scopeName))
                     .collect(Collectors.toList());
 
             if (resource.getId() != null) {
-                Resource resourceModel = authorizationManager.getStoreFactory().resource().findById(resource.getId());
+                Resource resourceModel = authorizationManager.getStoreFactory().getResourceStore().findById(resource.getId());
                 permissions.add(new ResourcePermission(resourceModel, scopes));
             } else if (resource.getType() != null) {
-                authorizationManager.getStoreFactory().resource().findByType(resource.getType()).forEach(resource1 -> permissions.add(new ResourcePermission(resource1, scopes)));
+                authorizationManager.getStoreFactory().getResourceStore().findByType(resource.getType()).forEach(resource1 -> permissions.add(new ResourcePermission(resource1, scopes)));
             }
         });
 
@@ -128,11 +130,6 @@ public class PolicyEvaluateResource {
                     }
 
                     @Override
-                    public String getResourceServerId() {
-                        return resourceServer.getId();
-                    }
-
-                    @Override
                     public Map<String, List<String>> getAttributes() {
                         HashMap<String, List<String>> attributes = new HashMap<>();
                         UserModel userModel = keycloakSession.users().getUserById(getId(), realm);
@@ -143,12 +140,18 @@ public class PolicyEvaluateResource {
                             attributes.put("roles", roles);
                         }
 
-                        return attributes;
-                    }
+                        Map<String, String> givenAttributes = representation.getContext().get("attributes");
 
-                    @Override
-                    public boolean isResourceServer() {
-                        return false;
+                        if (givenAttributes != null) {
+                            givenAttributes.forEach(new BiConsumer<String, String>() {
+                                @Override
+                                public void accept(String key, String value) {
+                                    attributes.put(key, Arrays.asList(value));
+                                }
+                            });
+                        }
+
+                        return attributes;
                     }
                 };
             }

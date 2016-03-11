@@ -22,30 +22,33 @@ import org.keycloak.authz.client.AuthzClient;
 import org.keycloak.authz.client.representation.PermissionRequest;
 import org.keycloak.authz.client.representation.PermissionResponse;
 import org.keycloak.authz.client.representation.ResourceRepresentation;
-import org.keycloak.authz.client.resource.ProtectedResource;
+import org.keycloak.authz.client.representation.ScopeRepresentation;
 
 import javax.ws.rs.BadRequestException;
+import java.util.HashSet;
 
 import static org.junit.Assert.*;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class PermissionServiceTestCase {
+public class PermissionServiceTestCase extends AbstractProtectionTestCase {
 
     @Test
     public void testObtainPermissionTicket() {
-        ResourceRepresentation resourceDescription = createResource();
-        String resourceId = resourceDescription.getId();
-        AuthzClient.ProtectionClient protection = AuthzClient.create().protection();
-        PermissionResponse response = protection.permission().forResource(new PermissionRequest(resourceId, "urn:photoz.com:scopes:album:admin:manage"));
+        HashSet<ScopeRepresentation> scopes = new HashSet<>();
 
+        scopes.add(new ScopeRepresentation("urn:photoz.com:scopes:album:admin:manage"));
+
+        ResourceRepresentation resourceDescription = createResource("Protected Resource", null, null, null, null, scopes);
+        String resourceId = resourceDescription.getId();
+        PermissionResponse response = this.authzClient.protection().permission().forResource(new PermissionRequest(resourceId, "urn:photoz.com:scopes:album:admin:manage"));
         assertNotNull(response.getTicket());
     }
 
     @Test
     public void testInvalidResourceId() {
-        AuthzClient.ProtectionClient protection = AuthzClient.create().protection();
+        AuthzClient.ProtectionClient protection = this.authzClient.protection();
 
         try {
             protection.permission().forResource(new PermissionRequest("invalid_resource_id", "http://photoz.example.com/dev/scopes/admin"));
@@ -60,10 +63,15 @@ public class PermissionServiceTestCase {
 
     @Test
     public void testInvalidScope() {
-        String resourceId = createResource().getId();
+        HashSet<ScopeRepresentation> scopes = new HashSet<>();
+
+        scopes.add(new ScopeRepresentation("urn:photoz.com:scopes:album:admin:manage"));
+
+        ResourceRepresentation resourceDescription = createResource("Protected Resource", null, null, null, null, scopes);
+        String resourceId = resourceDescription.getId();
 
         try {
-            AuthzClient.create().protection().permission().forResource(new PermissionRequest(resourceId, "http://photoz.example.com/dev/scopes/admin_invalid"));
+            this.authzClient.protection().permission().forResource(new PermissionRequest(resourceId, "urn:photoz.com:scopes:album:admin:invalid_scope"));
             fail("Error expected.");
         } catch (BadRequestException bde) {
             assertTrue(bde.getResponse().readEntity(String.class).contains("invalid_scope"));
@@ -71,15 +79,5 @@ public class PermissionServiceTestCase {
             e.printStackTrace();;
             fail("Unexpected exception.");
         }
-    }
-
-    private ResourceRepresentation createResource() {
-        ProtectedResource resource = AuthzClient.create()
-                .protection()
-                .resource();
-
-        String resourceId = resource.search("type=http://photoz.com/dev/resource/admin/album").iterator().next();
-
-        return resource.findById(resourceId).getResourceDescription();
     }
 }

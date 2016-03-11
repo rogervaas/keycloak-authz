@@ -1,7 +1,7 @@
 package org.keycloak.authz.persistence.syncronization;
 
 import org.keycloak.authz.core.model.ResourceServer;
-import org.keycloak.authz.core.store.spi.PersistenceProvider;
+import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.models.RealmModel;
 
 import java.util.function.Consumer;
@@ -11,7 +11,7 @@ import java.util.function.Consumer;
  */
 public class RealmSynchronizer implements Synchronizer<RealmModel.RealmRemovedEvent> {
     @Override
-    public void synchronize(RealmModel.RealmRemovedEvent event, PersistenceProvider persistenceProvider) {
+    public void synchronize(RealmModel.RealmRemovedEvent event, StoreFactory persistenceProvider) {
         persistenceProvider.getResourceServerStore().findByRealm(event.getRealm().getId()).forEach(resourceServer -> {
             persistenceProvider.getResourceServerStore().findByRealm(event.getRealm().getId()).forEach(new Consumer<ResourceServer>() {
                 @Override
@@ -19,7 +19,7 @@ public class RealmSynchronizer implements Synchronizer<RealmModel.RealmRemovedEv
                     String id = resourceServer.getId();
                     persistenceProvider.getResourceStore().findByResourceServer(id).forEach(resource -> persistenceProvider.getResourceStore().delete(resource.getId()));
                     persistenceProvider.getScopeStore().findByResourceServer(id).forEach(scope -> persistenceProvider.getScopeStore().delete(scope.getId()));
-                    persistenceProvider.getPolicyStore().findByResourceServer(id).forEach(scope -> persistenceProvider.getPolicyStore().delete(scope.getId()));
+                    persistenceProvider.getPolicyStore().findByResourceServer(id).forEach(scope -> persistenceProvider.getPolicyStore().remove(scope.getId()));
                     persistenceProvider.getResourceServerStore().delete(id);
                 }
             });

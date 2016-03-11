@@ -1,6 +1,6 @@
 package org.keycloak.authz.persistence.syncronization;
 
-import org.keycloak.authz.core.store.spi.PersistenceProvider;
+import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.provider.ProviderEvent;
 
 /**
@@ -8,6 +8,6 @@ import org.keycloak.provider.ProviderEvent;
  */
 public interface Synchronizer<E extends ProviderEvent> {
 
-    void synchronize(E event, PersistenceProvider persistenceProvider);
+    void synchronize(E event, StoreFactory persistenceProvider);
 
 }

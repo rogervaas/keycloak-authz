@@ -12,6 +12,7 @@
         <artifact name="${org.keycloak:keycloak-authz-identity}"/>
         <artifact name="${org.keycloak:keycloak-authz-resource}"/>
         <artifact name="${org.keycloak:keycloak-authz-scope}"/>
+        <artifact name="${org.keycloak:keycloak-authz-js}"/>
         <artifact name="${org.keycloak:keycloak-authz-persistence-api}"/>
         <artifact name="${org.keycloak:keycloak-authz-jpa-provider}"/>
         <artifact name="${org.keycloak:keycloak-authz-jaxrs-enforcer}"/>

@@ -17,14 +17,14 @@
  */
 package org.keycloak.authz.server.uma.protection.resource;
 
-import org.keycloak.authz.core.Identity;
+import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.server.admin.resource.ResourceSetResource;
 import org.keycloak.authz.server.admin.resource.representation.ResourceOwnerRepresentation;
 import org.keycloak.authz.server.admin.resource.representation.ResourceRepresentation;
 import org.keycloak.authz.server.admin.resource.representation.ScopeRepresentation;
 import org.keycloak.authz.server.admin.resource.util.Models;
-import org.keycloak.authz.server.uma.UmaAuthorizationManager;
 import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
 import org.keycloak.authz.server.uma.representation.UmaScopeRepresentation;
 import org.keycloak.models.KeycloakSession;
@@ -53,11 +53,11 @@ public class ResourceService {
     private final RealmModel realm;
     private final ResourceServer resourceServer;
     private final ResourceSetResource resourceManager;
-    private final UmaAuthorizationManager authorizationManager;
+    private final Authorization authorizationManager;
     private final KeycloakSession keycloakSession;
     private final Identity identity;
 
-    public ResourceService(RealmModel realm, ResourceServer resourceServer, Identity identity, UmaAuthorizationManager authorizationManager, KeycloakSession keycloakSession) {
+    public ResourceService(RealmModel realm, ResourceServer resourceServer, Identity identity, Authorization authorizationManager, KeycloakSession keycloakSession) {
         this.realm = realm;
         this.identity = identity;
         this.authorizationManager = authorizationManager;
@@ -133,32 +133,26 @@ public class ResourceService {
                     filterValue = null;
                 }
 
-                if ("all".equals(filterType)) {
-                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByOwner(identity.getId()).stream()
-                            .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
-                            .collect(Collectors.toList()));
-
-                    if (identity.isResourceServer()) {
-                        resources.addAll(this.authorizationManager.getStoreFactory().resource().findByResourceServer(resourceServer.getId()).stream()
-                                .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
-                                .collect(Collectors.toList()));
-                    }
-                } else if ("name".equals(filterType)) {
-                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getName())).collect(Collectors.toSet()).stream()
+                if ("name".equals(filterType)) {
+                    resources.addAll(this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getName())).collect(Collectors.toSet()).stream()
                             .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                             .collect(Collectors.toList()));
                 } else if ("type".equals(filterType)) {
-                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getType())).collect(Collectors.toSet()).stream()
+                    resources.addAll(this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getType())).collect(Collectors.toSet()).stream()
                             .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                             .collect(Collectors.toList()));
                 } else if ("uri".equals(filterType)) {
-                    resources.addAll(this.authorizationManager.getStoreFactory().resource().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getUri())).collect(Collectors.toSet()).stream()
+                    resources.addAll(this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getUri())).collect(Collectors.toSet()).stream()
+                            .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
+                            .collect(Collectors.toList()));
+                } else if ("owner".equals(filterType)) {
+                    resources.addAll(this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(this.resourceServer.getId()).stream().filter(description -> filterValue == null || filterValue.equals(description.getOwner())).collect(Collectors.toSet()).stream()
                             .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                             .collect(Collectors.toList()));
                 }
             }
         } else {
-            resources = this.authorizationManager.getStoreFactory().resource().findByOwner(identity.getId()).stream()
+            resources = this.authorizationManager.getStoreFactory().getResourceStore().findByOwner(identity.getId()).stream()
                     .map(resource -> Models.toRepresentation(resource, this.resourceServer, this.authorizationManager, this.realm, this.keycloakSession))
                     .collect(Collectors.toSet());
         }
@@ -181,11 +175,7 @@ public class ResourceService {
         String ownerId = umaResource.getOwner();
 
         if (ownerId == null) {
-            if (this.identity.isResourceServer()) {
-                ownerId = this.resourceServer.getId();
-            } else {
-                ownerId = this.identity.getId();
-            }
+            ownerId = this.identity.getId();
         }
 
         owner.setId(ownerId);

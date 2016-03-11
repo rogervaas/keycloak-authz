@@ -80,7 +80,7 @@ public class PolicyResource {
         updateAssociatedPolicies(policy);
         updateScopes(policy);
 
-        this.authorizationManager.getStoreFactory().policy().save(policy);
+        this.authorizationManager.getStoreFactory().getPolicyStore().save(policy);
 
         PolicyProviderAdminResource resource = getPolicyProviderAdminResource(policy.getType());
 
@@ -98,7 +98,7 @@ public class PolicyResource {
     @Consumes("application/json")
     @Produces("application/json")
     public Response update(@PathParam("id") String id, PolicyRepresentation representation) {
-        Policy policy = authorizationManager.getStoreFactory().policy().findById(representation.getId());
+        Policy policy = authorizationManager.getStoreFactory().getPolicyStore().findById(representation.getId());
 
         if (policy == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -119,7 +119,7 @@ public class PolicyResource {
             resource.update(policy);
         }
 
-        this.authorizationManager.getStoreFactory().policy().save(policy);
+        this.authorizationManager.getStoreFactory().getPolicyStore().save(policy);
 
         return Response.status(Response.Status.CREATED).build();
     }
@@ -127,7 +127,7 @@ public class PolicyResource {
     @Path("{id}")
     @DELETE
     public Response delete(@PathParam("id") String id) {
-        Policy policy = authorizationManager.getStoreFactory().policy().findById(id);
+        Policy policy = authorizationManager.getStoreFactory().getPolicyStore().findById(id);
 
         if (policy == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -139,12 +139,12 @@ public class PolicyResource {
             resource.remove(policy);
         }
 
-        this.authorizationManager.getStoreFactory().policy().findDependentPolicies(id).forEach(dependentPolicy -> {
+        this.authorizationManager.getStoreFactory().getPolicyStore().findDependentPolicies(id).forEach(dependentPolicy -> {
             dependentPolicy.removeAssociatedPolicy(policy);
-            this.authorizationManager.getStoreFactory().policy().save(dependentPolicy);
+            this.authorizationManager.getStoreFactory().getPolicyStore().save(dependentPolicy);
         });
 
-        this.authorizationManager.getStoreFactory().policy().delete(policy.getId());
+        this.authorizationManager.getStoreFactory().getPolicyStore().remove(policy.getId());
 
         return Response.noContent().build();
     }
@@ -153,7 +153,7 @@ public class PolicyResource {
     @GET
     @Produces("application/json")
     public Response findById(@PathParam("id") String id) {
-        Policy model = authorizationManager.getStoreFactory().policy().findById(id);
+        Policy model = authorizationManager.getStoreFactory().getPolicyStore().findById(id);
 
         if (model == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -166,7 +166,7 @@ public class PolicyResource {
     @Produces("application/json")
     public Response findAll() {
         return Response.ok(
-                authorizationManager.getStoreFactory().policy().findByResourceServer(resourceServer.getId()).stream()
+                authorizationManager.getStoreFactory().getPolicyStore().findByResourceServer(resourceServer.getId()).stream()
                         .map((Function<Policy, PolicyRepresentation>) policy -> {
                             return Models.toRepresentation(policy, this.authorizationManager);
                         })
@@ -245,7 +245,7 @@ public class PolicyResource {
                     }
                 }
                 if (!hasScope) {
-                    policy.addScope(authorizationManager.getStoreFactory().scope().findById(scopeId));
+                    policy.addScope(authorizationManager.getStoreFactory().getScopeStore().findById(scopeId));
                 }
             }
 
@@ -284,7 +284,7 @@ public class PolicyResource {
                     }
                 }
                 if (!hasPolicy) {
-                    policy.addAssociatedPolicy(authorizationManager.getStoreFactory().policy().findById(policyId));
+                    policy.addAssociatedPolicy(authorizationManager.getStoreFactory().getPolicyStore().findById(policyId));
                 }
             }
 
@@ -320,7 +320,7 @@ public class PolicyResource {
                     }
                 }
                 if (!hasResource && !"".equals(resourceId)) {
-                    policy.addResource(authorizationManager.getStoreFactory().resource().findById(resourceId));
+                    policy.addResource(authorizationManager.getStoreFactory().getResourceStore().findById(resourceId));
                 }
             }
             for (Resource resourceModel : new HashSet<Resource>(policy.getResources())) {

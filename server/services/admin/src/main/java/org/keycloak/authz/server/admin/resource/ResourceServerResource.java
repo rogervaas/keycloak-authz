@@ -76,7 +76,7 @@ public class ResourceServerResource {
     @Consumes("application/json")
     @Produces("application/json")
     public Response create(ResourceServerRepresentation server) {
-        ResourceServer client = this.authorizationManager.getStoreFactory().resourceServer().findByClient(server.getClientId());
+        ResourceServer client = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(server.getClientId());
 
         if (client != null) {
             ClientModel clientModel = this.keycloakSession.realms().getClientById(server.getClientId(), this.realm);
@@ -85,7 +85,7 @@ public class ResourceServerResource {
 
         ResourceServer model = Models.toModel(server, this.authorizationManager, this.realm);
 
-        this.authorizationManager.getStoreFactory().resourceServer().save(model);
+        this.authorizationManager.getStoreFactory().getResourceServerStore().save(model);
 
         ResourceServerRepresentation newServer = new ResourceServerRepresentation();
 
@@ -99,7 +99,7 @@ public class ResourceServerResource {
     @Consumes("application/json")
     @Produces("application/json")
     public Response update(@PathParam("id") String id, ResourceServerRepresentation server) {
-        ResourceServer model = this.authorizationManager.getStoreFactory().resourceServer().findById(server.getId());
+        ResourceServer model = this.authorizationManager.getStoreFactory().getResourceServerStore().findById(server.getId());
 
         if (model == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -109,7 +109,7 @@ public class ResourceServerResource {
         model.setAllowRemotePolicyManagement(server.isAllowRemotePolicyManagement());
         model.setPolicyEnforcementMode(server.getPolicyEnforcementMode());
 
-        this.authorizationManager.getStoreFactory().resourceServer().save(model);
+        this.authorizationManager.getStoreFactory().getResourceServerStore().save(model);
 
         return Response.noContent().build();
     }
@@ -117,10 +117,10 @@ public class ResourceServerResource {
     @Path("{id}")
     @DELETE
     public Response delete(@PathParam("id") String id) {
-        this.authorizationManager.getStoreFactory().resource().findByResourceServer(id).forEach(resource -> this.authorizationManager.getStoreFactory().resource().delete(resource.getId()));
-        this.authorizationManager.getStoreFactory().scope().findByResourceServer(id).forEach(scope -> this.authorizationManager.getStoreFactory().scope().delete(scope.getId()));
-        this.authorizationManager.getStoreFactory().policy().findByResourceServer(id).forEach(scope -> this.authorizationManager.getStoreFactory().policy().delete(scope.getId()));
-        this.authorizationManager.getStoreFactory().resourceServer().delete(id);
+        this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(id).forEach(resource -> this.authorizationManager.getStoreFactory().getResourceStore().delete(resource.getId()));
+        this.authorizationManager.getStoreFactory().getScopeStore().findByResourceServer(id).forEach(scope -> this.authorizationManager.getStoreFactory().getScopeStore().delete(scope.getId()));
+        this.authorizationManager.getStoreFactory().getPolicyStore().findByResourceServer(id).forEach(scope -> this.authorizationManager.getStoreFactory().getPolicyStore().remove(scope.getId()));
+        this.authorizationManager.getStoreFactory().getResourceServerStore().delete(id);
         return Response.noContent().build();
     }
 
@@ -128,7 +128,7 @@ public class ResourceServerResource {
     @GET
     @Produces("application/json")
     public Response findById(@PathParam("id") String id) {
-        ResourceServer model = this.authorizationManager.getStoreFactory().resourceServer().findById(id);
+        ResourceServer model = this.authorizationManager.getStoreFactory().getResourceServerStore().findById(id);
 
         if (model == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -141,7 +141,7 @@ public class ResourceServerResource {
     @Produces("application/json")
     public Response findAll() {
         return Response.ok(
-                this.authorizationManager.getStoreFactory().resourceServer().findByRealm(this.realm.getId()).stream()
+                this.authorizationManager.getStoreFactory().getResourceServerStore().findByRealm(this.realm.getId()).stream()
                         .map(resourceServer -> Models.toRepresentation(resourceServer, this.realm))
                         .collect(Collectors.toList()))
                 .build();
@@ -151,7 +151,7 @@ public class ResourceServerResource {
     @GET
     @Produces("application/json")
     public Response exportSettings(@PathParam("id") String id) {
-        ResourceServer model = this.authorizationManager.getStoreFactory().resourceServer().findById(id);
+        ResourceServer model = this.authorizationManager.getStoreFactory().getResourceServerStore().findById(id);
 
         if (model == null) {
             return Response.status(Response.Status.NOT_FOUND).build();
@@ -163,7 +163,7 @@ public class ResourceServerResource {
         settings.setName(null);
         settings.setClientId(this.realm.getClientById(settings.getClientId()).getClientId());
 
-        List<ResourceRepresentation> resources = this.authorizationManager.getStoreFactory().resource().findByResourceServer(model.getId())
+        List<ResourceRepresentation> resources = this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(model.getId())
                 .stream().map(resource -> {
                     ResourceRepresentation rep = Models.toRepresentation(resource, model, authorizationManager, realm, keycloakSession);
 
@@ -180,7 +180,7 @@ public class ResourceServerResource {
 
         settings.setResources(resources);
 
-        List<PolicyRepresentation> policies = this.authorizationManager.getStoreFactory().policy().findByResourceServer(model.getId())
+        List<PolicyRepresentation> policies = this.authorizationManager.getStoreFactory().getPolicyStore().findByResourceServer(model.getId())
                 .stream().map(policy -> {
                     PolicyRepresentation rep = Models.toRepresentation(policy, authorizationManager);
 
@@ -251,7 +251,7 @@ public class ResourceServerResource {
 
                                 scope = scope.replace("\"", "");
 
-                                scopeNames = scopeNames + "\"" + authorizationManager.getStoreFactory().scope().findById(scope).getName() + "\"";
+                                scopeNames = scopeNames + "\"" + authorizationManager.getStoreFactory().getScopeStore().findById(scope).getName() + "\"";
                             }
 
                             config.put("scopes", "[" + scopeNames + "]");
@@ -274,7 +274,7 @@ public class ResourceServerResource {
 
                                 resource = resource.replace("\"", "");
 
-                                resourceNames = resourceNames + "\"" + authorizationManager.getStoreFactory().resource().findById(resource).getName() + "\"";
+                                resourceNames = resourceNames + "\"" + authorizationManager.getStoreFactory().getResourceStore().findById(resource).getName() + "\"";
                             }
 
                             config.put("resources", "[" + resourceNames + "]");
@@ -297,7 +297,7 @@ public class ResourceServerResource {
 
                                 pId = pId.replace("\"", "");
 
-                                policyNames = policyNames + "\"" + authorizationManager.getStoreFactory().policy().findById(pId).getName() + "\"";
+                                policyNames = policyNames + "\"" + authorizationManager.getStoreFactory().getPolicyStore().findById(pId).getName() + "\"";
                             }
 
                             config.put("applyPolicies", "[" + policyNames + "]");
@@ -309,7 +309,7 @@ public class ResourceServerResource {
 
         settings.setPolicies(policies);
 
-        List<ScopeRepresentation> scopes = this.authorizationManager.getStoreFactory().scope().findByResourceServer(model.getId()).stream().map(new Function<Scope, ScopeRepresentation>() {
+        List<ScopeRepresentation> scopes = this.authorizationManager.getStoreFactory().getScopeStore().findByResourceServer(model.getId()).stream().map(new Function<Scope, ScopeRepresentation>() {
             @Override
             public ScopeRepresentation apply(Scope scope) {
                 ScopeRepresentation rep = Models.toRepresentation(scope);
@@ -353,7 +353,7 @@ public class ResourceServerResource {
 
             response = create(rep);
 
-            ResourceServer resourceServer = this.authorizationManager.getStoreFactory().resourceServer().findByClient(clientId);
+            ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(clientId);
 
             ScopeResource scopeResource = new ScopeResource(resourceServer);
 
@@ -373,10 +373,9 @@ public class ResourceServerResource {
                 public void accept(ResourceRepresentation resourceRepresentation) {
                     ResourceOwnerRepresentation owner = resourceRepresentation.getOwner();
 
-                    owner.setId(resourceServer.getId());
-                    String name = owner.getName();
+                    owner.setId(resourceServer.getClientId());
 
-                    UserModel user = keycloakSession.users().getUserByUsername(name, realm);
+                    UserModel user = keycloakSession.users().getUserByUsername(owner.getName(), realm);
 
                     if (user != null) {
                         owner.setId(user.getId());
@@ -457,7 +456,7 @@ public class ResourceServerResource {
 
                                 scope = scope.replace("\"", "");
 
-                                scopeNames = scopeNames + "\"" + authorizationManager.getStoreFactory().scope().findByName(scope).getId() + "\"";
+                                scopeNames = scopeNames + "\"" + authorizationManager.getStoreFactory().getScopeStore().findByName(scope).getId() + "\"";
                             }
 
                             config.put("scopes", "[" + scopeNames + "]");
@@ -484,7 +483,7 @@ public class ResourceServerResource {
                                     continue;
                                 }
 
-                                resourceNames = resourceNames + "\"" + authorizationManager.getStoreFactory().resource().findByName(resource).getId() + "\"";
+                                resourceNames = resourceNames + "\"" + authorizationManager.getStoreFactory().getResourceStore().findByName(resource).getId() + "\"";
                             }
 
                             config.put("resources", "[" + resourceNames + "]");
@@ -507,7 +506,7 @@ public class ResourceServerResource {
 
                                 pId = pId.replace("\"", "");
 
-                                policyNames = policyNames + "\"" + authorizationManager.getStoreFactory().policy().findByName(pId).getId() + "\"";
+                                policyNames = policyNames + "\"" + authorizationManager.getStoreFactory().getPolicyStore().findByName(pId).getId() + "\"";
                             }
 
                             config.put("applyPolicies", "[" + policyNames + "]");
@@ -524,7 +523,7 @@ public class ResourceServerResource {
 
     @Path("{id}/resource")
     public ResourceSetResource getResourceSetResource(@PathParam("id") String id) {
-        ResourceSetResource resource = new ResourceSetResource(this.realm, this.authorizationManager.getStoreFactory().resourceServer().findById(id), this.authorizationManager, this.keycloakSession);
+        ResourceSetResource resource = new ResourceSetResource(this.realm, this.authorizationManager.getStoreFactory().getResourceServerStore().findById(id), this.authorizationManager, this.keycloakSession);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -533,7 +532,7 @@ public class ResourceServerResource {
 
     @Path("{id}/scope")
     public ScopeResource getScopeResource(@PathParam("id") String id) {
-        ScopeResource resource = new ScopeResource(this.authorizationManager.getStoreFactory().resourceServer().findById(id));
+        ScopeResource resource = new ScopeResource(this.authorizationManager.getStoreFactory().getResourceServerStore().findById(id));
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -542,7 +541,7 @@ public class ResourceServerResource {
 
     @Path("{id}/policy")
     public PolicyResource getPolicyResource(@PathParam("id") String id) {
-        PolicyResource resource = new PolicyResource(this.realm, this.authorizationManager.getStoreFactory().resourceServer().findById(id));
+        PolicyResource resource = new PolicyResource(this.realm, this.authorizationManager.getStoreFactory().getResourceServerStore().findById(id));
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 

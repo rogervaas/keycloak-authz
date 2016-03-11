@@ -70,7 +70,7 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public void delete(String id) {
+    public void remove(String id) {
         this.entityManager.remove(findById(id));
     }
 
@@ -94,10 +94,10 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public List<Policy> findByResourceServer(final String serverId) {
+    public List<Policy> findByResourceServer(final String resourceServerId) {
         Query query = entityManager.createQuery("from PolicyEntity where resourceServer.id = :serverId");
 
-        query.setParameter("serverId", serverId);
+        query.setParameter("serverId", resourceServerId);
 
         return query.getResultList();
     }

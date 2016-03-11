@@ -17,14 +17,15 @@
  */
 package org.keycloak.authz.core.policy;
 
-import org.keycloak.authz.core.Identity;
-import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.identity.Identity;
+import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.models.RealmModel;
 
 import java.util.List;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
+ * @see EvaluationContext
  */
 public class DefaultEvaluationContext implements EvaluationContext {
 

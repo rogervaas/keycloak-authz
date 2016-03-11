@@ -31,9 +31,6 @@ public class ConfigurationTestCase {
 
     @Test
     public void testConfigurationEndpoint() {
-        Configuration configuration = AuthzClient.fromConfig(URI.create("http://localhost:8080/auth/realms/photoz/authz/uma_configuration"))
-                .getServerConfiguration();
-
-        assertNotNull(configuration);
+        assertNotNull(AuthzClient.create().getServerConfiguration());
     }
 }

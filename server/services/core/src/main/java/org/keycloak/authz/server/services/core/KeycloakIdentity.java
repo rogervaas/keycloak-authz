@@ -20,7 +20,7 @@ package org.keycloak.authz.server.services.core;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.keycloak.authz.core.Identity;
+import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.models.ClientSessionModel;
 import org.keycloak.models.KeycloakSession;
@@ -29,7 +29,6 @@ import org.keycloak.models.UserModel;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.managers.AppAuthManager;
-import org.keycloak.services.managers.AuthenticationManager;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -37,6 +36,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
+import static org.keycloak.authz.server.services.core.util.Tokens.getAccessToken;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -56,17 +57,6 @@ public class KeycloakIdentity implements Identity {
         return new KeycloakIdentity(token, keycloakSession);
     }
 
-    private static AccessToken getAccessToken(KeycloakSession keycloakSession, RealmModel realm) {
-        AppAuthManager authManager = new AppAuthManager();
-        AuthenticationManager.AuthResult authResult = authManager.authenticateBearerToken(keycloakSession, realm, keycloakSession.getContext().getUri(), keycloakSession.getContext().getConnection(), keycloakSession.getContext().getRequestHeaders());
-
-        if (authResult != null) {
-            return authResult.getToken();
-        }
-
-        return null;
-    }
-
     private KeycloakIdentity(AccessToken accessToken, KeycloakSession keycloakSession) {
         this.accessToken = accessToken;
         this.keycloakSession = keycloakSession;
@@ -80,12 +70,6 @@ public class KeycloakIdentity implements Identity {
         }
 
         return this.accessToken.getSubject();
-    }
-
-    @Override
-    public String getResourceServerId() {
-        ClientSessionModel clientSession = this.keycloakSession.sessions().getClientSession(this.accessToken.getClientSession());
-        return clientSession.getClient().getId();
     }
 
     @Override
@@ -146,7 +130,6 @@ public class KeycloakIdentity implements Identity {
         return attributes;
     }
 
-    @Override
     public boolean isResourceServer() {
         ClientSessionModel clientSession = this.keycloakSession.sessions().getClientSession(this.accessToken.getClientSession());
         UserModel clientUser = this.keycloakSession.users().getUserByServiceAccountClient(clientSession.getClient());

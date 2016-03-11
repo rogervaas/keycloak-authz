@@ -1,9 +1,10 @@
 package org.keycloak.authz.core.policy;
 
-import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.model.ResourcePermission;
+import org.keycloak.authz.core.policy.provider.PolicyProvider;
 
 /**
- * <p>An {@link Evaluation} is mainly used by {@link org.keycloak.authz.core.policy.spi.PolicyProvider} in order to evaluate a single
+ * <p>An {@link Evaluation} is mainly used by {@link PolicyProvider} in order to evaluate a single
  * and specific {@link ResourcePermission} against the configured policies.
  *
  * <p>Differently than {@link EvaluationContext}, the {@link Evaluation} has narrow scope, specific for a single {@link ResourcePermission}.

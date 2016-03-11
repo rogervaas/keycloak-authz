@@ -23,7 +23,6 @@
     <modules>
         <module>ui</module>
         <module>services</module>
-        <module>client</module>
     </modules>
 
     <dependencyManagement>

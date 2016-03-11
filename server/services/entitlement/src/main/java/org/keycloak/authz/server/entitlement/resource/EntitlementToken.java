@@ -17,7 +17,6 @@
  */
 package org.keycloak.authz.server.entitlement.resource;
 
-import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.representations.JsonWebToken;
 
 import java.util.List;

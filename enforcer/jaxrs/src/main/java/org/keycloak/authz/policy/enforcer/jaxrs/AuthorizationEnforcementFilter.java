@@ -28,7 +28,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -37,32 +36,34 @@ import java.util.stream.Collectors;
 public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
 
     private final Map<Class<?>, Set<ResourceHolder>> protectedResources;
+    private final AuthzClient authzClient;
 
     @Context
     private ResourceInfo resourceInfo;
 
     public AuthorizationEnforcementFilter(Map<Class<?>, Set<ResourceHolder>> protectedResources) {
         this.protectedResources = protectedResources;
+        this.authzClient = AuthzClient.create();
     }
 
     @Override
     public void filter(ContainerRequestContext requestContext) throws IOException {
-        if (isProtectedResource()) {
+        if (isProtectedResource(this.resourceInfo)) {
             try {
-                enforceAuthorization(requestContext);
+                enforceAuthorization(requestContext, this.resourceInfo);
             } catch (Exception e) {
                 throw new RuntimeException("Failed to enforce authorization in resource type[" + this.resourceInfo.getResourceClass() + "].", e);
             }
         }
     }
 
-    private  boolean isProtectedResource() {
-        return this.resourceInfo.getResourceClass().isAnnotationPresent(ProtectedResource.class);
+    private  boolean isProtectedResource(ResourceInfo resourceInfo) {
+        return resourceInfo.getResourceClass().isAnnotationPresent(ProtectedResource.class);
     }
 
-    private void enforceAuthorization(ContainerRequestContext requestContext) {
-        Class<?> resourceClass = this.resourceInfo.getResourceClass();
-        Method resourceMethod = this.resourceInfo.getResourceMethod();
+    private void enforceAuthorization(ContainerRequestContext requestContext, ResourceInfo resourceInfo) {
+        Class<?> resourceClass = resourceInfo.getResourceClass();
+        Method resourceMethod = resourceInfo.getResourceMethod();
         Enforce enforce = resourceMethod.getAnnotation(Enforce.class);
         String uri = buildUri(requestContext, enforce);
         Set<String> requiredScopes = new HashSet<>();
@@ -114,12 +115,11 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
             }
 
             if (targetResource == null) {
-                AuthzClient authzClient = createAuthzClient();
-                Set<String> search = authzClient.protection().resource().search("uri=" + uri);
+                Set<String> search = this.authzClient.protection().resource().search("uri=" + uri);
 
                 if (!search.isEmpty()) {
                     // resource does exist on the server, cache it
-                    targetResource = new ResourceHolder(resourceClass, authzClient.protection().resource().findById(search.iterator().next()).getResourceDescription());
+                    targetResource = new ResourceHolder(this.authzClient.protection().resource().findById(search.iterator().next()).getResourceDescription());
                     this.protectedResources.get(resourceClass).add(targetResource);
                 }
             }
@@ -164,6 +164,11 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
     private RequestingPartyToken extractRequestingPartyToken(ContainerRequestContext requestContext) {
         try {
             String authorizationHeader = requestContext.getHeaderString("Authorization");
+
+            if (authorizationHeader == null) {
+                return null;
+            }
+
             String expectedRpt = authorizationHeader.substring("Bearer".length() + 1);
             return new JWSInput(expectedRpt).readJsonContent(RequestingPartyToken.class);
         } catch (Exception e) {
@@ -197,9 +202,8 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
 
     private Response obtainPermissionTicket(String resourceId, String... scopes) {
         try {
-            AuthzClient authzClient = createAuthzClient();
-            PermissionResponse response = authzClient.protection().permission().forResource(new PermissionRequest(resourceId, scopes));
-            return Response.status(Response.Status.FORBIDDEN).header(HttpHeaders.WWW_AUTHENTICATE, "as_uri=\"" + authzClient.getServerConfiguration().getRptEndpoint() + "\"")
+            PermissionResponse response = this.authzClient.protection().permission().forResource(new PermissionRequest(resourceId, scopes));
+            return Response.status(Response.Status.FORBIDDEN).header(HttpHeaders.WWW_AUTHENTICATE, "as_uri=\"" + this.authzClient.getServerConfiguration().getRptEndpoint() + "\"")
                     .entity(response)
                     .build();
         } catch (WebApplicationException cre) {
@@ -219,9 +223,5 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
         } catch (Exception e) {
             throw new RuntimeException("Unexpected error when asking for permission.", e);
         }
-    }
-
-    private AuthzClient createAuthzClient() {
-        return AuthzClient.create();
     }
 }

@@ -1,5 +1,5 @@
 /**
- * Contains the types representing the model used to store data using a specific persistence provider implementation.
+ * Provides the domain model and any other type related with it
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */

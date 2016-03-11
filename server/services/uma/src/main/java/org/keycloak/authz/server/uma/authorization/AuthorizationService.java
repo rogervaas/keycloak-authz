@@ -20,14 +20,15 @@ package org.keycloak.authz.server.uma.authorization;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.Identity;
+import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
 import org.keycloak.authz.core.policy.ExecutionContext;
 import org.keycloak.authz.server.services.core.KeycloakIdentity;
+import org.keycloak.authz.server.services.core.util.Tokens;
 import org.keycloak.authz.server.uma.protection.permission.PermissionTicket;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.jose.jws.JWSInput;
@@ -36,8 +37,6 @@ import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.services.ErrorResponseException;
-import org.keycloak.services.managers.AppAuthManager;
-import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.resources.Cors;
 
 import javax.ws.rs.Consumes;
@@ -102,10 +101,10 @@ public class AuthorizationService {
         List<Scope> scopes = new ArrayList<>();
 
         for (String scopeName : ticket.getScopes()) {
-            scopes.add(this.authorizationManager.getStoreFactory().scope().findByName(scopeName));
+            scopes.add(this.authorizationManager.getStoreFactory().getScopeStore().findByName(scopeName));
         }
 
-        ResourcePermission permission = new ResourcePermission(this.authorizationManager.getStoreFactory().resource().findById(ticket.getResourceSetId()), scopes);
+        ResourcePermission permission = new ResourcePermission(this.authorizationManager.getStoreFactory().getResourceStore().findById(ticket.getResourceSetId()), scopes);
 
         return new DefaultEvaluationContext(identity, this.realm, Arrays.asList(permission), ExecutionContext.EMPTY);
     }
@@ -124,8 +123,11 @@ public class AuthorizationService {
                 return new Permission(permission.getResource().getId(), scopes);
             }
         }).collect(Collectors.toList());
+
+        AccessToken accessToken = Tokens.getAccessToken(this.keycloakSession, this.realm);
+
         return new JWSBuilder().jsonContent(new RequestingPartyToken(
-                identity.getId(),
+                identity.getId(), accessToken,
                 permissions.toArray(new Permission[permissions.size()]))).rsa256(this.realm.getPrivateKey()
         );
     }

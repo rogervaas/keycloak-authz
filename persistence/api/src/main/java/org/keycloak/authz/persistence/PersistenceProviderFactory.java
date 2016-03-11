@@ -1,6 +1,6 @@
 package org.keycloak.authz.persistence;
 
-import org.keycloak.authz.core.store.spi.PersistenceProvider;
+import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.authz.persistence.syncronization.ClientApplicationSynchronizer;
 import org.keycloak.authz.persistence.syncronization.RealmSynchronizer;
 import org.keycloak.authz.persistence.syncronization.Synchronizer;
@@ -18,7 +18,7 @@ import java.util.Map;
  */
 public interface PersistenceProviderFactory {
 
-    PersistenceProvider create(KeycloakSession keycloakSession);
+    StoreFactory create(KeycloakSession keycloakSession);
 
     default void registerSynchronizationListeners(KeycloakSessionFactory factory) {
         Map<Class<? extends ProviderEvent>, Synchronizer> synchronizers = new HashMap<>();

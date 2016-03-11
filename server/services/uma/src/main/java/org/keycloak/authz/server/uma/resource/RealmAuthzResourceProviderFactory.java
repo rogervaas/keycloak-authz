@@ -19,11 +19,11 @@ package org.keycloak.authz.server.uma.resource;
 
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.Config;
-import org.keycloak.authz.core.policy.spi.PolicyProviderFactory;
-import org.keycloak.authz.core.store.spi.PersistenceProvider;
+import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
+import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.authz.persistence.PersistenceProviderFactory;
-import org.keycloak.authz.server.uma.KeycloakAuthorizationManager;
-import org.keycloak.authz.server.uma.UmaAuthorizationManager;
+import org.keycloak.authz.server.services.core.KeycloakAuthorizationManager;
 import org.keycloak.authz.server.uma.config.Configuration;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
@@ -57,7 +57,7 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
         return new RealmResourceProvider() {
             public Object getResource(final String pathName) {
                 if (pathName.equals("authz")) {
-                    RootResource resource = new RootResource(realm, createAuthorizationManager(realm, keycloakSession), keycloakSession);
+                    RootResource resource = new RootResource(realm, createAuthorizationManager(realm, keycloakSession), keycloakSession, createConfiguration(realm));
 
                     ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -98,10 +98,8 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
         return "keycloak-authz-restapi";
     }
 
-    private UmaAuthorizationManager createAuthorizationManager(RealmModel realm, KeycloakSession keycloakSession) {
-        return new KeycloakAuthorizationManager(this.persistenceProviderFactory.create(keycloakSession),
-                this.policyProviders,
-                createConfiguration(realm));
+    private Authorization createAuthorizationManager(RealmModel realm, KeycloakSession keycloakSession) {
+        return new KeycloakAuthorizationManager(this.persistenceProviderFactory.create(keycloakSession), this.policyProviders);
     }
 
     @Override
@@ -134,7 +132,7 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
             transaction.begin();
 
             ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach(providerFactory -> {
-                PersistenceProvider persistenceProvider = this.persistenceProviderFactory.create(session);
+                StoreFactory persistenceProvider = this.persistenceProviderFactory.create(session);
 
                 providerFactory.init(persistenceProvider.getPolicyStore());
 

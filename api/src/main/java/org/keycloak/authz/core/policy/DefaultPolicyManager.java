@@ -18,13 +18,13 @@
 package org.keycloak.authz.core.policy;
 
 import org.keycloak.authz.core.model.Policy;
+import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.ResourceServer.PolicyEnforcementMode;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.EvaluationResult.PolicyResult.Status;
-import org.keycloak.authz.core.policy.spi.PolicyProvider;
-import org.keycloak.authz.core.policy.spi.PolicyProviderFactory;
+import org.keycloak.authz.core.policy.provider.PolicyProvider;
+import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.PolicyStore;
 
 import java.util.ArrayList;
@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
+ * @see PolicyManager
  */
 public class DefaultPolicyManager implements PolicyManager {
 
@@ -80,7 +81,7 @@ public class DefaultPolicyManager implements PolicyManager {
                 Map<Policy, Boolean> decisions = new HashMap<>();
 
                 for (Policy associatedPolicy : policy.getAssociatedPolicies()) {
-                    PolicyProvider provider = getProviderFactory(associatedPolicy.getType()).create(associatedPolicy);
+                    PolicyProvider provider = this.providers.get(associatedPolicy.getType()).create(associatedPolicy);
 
                     if (provider != null) {
                         Evaluation evaluation = new Evaluation(permission, context) {
@@ -130,11 +131,6 @@ public class DefaultPolicyManager implements PolicyManager {
     @Override
     public void dispose() {
         this.providers.values().forEach(PolicyProviderFactory::dispose);
-    }
-
-    @Override
-    public PolicyProviderFactory getProviderFactory(String type) {
-        return this.providers.get(type);
     }
 
     private Map<Policy, EvaluationResult.PolicyResult> getEvaluationPolicies(ResourcePermission permission, EvaluationResult result) {

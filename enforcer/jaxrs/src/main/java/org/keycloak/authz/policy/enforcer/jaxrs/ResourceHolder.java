@@ -14,7 +14,7 @@ class ResourceHolder {
     private final ResourceRepresentation resource;
     private Set<RequestingPartyToken> permissions = new LinkedHashSet<>();
 
-    ResourceHolder(Class<?> resourceType, ResourceRepresentation resource) {
+    ResourceHolder(ResourceRepresentation resource) {
         this.resource = resource;
     }
 

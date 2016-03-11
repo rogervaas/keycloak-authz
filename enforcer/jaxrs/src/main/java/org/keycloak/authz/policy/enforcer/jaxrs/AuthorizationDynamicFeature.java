@@ -1,7 +1,6 @@
 package org.keycloak.authz.policy.enforcer.jaxrs;
 
 import org.keycloak.authz.client.AuthzClient;
-import org.keycloak.authz.client.representation.RegistrationResponse;
 import org.keycloak.authz.client.representation.ResourceRepresentation;
 import org.keycloak.authz.client.representation.ScopeRepresentation;
 import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedResource;
@@ -13,7 +12,6 @@ import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -25,12 +23,12 @@ import java.util.stream.Collectors;
 @Provider
 public class AuthorizationDynamicFeature implements DynamicFeature {
 
-    private final AuthzClient.ProtectionClient protectionClient;
     private final Map<Class<?>, Set<ResourceHolder>> protectedResources = new HashMap<>();
+    private final AuthzClient.ProtectionClient protectionClient;
     private final AuthorizationEnforcementFilter authorizationEnforcer;
 
     public AuthorizationDynamicFeature() {
-        this.protectionClient = createProtectionClient();
+        this.protectionClient = AuthzClient.create().protection();
         this.authorizationEnforcer = new AuthorizationEnforcementFilter(this.protectedResources);
     }
 
@@ -55,7 +53,7 @@ public class AuthorizationDynamicFeature implements DynamicFeature {
                     }
                 }
 
-                holders.add(new ResourceHolder(resourceClass, resolveResourceId(protectedResource)));
+                holders.add(new ResourceHolder(resolveResourceId(protectedResource)));
             } catch (WebApplicationException cre) {
                 throw new RuntimeException("Could not register protected resource. Server returned: [" + cre.getResponse().readEntity(String.class), cre);
             } catch (Exception e) {
@@ -75,17 +73,10 @@ public class AuthorizationDynamicFeature implements DynamicFeature {
             Set<ScopeRepresentation> scopes = Arrays.asList(protectedResource.scopes()).stream()
                     .map(protectedScope -> new ScopeRepresentation(protectedScope.name(), protectedScope.uri()))
                     .collect(Collectors.toSet());
-            ResourceRepresentation resource = new ResourceRepresentation(protectedResource.name(), scopes, protectedResource.uri(), protectedResource.type());
-            RegistrationResponse response = this.protectionClient.resource().create(resource);
 
-            return resource;
+            return new ResourceRepresentation(protectedResource.name(), scopes, protectedResource.uri(), protectedResource.type());
         }
 
-        return createProtectionClient().resource().findById(search.iterator().next()).getResourceDescription();
+        return this.protectionClient.resource().findById(search.iterator().next()).getResourceDescription();
     }
-
-    private AuthzClient.ProtectionClient createProtectionClient() {
-        return AuthzClient.create().protection();
-    }
-
 }

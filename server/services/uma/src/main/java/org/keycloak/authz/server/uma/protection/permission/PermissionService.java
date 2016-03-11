@@ -56,7 +56,7 @@ public class PermissionService {
             return ErrorResponse.create("invalid_resource_set_id");
         }
 
-        Resource resource = this.authorizationManager.getStoreFactory().resource().findById(resourceSetId);
+        Resource resource = this.authorizationManager.getStoreFactory().getResourceStore().findById(resourceSetId);
 
         if (resource == null) {
             return ErrorResponse.create("nonexistent_resource_set_id");

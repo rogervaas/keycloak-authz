@@ -17,6 +17,7 @@
         <module>persistence</module>
         <module>provider</module>
         <module>server</module>
+        <module>client</module>
         <module>enforcer</module>
         <module>examples</module>
     </modules>
