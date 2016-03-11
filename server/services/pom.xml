@@ -17,7 +17,7 @@
     <description>KeyCloak Authz: Server Services Parent</description>
 
     <modules>
-        <module>core</module>
+        <module>common</module>
         <module>admin</module>
         <module>entitlement</module>
         <module>uma</module>

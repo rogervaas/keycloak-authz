@@ -45,7 +45,12 @@ import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -112,7 +117,7 @@ public class EntitlementResource {
 
         List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
 
-        return Cors.add(this.request, Response.status(Response.Status.CREATED).entity(new EntitlementResponse(createRequestingPartyToken(identity, evaluate)))).allowedOrigins("*").build();
+        return Cors.add(this.request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, evaluate)))).allowedOrigins("*").build();
     }
 
     private String createRequestingPartyToken(Identity identity, List<EvaluationResult> evaluation) {
@@ -134,9 +139,34 @@ public class EntitlementResource {
             }
         }).collect(Collectors.toList());
 
+        Map<String, Permission> perms = new HashMap<>();
+
+        permissions.forEach(new Consumer<Permission>() {
+            @Override
+            public void accept(Permission permission) {
+                Permission evalPermission = perms.get(permission.getResourceSetId());
+
+                if (evalPermission == null) {
+                    evalPermission = permission;
+                    perms.put(permission.getResourceSetId(), evalPermission);
+                }
+
+                final Permission finalEvalPermission = evalPermission;
+
+                permission.getScopes().forEach(new Consumer<String>() {
+                    @Override
+                    public void accept(String s) {
+                        if (!finalEvalPermission.getScopes().contains(s)) {
+                            finalEvalPermission.getScopes().add(s);
+                        }
+                    }
+                });
+            }
+        });
+
         return new JWSBuilder().jsonContent(new EntitlementToken(
                 identity.getId(),
-                permissions)).rsa256(this.realm.getPrivateKey()
+                perms.values().stream().collect(Collectors.toList()))).rsa256(this.realm.getPrivateKey()
         );
     }
 

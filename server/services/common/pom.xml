@@ -11,11 +11,11 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
 
-    <artifactId>keycloak-authz-server-services-core</artifactId>
+    <artifactId>keycloak-authz-server-services-common</artifactId>
     <packaging>jar</packaging>
 
-    <name>KeyCloak Authz: Services Core</name>
-    <description>KeyCloak Authz: Services Core</description>
+    <name>KeyCloak Authz: Services Common</name>
+    <description>KeyCloak Authz: Services Common</description>
 
     <dependencies>
         <dependency>

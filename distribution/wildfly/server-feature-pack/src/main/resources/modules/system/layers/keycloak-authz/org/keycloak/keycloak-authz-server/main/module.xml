@@ -6,7 +6,7 @@
         <artifact name="${org.keycloak:keycloak-authz-server-uma-services}"/>
         <artifact name="${org.keycloak:keycloak-authz-server-admin-services}"/>
         <artifact name="${org.keycloak:keycloak-authz-server-entitlement-services}"/>
-        <artifact name="${org.keycloak:keycloak-authz-server-services-core}"/>
+        <artifact name="${org.keycloak:keycloak-authz-server-services-common}"/>
         <artifact name="${org.keycloak:keycloak-authz-api}"/>
         <artifact name="${org.keycloak:keycloak-authz-drools}"/>
         <artifact name="${org.keycloak:keycloak-authz-identity}"/>

@@ -50,6 +50,28 @@ module.controller('GlobalCtrl', function ($scope, $http, $route, $location, Albu
             $route.reload();
         });
     }
+
+    $scope.showRpt = function() {
+        document.getElementById("output").innerHTML = JSON.stringify(jwt_decode(Identity.uma.rpt.rpt), null, '  ');
+    }
+
+    $scope.showAccessToken = function() {
+        document.getElementById("output").innerHTML = JSON.stringify(jwt_decode(Identity.authc.token), null, '  ');
+    }
+
+    $scope.requestEntitlements = function() {
+        var request = new XMLHttpRequest();
+
+        request.open("GET", "http://localhost:8080/auth/realms/photoz/entitlement?resourceServerId=photoz-restful-api", true);
+        request.setRequestHeader("Authorization", "Bearer " + Identity.authc.token);
+        request.onreadystatechange = function() {
+            if(request.readyState == 4 && request.status == 200) {
+                Identity.uma.rpt = JSON.parse(request.responseText);
+            }
+        }
+
+        request.send(null);
+    }
 });
 module.controller('AlbumCtrl', function ($scope, $http, $routeParams, $location, Album) {
     $scope.album = {};
@@ -87,12 +109,17 @@ module.factory('AdminAlbum', ['$resource', function ($resource) {
 module.factory('authInterceptor', function ($q, Identity) {
     return {
         request: function (config) {
+            if (config.bypass) {
+                return config;
+            }
+
             var deferred = $q.defer();
+
             if (Identity.authc.token) {
                 Identity.authz.updateToken(60).success(function () {
                     config.headers = config.headers || {};
 
-                    if (Identity.uma && Identity.uma.rpt) {
+                    if (Identity.uma && Identity.uma.rpt && config.url.indexOf('/authz/') == -1) {
                         console.log("Sending rpt");
                         config.headers.Authorization = 'Bearer ' + Identity.uma.rpt.rpt;
                     } else {
