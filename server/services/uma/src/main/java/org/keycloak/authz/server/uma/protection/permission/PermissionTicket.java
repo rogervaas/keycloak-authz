@@ -17,8 +17,10 @@
  */
 package org.keycloak.authz.server.uma.protection.permission;
 
-import java.util.Set;
+import org.keycloak.authz.core.model.util.Identifiers;
 import org.keycloak.representations.JsonWebToken;
+
+import java.util.Set;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -29,18 +31,14 @@ public class PermissionTicket extends JsonWebToken {
     private final String resourceSetId;
 
     public PermissionTicket() {
-        this(null, null, null);
+        this.scopes = null;
+        this.resourceSetId = null;
     }
 
-    public PermissionTicket(String id, String resourceSetId, Set<String> scopes) {
-        id(id);
-        //TODO: set expiration
+    public PermissionTicket(String resourceSetId, Set<String> scopes) {
+        id(Identifiers.generateId());
         this.resourceSetId = resourceSetId;
         this.scopes = scopes;
-    }
-
-    public String getId() {
-        return this.id;
     }
 
     public Set<String> getScopes() {

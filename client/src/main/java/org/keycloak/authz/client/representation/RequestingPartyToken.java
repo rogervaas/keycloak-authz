@@ -19,8 +19,6 @@ package org.keycloak.authz.client.representation;
 
 import org.keycloak.representations.JsonWebToken;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -29,27 +27,41 @@ import java.util.List;
 public class RequestingPartyToken extends JsonWebToken {
 
     private final List<Permission> permissions;
-    private final String requestingPartyId;
     private String accessToken;
 
     public RequestingPartyToken() {
         this.permissions = null;
-        this.requestingPartyId = null;
     }
 
     public List<Permission> getPermissions() {
         return this.permissions;
     }
 
-    public String getRequestingPartyId() {
-        return this.requestingPartyId;
-    }
-
-    public boolean isValid() {
-        return getType() != null && getType().equals("rpt") &&  isActive();
-    }
-
     public String getAccessToken() {
         return this.accessToken;
+    }
+
+    public boolean isValid(String... types) {
+        return isOfType(types) &&  isActive();
+    }
+
+    private boolean isOfType(String[] types) {
+        if (getType() == null) {
+            return false;
+        }
+
+        if (types.length == 0) {
+            types = new String[] {"rpt", "kc_ett"};
+        }
+
+        boolean validType = false;
+
+        for (String type : types) {
+            if (getType().equals(type)) {
+                validType = true;
+                break;
+            }
+        }
+        return validType;
     }
 }

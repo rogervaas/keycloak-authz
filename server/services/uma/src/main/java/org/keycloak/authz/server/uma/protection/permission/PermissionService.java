@@ -80,7 +80,7 @@ public class PermissionService {
     }
 
     private String createPermissionTicket(PermissionRequest request) {
-        return new JWSBuilder().jsonContent(new PermissionTicket(UUID.randomUUID().toString(), request.getResourceSetId(), request.getScopes()))
+        return new JWSBuilder().jsonContent(new PermissionTicket(request.getResourceSetId(), request.getScopes()))
                 .rsa256(this.realm.getPrivateKey());
     }
 }

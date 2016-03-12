@@ -21,18 +21,20 @@ import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.identity.Identity;
-import org.keycloak.authz.core.model.Resource;
+import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
 import org.keycloak.authz.core.policy.ExecutionContext;
+import org.keycloak.authz.server.services.core.DefaultExecutionContext;
+import org.keycloak.authz.server.services.core.util.Tokens;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.services.ErrorResponseException;
 import org.keycloak.services.resources.Cors;
 
@@ -46,15 +48,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -85,92 +81,72 @@ public class EntitlementResource {
 
     @GET
     @Produces("application/json")
-    public Response resource(@QueryParam("resourceServerId") String resourceServerId) {
+    public Response get(@QueryParam("resourceServerId") String resourceServerId) {
+        if (resourceServerId == null) {
+            throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Requires resourceServerId request parameter.", Response.Status.BAD_REQUEST);
+        }
+
         if (!this.identity.hasRole("kc_entitlement")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires kc_entitlement scope.", Response.Status.FORBIDDEN);
         }
 
         ClientModel client = this.realm.getClientByClientId(resourceServerId);
+
+        if (client == null) {
+            throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Identifier is not associated with any client and resource server.", Response.Status.BAD_REQUEST);
+        }
+
         ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(client.getId());
         ArrayList<ResourcePermission> permissions = new ArrayList<>();
 
         permissions.addAll(this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(resourceServer.getId()).stream()
-                .flatMap(new Function<Resource, Stream<ResourcePermission>>() {
-                    @Override
-                    public Stream<ResourcePermission> apply(Resource resource) {
-                        List<Scope> scopes = resource.getScopes();
+                .flatMap(resource -> {
+                    List<Scope> scopes = resource.getScopes();
 
-                        if (scopes.isEmpty()) {
-                            return Arrays.asList(new ResourcePermission(resource, Collections.emptyList())).stream();
-                        }
-
-                        return scopes.stream().map(new Function<Scope, ResourcePermission>() {
-                            @Override
-                            public ResourcePermission apply(Scope scope) {
-                                return new ResourcePermission(resource, Arrays.asList(scope));
-                            }
-                        });
+                    if (scopes.isEmpty()) {
+                        return Arrays.asList(new ResourcePermission(resource, Collections.emptyList())).stream();
                     }
+
+                    return scopes.stream().map(scope -> new ResourcePermission(resource, Arrays.asList(scope)));
                 }).collect(Collectors.toList()));
 
-        EvaluationContext evaluationContext = createEvaluationContext(identity, permissions);
-
+        EvaluationContext evaluationContext = new DefaultEvaluationContext(identity, this.realm, permissions, new DefaultExecutionContext(this.keycloakSession, this.realm));
         List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
 
         return Cors.add(this.request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, evaluate)))).allowedOrigins("*").build();
     }
 
     private String createRequestingPartyToken(Identity identity, List<EvaluationResult> evaluation) {
-        List<Permission> permissions = evaluation.stream().filter(new Predicate<EvaluationResult>() {
-            @Override
-            public boolean test(EvaluationResult evaluationResult) {
-                return evaluationResult.getStatus().equals(EvaluationResult.PolicyResult.Status.GRANTED);
-            }
-        }).map(new Function<EvaluationResult, Permission>() {
-            @Override
-            public Permission apply(EvaluationResult evaluationResult) {
-                ResourcePermission permission = evaluationResult.getPermission();
-                return new Permission(permission.getResource().getId(), permission.getScopes().stream().map(new Function<Scope, String>() {
-                    @Override
-                    public String apply(Scope scope) {
-                        return scope.getName();
-                    }
-                }).collect(Collectors.toList()));
-            }
-        }).collect(Collectors.toList());
+        List<Permission> permissions = evaluation.stream()
+                .filter(evaluationResult -> evaluationResult.getStatus().equals(EvaluationResult.PolicyResult.Status.GRANTED))
+                .map(evaluationResult -> {
+                    ResourcePermission permission = evaluationResult.getPermission();
+                    return new Permission(permission.getResource().getId(), permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList()));
+                }).collect(Collectors.toList());
 
         Map<String, Permission> perms = new HashMap<>();
 
-        permissions.forEach(new Consumer<Permission>() {
-            @Override
-            public void accept(Permission permission) {
-                Permission evalPermission = perms.get(permission.getResourceSetId());
+        permissions.forEach(permission -> {
+            Permission evalPermission = perms.get(permission.getResourceSetId());
 
-                if (evalPermission == null) {
-                    evalPermission = permission;
-                    perms.put(permission.getResourceSetId(), evalPermission);
-                }
-
-                final Permission finalEvalPermission = evalPermission;
-
-                permission.getScopes().forEach(new Consumer<String>() {
-                    @Override
-                    public void accept(String s) {
-                        if (!finalEvalPermission.getScopes().contains(s)) {
-                            finalEvalPermission.getScopes().add(s);
-                        }
-                    }
-                });
+            if (evalPermission == null) {
+                evalPermission = permission;
+                perms.put(permission.getResourceSetId(), evalPermission);
             }
+
+            List<String> scopes = evalPermission.getScopes();
+
+            permission.getScopes().forEach(s -> {
+                if (!scopes.contains(s)) {
+                    scopes.add(s);
+                }
+            });
         });
 
-        return new JWSBuilder().jsonContent(new EntitlementToken(
-                identity.getId(),
-                perms.values().stream().collect(Collectors.toList()))).rsa256(this.realm.getPrivateKey()
-        );
-    }
+        AccessToken accessToken = Tokens.getAccessToken(this.keycloakSession, this.realm);
+        String accessTokenAsString = Tokens.getAccessTokenAsString(this.keycloakSession);
 
-    private EvaluationContext createEvaluationContext(Identity identity, List<ResourcePermission> permissions) {
-        return new DefaultEvaluationContext(identity, this.realm, permissions, ExecutionContext.EMPTY);
+        return new JWSBuilder().jsonContent(new EntitlementToken(perms.values().stream().collect(Collectors.toList()), accessToken, accessTokenAsString))
+                .rsa256(this.realm.getPrivateKey());
     }
 }

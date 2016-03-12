@@ -17,6 +17,8 @@
  */
 package org.keycloak.authz.server.entitlement.resource;
 
+import org.keycloak.authz.core.model.util.Identifiers;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.JsonWebToken;
 
 import java.util.List;
@@ -27,23 +29,35 @@ import java.util.List;
 public class EntitlementToken extends JsonWebToken {
 
     private final List<Permission> permissions;
-    private final String requestingPartyId;
+    private final String accessToken;
 
     public EntitlementToken() {
-        this(null, null);
+        this.permissions = null;
+        this.accessToken = null;
     }
 
-    public EntitlementToken(String requestingPartyId, List<Permission> permissions) {
-        this.requestingPartyId = requestingPartyId;
+    public EntitlementToken(List<Permission> permissions, AccessToken accessToken, String accessTokenAsString) {
         this.permissions = permissions;
-        type("kc_ett");
-    }
+        this.accessToken = accessTokenAsString;
 
-    public String getRequestingPartyId() {
-        return this.requestingPartyId;
+        type("kc_ett");
+        id(Identifiers.generateId());
+        subject(accessToken.getSubject());
+        expiration(accessToken.getExpiration());
+        notBefore(accessToken.getNotBefore());
+        issuedAt(accessToken.getIssuedAt());
+        issuedFor(accessToken.getIssuedFor());
     }
 
     public List<Permission> getPermissions() {
         return this.permissions;
+    }
+
+    public String getAccessToken() {
+        return this.accessToken;
+    }
+
+    public boolean isValid() {
+        return getType() != null && getType().equals("kc_ett") &&  isActive();
     }
 }

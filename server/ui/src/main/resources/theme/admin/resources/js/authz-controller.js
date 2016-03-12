@@ -569,7 +569,7 @@ module.controller('ResourceServerPolicyScopeDetailCtrl', function($scope, $route
         },
 
         onCreate : function() {
-            $scope.policy.config.resources = JSON.stringify($scope.policy.config.resources);
+            $scope.policy.config.resources = JSON.stringify([$scope.policy.config.resources]);
             $scope.policy.config.scopes = JSON.stringify($scope.policy.config.scopes);
             $scope.policy.config.applyPolicies = JSON.stringify($scope.policy.config.applyPolicies);
         }
@@ -920,16 +920,24 @@ module.controller('PolicyEvaluateCtrl', function($scope, $http, $route, $locatio
             ]
         },
         {
-            key : "kc.authz.context.network.ip_address",
-            name : "IPv4 Address"
+            key : "kc.authz.context.authc.realm",
+            name : "Realm"
         },
         {
             key : "kc.authz.context.time.date_time",
             name : "Date/Time (MM/dd/yyyy hh:mm:ss)"
         },
         {
-            key : "kc.authz.context.client.device_type",
-            name : "Client Device"
+            key : "kc.authz.context.client.network.ip_address",
+            name : "Client IPv4 Address"
+        },
+        {
+            key : "kc.authz.context.client.network.host",
+            name : "Client Host"
+        },
+        {
+            key : "kc.authz.context.client.user_agent",
+            name : "Client/User Agent"
         }
     ];
 

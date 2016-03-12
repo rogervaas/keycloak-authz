@@ -22,19 +22,19 @@ import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.model.ResourcePermission;
+import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
 import org.keycloak.authz.core.policy.ExecutionContext;
+import org.keycloak.authz.server.services.core.DefaultExecutionContext;
 import org.keycloak.authz.server.services.core.KeycloakIdentity;
 import org.keycloak.authz.server.services.core.util.Tokens;
 import org.keycloak.authz.server.uma.protection.permission.PermissionTicket;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
-import org.keycloak.jose.jws.crypto.RSAProvider;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.representations.AccessToken;
@@ -47,16 +47,14 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -104,36 +102,44 @@ public class AuthorizationService {
     }
 
     private EvaluationContext createEvaluationContext(Identity identity, PermissionTicket ticket, AuthorizationRequest request) {
-        Map<String, Set<String>> perms = new HashMap<>();
+        Map<String, Set<String>> permissionsToEvaluate = new HashMap<>();
 
-        perms.put(ticket.getResourceSetId(), ticket.getScopes());
+        permissionsToEvaluate.put(ticket.getResourceSetId(), ticket.getScopes());
 
         String rpt = request.getRpt();
 
         if (rpt != null && !"".equals(rpt)) {
-            try {
-                RequestingPartyToken requestingPartyToken = new JWSInput(rpt).readJsonContent(RequestingPartyToken.class);
+            if (!Tokens.verifySignature(rpt, this.realm.getPublicKey())) {
+                throw new ErrorResponseException("invalid_rpt", "RPT signature is invalid", Response.Status.BAD_REQUEST);
+            }
 
+            RequestingPartyToken requestingPartyToken;
+
+            try {
+                requestingPartyToken = new JWSInput(rpt).readJsonContent(RequestingPartyToken.class);
+            } catch (JWSInputException e) {
+                throw new ErrorResponseException("invalid_rpt", "Invalid RPT", Response.Status.BAD_REQUEST);
+            }
+
+            if (requestingPartyToken.isValid()) {
                 requestingPartyToken.getPermissions().forEach(permission -> {
                     Resource resource = authorizationManager.getStoreFactory().getResourceStore().findById(permission.getResourceSetId());
 
                     if (resource != null) {
-                        Set<String> scopes = perms.get(permission.getResourceSetId());
+                        Set<String> scopes = permissionsToEvaluate.get(permission.getResourceSetId());
 
                         if (scopes == null) {
                             scopes = new HashSet<>();
-                            perms.put(permission.getResourceSetId(), scopes);
+                            permissionsToEvaluate.put(permission.getResourceSetId(), scopes);
                         }
 
                         scopes.addAll(permission.getScopes());
                     }
                 });
-            } catch (JWSInputException e) {
-                throw new RuntimeException("Could not parse existing RPT.", e);
             }
         }
 
-        List<ResourcePermission> permissions = perms.entrySet().stream().map(entry -> {
+        List<ResourcePermission> finalPermissions = permissionsToEvaluate.entrySet().stream().map(entry -> {
             Resource resource = authorizationManager.getStoreFactory().getResourceStore().findById(entry.getKey());
 
             if (resource != null) {
@@ -145,14 +151,9 @@ public class AuthorizationService {
             }
 
             return null;
-        }).filter(new Predicate<ResourcePermission>() {
-            @Override
-            public boolean test(ResourcePermission resourcePermission) {
-                return resourcePermission != null;
-            }
-        }).collect(Collectors.toList());
+        }).filter(resourcePermission -> resourcePermission != null).collect(Collectors.toList());
 
-        return new DefaultEvaluationContext(identity, this.realm, permissions, ExecutionContext.EMPTY);
+        return new DefaultEvaluationContext(identity, this.realm, finalPermissions, new DefaultExecutionContext(this.keycloakSession, this.realm));
     }
 
     private String createRequestingPartyToken(Identity identity, List<EvaluationResult> evaluation) {
@@ -164,25 +165,20 @@ public class AuthorizationService {
 
         AccessToken accessToken = Tokens.getAccessToken(this.keycloakSession, this.realm);
 
-        return new JWSBuilder().jsonContent(new RequestingPartyToken(
-                identity.getId(), accessToken, Tokens.getAccessTokenAsString(this.keycloakSession),
+        return new JWSBuilder().jsonContent(new RequestingPartyToken(accessToken, Tokens.getAccessTokenAsString(this.keycloakSession),
                 permissions.toArray(new Permission[permissions.size()]))).rsa256(this.realm.getPrivateKey()
         );
     }
 
     private PermissionTicket verifyPermissionTicket(AuthorizationRequest request) {
+        if (!Tokens.verifySignature(request.getTicket(), this.realm.getPublicKey())) {
+            throw new ErrorResponseException("invalid_ticket", "Ticket verification failed", Response.Status.BAD_REQUEST);
+        }
+
         try {
-            JWSInput jws = new JWSInput(request.getTicket());
-
-            if (!RSAProvider.verify(jws, this.realm.getPublicKey())) {
-                throw new ErrorResponseException("invalid_ticket", "Ticket verification failed", Response.Status.BAD_REQUEST);
-            }
-
-            //TODO: more validations are required, like issuer, audience, expiration and so forth.
-
-            return jws.readJsonContent(PermissionTicket.class);
-        } catch (Exception e) {
-            throw new ErrorResponseException("invalid_ticket", "Unexpected error while validating ticket.", Response.Status.BAD_REQUEST);
+            return new JWSInput(request.getTicket()).readJsonContent(PermissionTicket.class);
+        } catch (JWSInputException e) {
+            throw new ErrorResponseException("invalid_ticket", "Could not parse permission ticket.", Response.Status.INTERNAL_SERVER_ERROR);
         }
     }
 }

@@ -115,23 +115,22 @@ module.factory('authInterceptor', function ($q, Identity) {
 
             var deferred = $q.defer();
 
-            if (Identity.authc.token) {
-                Identity.authz.updateToken(60).success(function () {
-                    config.headers = config.headers || {};
+            Identity.authz.updateToken(5).success(function () {
+                config.headers = config.headers || {};
 
-                    if (Identity.uma && Identity.uma.rpt && config.url.indexOf('/authz/') == -1) {
-                        console.log("Sending rpt");
-                        config.headers.Authorization = 'Bearer ' + Identity.uma.rpt.rpt;
-                    } else {
-                        console.log("Sending at");
-                        config.headers.Authorization = 'Bearer ' + Identity.authc.token;
-                    }
+                if (Identity.uma && Identity.uma.rpt && config.url.indexOf('/album') != -1) {
+                    console.log("Sending rpt");
+                    config.headers.Authorization = 'Bearer ' + Identity.uma.rpt.rpt;
+                } else {
+                    console.log("Sending at");
+                    config.headers.Authorization = 'Bearer ' + Identity.authc.token;
+                }
 
-                    deferred.resolve(config);
-                }).error(function () {
-                    deferred.reject('Failed to refresh token');
-                });
-            }
+                deferred.resolve(config);
+            }).error(function () {
+                deferred.reject('Failed to refresh token');
+            });
+
             return deferred.promise;
         }
     };
@@ -166,38 +165,43 @@ module.factory('errorInterceptor', function ($q, $injector) {
                 logout();
             } else if (response.status == 403) {
                 console.log("Forbidden");
+                console.log(response);
+                var deferred = $q.defer();
 
-                var authenticateHeader = response.headers("WWW-Authenticate");
+                if (response.config.url.indexOf('/album') != -1) {
+                    var authenticateHeader = response.headers("WWW-Authenticate");
 
-                if (authenticateHeader) {
-                    var deferred = $q.defer();
-                    var data = JSON.stringify({
-                        ticket: response.data.ticket,
-                        rpt: Identity.uma ? Identity.uma.rpt.rpt : ""
-                    });
+                    if (authenticateHeader) {
+                        var data = JSON.stringify({
+                            ticket: response.data.ticket,
+                            rpt: Identity.uma ? Identity.uma.rpt.rpt : ""
+                        });
 
-                    Identity.uma = null;
+                        Identity.uma = null;
 
-                    $injector.get("$http").post('http://localhost:8080/auth/realms/photoz/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
-                            .then(function(authzResponse) {
+                        $injector.get("$http").post('http://localhost:8080/auth/realms/photoz/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
+                            .then(function (authzResponse) {
                                 if (authzResponse.data) {
                                     Identity.uma = {};
                                     Identity.uma.rpt = authzResponse.data;
                                     console.log(authzResponse.data);
-                                    $injector.get("$http")(response.config).then(function(response) {
+                                    $injector.get("$http")(response.config).then(function (response) {
                                         deferred.resolve(response);
-                                    },function(response) {
+                                    }, function (response) {
                                         deferred.reject();
                                     });
                                 } else {
                                     deferred.reject();
                                 }
-                            }, function(response) {
+                            }, function (response) {
                                 deferred.reject();
                                 alert('Oops, you are probably missing some permission. Contact the administrator.');
                                 return;
                             });
-                    return deferred.promise;
+                        return deferred.promise;
+                    }
+                } else {
+                    $q.resolve(response);
                 }
             } else if (response.status == 404) {
                 alert("Not found");

@@ -17,6 +17,7 @@
  */
 package org.keycloak.authz.server.uma.authorization;
 
+import org.keycloak.authz.core.model.util.Identifiers;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.JsonWebToken;
 
@@ -30,22 +31,14 @@ import java.util.List;
 public class RequestingPartyToken extends JsonWebToken {
 
     private final List<Permission> permissions;
-    private final String requestingPartyId;
     private final String accessToken;
 
     public RequestingPartyToken() {
         this.permissions = null;
-        this.requestingPartyId = null;
         this.accessToken = null;
     }
 
-    public RequestingPartyToken(String requestingPartyId, AccessToken accessToken, String accessTokenString, Permission... permissions) {
-        if (requestingPartyId == null) {
-            throw new IllegalArgumentException("Requesting party identifier is null.");
-        }
-
-        this.requestingPartyId = requestingPartyId;
-
+    public RequestingPartyToken(AccessToken accessToken, String accessTokenString, Permission... permissions) {
         if (permissions != null) {
             this.permissions = new ArrayList<>(Arrays.asList(permissions));
         } else {
@@ -55,6 +48,9 @@ public class RequestingPartyToken extends JsonWebToken {
         this.accessToken = accessTokenString;
 
         type("rpt");
+
+        id(Identifiers.generateId());
+        subject(accessToken.getSubject());
         expiration(accessToken.getExpiration());
         notBefore(accessToken.getNotBefore());
         issuedAt(accessToken.getIssuedAt());
@@ -65,11 +61,11 @@ public class RequestingPartyToken extends JsonWebToken {
         return this.permissions;
     }
 
-    public String getRequestingPartyId() {
-        return this.requestingPartyId;
-    }
-
     public String getAccessToken() {
         return this.accessToken;
+    }
+
+    public boolean isValid() {
+        return getType() != null && getType().equals("rpt") &&  isActive();
     }
 }

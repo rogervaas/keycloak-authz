@@ -179,6 +179,7 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
             RequestingPartyToken rpt = jwsInput.readJsonContent(RequestingPartyToken.class);
 
             if (!rpt.isValid()) {
+                System.out.println("Invalid RPT: " + rpt.getType());
                 return null;
             }
 
@@ -201,7 +202,7 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
         return new SecurityContext() {
             @Override
             public Principal getUserPrincipal() {
-                return new KeycloakPrincipal<>(rpt.getRequestingPartyId(), new KeycloakSecurityContext(accessTokenString, accessToken, null, null));
+                return new KeycloakPrincipal<>(rpt.getSubject(), new KeycloakSecurityContext(accessTokenString, accessToken, null, null));
             }
 
             @Override
@@ -234,7 +235,7 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
                 ErrorResponse errorResponse = new ObjectMapper().readValue(serverResponse, ErrorResponse.class);
 
                 if (errorResponse.getError().equals("nonexistent_resource_set_id")) {
-                    throw new RuntimeException("Resource not registered in the server.");
+                    return Response.status(Response.Status.BAD_REQUEST).entity("Resource not registered in the server.").build();
                 }
             } catch (Exception ignore) {
                 // ignore

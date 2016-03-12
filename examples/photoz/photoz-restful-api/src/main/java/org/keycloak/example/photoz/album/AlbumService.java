@@ -84,6 +84,7 @@ public class AlbumService {
 
     @GET
     @Produces("application/json")
+    @Enforce(scopes= AlbumService.SCOPE_ALBUM_VIEW)
     public Response findAll(@Context SecurityContext securityContext) {
         return Response.ok(this.entityManager.createQuery("from Album where userId = '" + securityContext.getUserPrincipal().getName() + "'").getResultList()).build();
     }
