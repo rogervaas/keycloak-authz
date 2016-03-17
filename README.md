@@ -1,10 +1,10 @@
 # Keycloak Authorization Server
 
-This a temporary repository holding an Authorization Server based on [Keycloak](https://github.com/keycloak/keycloak).
+This a temporary repository for an Authorization Server based on [Keycloak](https://github.com/keycloak/keycloak).
 
 ## Overview
 
-This projects leverage Keycloak Authorization capabilities in order to support fine-grained permissions and policies with a mix
+This project leverages Keycloak Authorization capabilities in order to support fine-grained permissions and policies with a mix
 and match of different access control mechanisms such as:
 
 * Role-based
@@ -17,9 +17,10 @@ and match of different access control mechanisms such as:
 
 * Rule-based
     * JBoss Drools
+    * JavaScript
     * XACML (planned)
 
-The whole concept is based on a Keycloak client application acting as a resource server, which resources and its respective scopes
+The whole concept is based on a Keycloak client application acting as a resource server, which resources and their respective scopes
 are protected and ruled by a set of authorization policies. Any client application serving resources to its users can be considered a resource server,  
 where these resources are part of the assets of an application and the organization.
 
@@ -32,15 +33,15 @@ The authorization server is based on three main APIs:
 Based on some common authorization patterns, this authorization server provides the following:
 
 * Policy Administration Point (PAP)
-    * Provides a set of UIs, based on the Keycloak Administration Console, to manage resource servers, resources, scopes and policies.
+    * Provides a set of UIs based on the Keycloak Administration Console to manage resource servers, resources, scopes and policies.
     * Part of this also accomplished remotely through the use of the Protection API 
      
 * Policy Decision Point (PDP)
-    * Provides a distributable policy decision point, to where authorization requests are sent and policies are evaluated.
+    * Provides a distributable policy decision point, where authorization requests are sent to and policies are evaluated.
     * Part of this also accomplished remotely through the use of the Authorization API
     
 * Policy Enforcement point (PEP)
-    * Provides implementations for different technologies and platforms to actually enforce authorization policies on the resource server side.
+    * Provides implementations for different environments to actually enforce authorization policies on the resource server side.
       
 Instead of doing authorization by your own, this project provides a centralized but still distributable server to govern the protected resources
 and their respective policies within an application or organization using some well-known authorization patterns and standards such as OAuth2 and User-Managed Access (UMA).
@@ -52,17 +53,16 @@ with a high demand for information sharing.
 Being based on both OAuth2 and UMA concepts, this project can be used as great tool to:
 
 * Control your protected resources and the actions that can be performed on them
-* Centralize Policy Management
-* Support a centralized and RESTful-based Athorization Services for different platforms and environments    
+* Centralized Policy Management
+* Centralized and RESTful-based Athorization Services for different environments    
 * Audit and analyse authorization requests and decision results
-* Avoid replicate code across projects or redeploy your applications when your policies need to change
+* Avoid code replication across projects or redeploys of your applications when your policies need to change
 * Provide a better and more secure way to your users share information
 * Obligations and Advices
 * Alerts and Notifications
 * Authorization and Resource Sharing Flows
 
 Some of these features are planned or are being developed. Feel free to contribute :)
-
 
 ### The Protection API
 
@@ -72,15 +72,14 @@ and permissions for these resources.
 ### The Authorization API
 
 The **Authorization API** provides ways for any client application to ask for authorization for a given set of resources and/or any scopes. When
-asking for authorization, all policies associated with the resources and/or scopes being requested will be evaluated, as a result the server
+asking for authorization, all policies associated with the resources and/or scopes being requested will be evaluated. As a result the server
 will return a specific token that can finally be used to access a protected resource on a resource server.
 
 ### The Entitlements API
 
-The **Entitlements API** provides ways for any client application to ask for all the permissions for a given user, based on the policies
-associated with each resource. In other words, it provides for clients what an user is entitled to do in the scope of a given resource server, which resources
-and scopes can be accessed. Like the Authorization API, the result is also a specific token containing all the entitlements for an user, which can be used
-in turn to access the protected resources on the resource server.
+The **Entitlements API** provides ways for any client application to ask for all the permissions for a given user based on the policies
+associated with each resource or scope. In other words, it provides for clients what an user is entitled to do in the scope of a given resource server.  Like the 
+Authorization API, the result is also a specific token containing all the entitlements for an user, which can be used in turn to access the protected resources on the resource server.
 
 ## Build
 
@@ -101,7 +100,7 @@ Now you can clone and this project using the following command:
         
 ## Install and Start the Authz Server (Demo Distribution) 
 
-Once the project was built, you can obtain a distribution that can be used to start the AuthZ Server and run some example applications.
+Once the project is built, you can obtain a distribution that can be used to start the AuthZ Server and run an example application.
 
 The demo distribution is located at:
 
@@ -113,7 +112,7 @@ Now, extract that file and you'll have a full Keycloak Server with the AuthZ Ser
      
 Change ``/to/this/directory`` to the directory where you want to install the AuthZ Server.
 
-You should be able now to enter into the  directory where the AuthZ Server is installed and run the server.
+You should be able now to enter into the directory where the AuthZ Server is installed and run the server.
  
     cd /to/this/directory
     cd bin
@@ -132,11 +131,11 @@ The example application is located at:
  
     cd examples/photoz
     
-Basically, it is a project with three modules:
+Basically, it is a project containing three modules:
  
-* **photoz-restful-api**, providing a simple RESTFul API based on JAX-RS and acting as a regular **client application**.
-* **photoz-html5-client**, providing a HTML5+AngularJS client that will consume the RESTful API and acting as a **resource server**.
-* **photoz-authz-policy**, providing a simple project with some rule-based policies using JBoss Drools.
+* **photoz-restful-api**, with a simple RESTFul API based on JAX-RS and acting as a regular **client application**.
+* **photoz-html5-client**, with a HTML5+AngularJS client that will consume the RESTful API and acting as a **resource server**.
+* **photoz-authz-policy**, with a simple project with some rule-based policies using JBoss Drools.
 
 For this application, users can be regular users or administrators. Regular users can create/view/delete only their albums 
 and administrators can view the albums for all users.
@@ -144,7 +143,7 @@ and administrators can view the albums for all users.
 For the AuthZ Server, albums are resources that must be protected based on a set of rules that may define who and how can access them.
 In turn, resources belong to a specific resource server, in this case to the *photoz-restful-api*.
 
-The resources are also associated with a set of scopes that define a specific access context such as a operation that can be performed on them.
+The resources are also associated with a set of scopes that define a specific access context.
 
 In this case, albums have three main scopes:
 
@@ -152,25 +151,26 @@ In this case, albums have three main scopes:
 * urn:photoz.com/dev/scopes/album/view
 * urn:photoz.com/dev/scopes/album/delete
 
-The authorization requirements for this example application are based on the following premises:
+The authorization requirements for this example application are based on the following assumptions:
 
-* By default, any regular user can perform any operation on their albums resources. Here we are considering policies based on the resource type.
+* By default, any regular user can perform any operation on his resources. Here we are considering policies based on the resource type.
 
     * For instance, Alice can create, view and delete her albums. In this case, the policy that applies to the *create* scope is defined on the resource type level. 
 
-* Only the owner of a album can delete it. Here we are considering policies based on a resource instance, in other words, a album which is owned by an user.
+* Only the album's owner can delete it. Here we are considering policies based on a resource instance, in other words, an album which is owned by an user.
 
-    * For instance, only Alice can delete her album. Even administrators can not delete users albums. In this case, the policy that applies to the *delete* scope is enforced on resource instances.
+    * For instance, only Alice can delete her album. Even administrators can not delete users' albums. In this case, the policy that applies to the *delete* scope is enforced on each resource instance.
 
-* Only administrators can access the Administrative API (which basically provides ways to query albums for all users)
+* Only administrators can access the Administration API (which basically provides ways to query albums for all users)
 
-That said, this application will show you how to use the AuthZ Server to define policies involving:
+That said, this application will show you how to use the AuthZ Server to define policies using:
 
 * Role-based Access Control
 * Attribute-based Access Control
 * Rule-based policies using JBoss Drools
+* Rule-based policies using JavaScript 
 
-It also provides some background on how you can actually protect your JAX-RS endpoints using a *enforcer*.
+It also provides some background on how you can actually protect your JAX-RS endpoints using a *policy enforcer*.
 
 ### Create the Example Realm and a Resource Server
 
@@ -185,13 +185,13 @@ Now, create a new realm based on the following configuration file:
 
     examples/photoz/photoz-realm.json
     
-This will import a pre-configured realm with everything you need to run this example. For more details about how to import a realm 
-into Keycloak, check the reference documentation.
+That will import a pre-configured realm with everything you need to run this example. For more details about how to import a realm 
+into Keycloak, check the Keycloak's reference documentation.
 
 After importing that file, you'll have a new realm called ``photoz``. 
 
 Back to the command-line, build the example application. This step is necessary given that we're using policies based on
-JBoss Drools, which require ``photoz-authz-policy`` to be available in your local maven repository.
+JBoss Drools, which require ``photoz-authz-policy`` artifact installed into your local maven repository.
 
     cd examples/photoz
     mvn clean install 
@@ -238,4 +238,4 @@ More details about how the authorization happens, protocols and constraints will
 of stuff from UMA and still evaluating which parts require customizations.
 
 More features and documentation are coming, if you have any suggestion or any issue with this initial documentation, please
-file a  GitHub Issue.
+file a GitHub Issue.

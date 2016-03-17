@@ -193,6 +193,22 @@ module.config(['$routeProvider', function ($routeProvider) {
             }
         },
         controller: 'ResourceServerPolicyJSDetailCtrl'
+    }).when('/realms/:realm/authz/resource-server/:rsid/policy/time/create', {
+        templateUrl: resourceUrl + '/partials/policy/provider/resource-server-policy-time-detail.html',
+        resolve: {
+            realm: function (RealmLoader) {
+                return RealmLoader();
+            }
+        },
+        controller: 'ResourceServerPolicyTimeDetailCtrl'
+    }).when('/realms/:realm/authz/resource-server/:rsid/policy/time/:id', {
+        templateUrl: resourceUrl + '/partials/policy/provider/resource-server-policy-time-detail.html',
+        resolve: {
+            realm: function (RealmLoader) {
+                return RealmLoader();
+            }
+        },
+        controller: 'ResourceServerPolicyTimeDetailCtrl'
     });
 }]);
 

@@ -179,7 +179,6 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
             RequestingPartyToken rpt = jwsInput.readJsonContent(RequestingPartyToken.class);
 
             if (!rpt.isValid()) {
-                System.out.println("Invalid RPT: " + rpt.getType());
                 return null;
             }
 

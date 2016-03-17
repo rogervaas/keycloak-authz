@@ -7,11 +7,11 @@
         <li><a href="#/realms/{{realm.realm}}/authz/">Resource Servers</a></li>
         <li><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}">{{server.name}}</a></li>
         <li><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}/policy">Policy</a></li>
-        <li data-ng-show="create">Add JavaScript Policy</li>
+        <li data-ng-show="create">Add Time Policy</li>
         <li data-ng-hide="create">{{policy.name}}</li>
     </ol>
 
-    <h1 data-ng-show="create">Add JS Policy</h1>
+    <h1 data-ng-show="create">Add Time Policy</h1>
     <h1 data-ng-hide="create">{{policy.name|capitalize}}<i class="pficon pficon-delete clickable" data-ng-click="remove()"></i></h1>
 
     <form class="form-horizontal" name="clientForm" novalidate>
@@ -27,13 +27,6 @@
                 <label class="col-md-2 control-label" for="description">Description </label>
                 <div class="col-sm-6">
                     <input class="form-control" type="text" id="description" name="description" data-ng-model="policy.description">
-                </div>
-                <kc-tooltip>A description for this policy.</kc-tooltip>
-            </div>
-            <div class="form-group">
-                <label class="col-md-2 control-label" for="description">Code </label>
-                <div class="col-sm-6">
-                    <div ui-ace="{ onLoad : initEditor }" data-ng-model="policy.config.code"></div>
                 </div>
                 <kc-tooltip>A description for this policy.</kc-tooltip>
             </div>

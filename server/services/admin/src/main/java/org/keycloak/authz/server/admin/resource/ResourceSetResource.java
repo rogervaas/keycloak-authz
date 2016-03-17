@@ -68,7 +68,8 @@ public class ResourceSetResource {
     public Response create(ResourceRepresentation resource) {
         Resource existingResource = this.authorizationManager.getStoreFactory().getResourceStore().findByName(resource.getName());
 
-        if (existingResource != null && existingResource.getResourceServer().getId().equals(this.resourceServer.getId())) {
+        if (existingResource != null && existingResource.getResourceServer().getId().equals(this.resourceServer.getId())
+                && existingResource.getOwner().equals(resource.getOwner())) {
             return ErrorResponse.exists("Resource with name [" + resource.getName() + "] already exists.");
         }
 

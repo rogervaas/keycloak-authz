@@ -103,11 +103,11 @@
       }
     },
     {
-      "name": "Only On a Specific Client Address",
+      "name": "Only From a Specific Client Address",
       "description": "A policy that validates the client address",
       "type": "js",
       "config": {
-        "code": "var context = $evaluation.getContext();\nvar executionContext = context.getExecutionContext();\nvar clientIpAddress = executionContext.getAttributes().get(\"kc.authz.context.client.network.ip_address\");\n\nprint(clientIpAddress);\n\nif (clientIpAddress.contains('127.0.0.1')) {\n    $evaluation.grant();\n}"
+        "code": "var context = $evaluation.getContext();\nvar executionContext = context.getExecutionContext();\nvar clientIpAddress = executionContext.getAttributes().get(\"kc.authz.context.client.network.ip_address\");\n\nprint(\"From JavaScript Rule: \" + clientIpAddress);\n\nif (clientIpAddress.contains('127.0.0.1')) {\n    $evaluation.grant();\n}"
       }
     },
     {
@@ -117,7 +117,7 @@
       "config": {
         "resources": "[\"Album Resource\"]",
         "scopes": "[\"urn:photoz.com:scopes:album:create\"]",
-        "applyPolicies": "[\"Only On a Specific Client Address\"]"
+        "applyPolicies": "[\"Only From a Specific Client Address\"]"
       }
     }
   ],

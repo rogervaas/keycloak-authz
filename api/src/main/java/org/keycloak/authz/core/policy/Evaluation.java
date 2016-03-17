@@ -3,6 +3,9 @@ package org.keycloak.authz.core.policy;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 
+import java.util.Collections;
+import java.util.List;
+
 /**
  * <p>An {@link Evaluation} is mainly used by {@link PolicyProvider} in order to evaluate a single
  * and specific {@link ResourcePermission} against the configured policies.
@@ -15,6 +18,7 @@ public abstract class Evaluation {
 
     private final ResourcePermission permission;
     private final EvaluationContext evaluationContext;
+    private List<Advice> advices = Collections.emptyList();
 
     public Evaluation(ResourcePermission permission, EvaluationContext evaluationContext) {
         this.permission = permission;
@@ -43,4 +47,9 @@ public abstract class Evaluation {
      * Grants all the requested permissions to the called.
      */
     public abstract void grant();
+
+    public void grantWithAdvices(List<Advice> advices) {
+        this.advices = advices;
+        grant();
+    }
 }

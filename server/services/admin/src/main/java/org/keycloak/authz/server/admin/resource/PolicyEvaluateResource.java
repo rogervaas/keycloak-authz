@@ -29,6 +29,7 @@ import org.keycloak.authz.core.policy.ExecutionContext;
 import org.keycloak.authz.core.policy.PolicyManager;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
+import org.keycloak.authz.server.services.core.DefaultExecutionContext;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
@@ -96,69 +97,65 @@ public class PolicyEvaluateResource {
             }
         });
 
-        DefaultEvaluationContext context = new DefaultEvaluationContext(null, this.realm, permissions, new ExecutionContext() {
+        DefaultEvaluationContext context = new DefaultEvaluationContext(createIdentity(representation), this.realm, permissions, new DefaultExecutionContext(this.keycloakSession, this.realm) {
             @Override
             public Map<String, List<String>> getAttributes() {
+                Map<String, List<String>> attributes = super.getAttributes();
+
                 Map<String, String> givenAttributes = representation.getContext().get("attributes");
 
-                return givenAttributes.entrySet().stream()
-                        .collect(Collectors.toMap(
-                                (Function<Map.Entry<String, String>, String>) Map.Entry<String, String>::getKey,
-                                (Function<Map.Entry<String, String>, List<String>>) entry -> {
-                                    String entryValue = entry.getValue();
+                givenAttributes.forEach((key, entryValue) -> {
+                    if (entryValue != null) {
+                        List<String> values = Collections.emptyList();
 
-                                    if (entryValue == null) {
-                                        return Collections.emptyList();
-                                    }
-
-                                    List<String> attributes = new ArrayList();
-
-                                    for (String value : entryValue.split(",")) {
-                                        attributes.add(value);
-                                    }
-
-                                    return attributes;
-                                }));
-            }
-        }) {
-            @Override
-            public Identity getIdentity() {
-                return new Identity() {
-                    @Override
-                    public String getId() {
-                        return representation.getUserId();
-                    }
-
-                    @Override
-                    public Map<String, List<String>> getAttributes() {
-                        HashMap<String, List<String>> attributes = new HashMap<>();
-                        UserModel userModel = keycloakSession.users().getUserById(getId(), realm);
-
-                        if (userModel != null) {
-                            Set<RoleModel> roleMappings = userModel.getRoleMappings();
-                            List<String> roles = roleMappings.stream().map(RoleModel::getName).collect(Collectors.toList());
-                            attributes.put("roles", roles);
+                        for (String value : entryValue.split(",")) {
+                            values.add(value);
                         }
 
-                        Map<String, String> givenAttributes = representation.getContext().get("attributes");
-
-                        if (givenAttributes != null) {
-                            givenAttributes.forEach(new BiConsumer<String, String>() {
-                                @Override
-                                public void accept(String key, String value) {
-                                    attributes.put(key, Arrays.asList(value));
-                                }
-                            });
-                        }
-
-                        return attributes;
+                        attributes.put(key, values);
                     }
-                };
+                });
+
+                return attributes;
             }
-        };
+        });
 
         List<EvaluationResult> results = manager.evaluate(context);
 
         return Response.ok(PolicyEvaluationResponse.build(this.realm, context, results, this.resourceServer, this.authorizationManager, this.keycloakSession)).build();
+    }
+
+    public Identity createIdentity(PolicyEvaluationRequest representation) {
+        return new Identity() {
+            @Override
+            public String getId() {
+                return representation.getUserId();
+            }
+
+            @Override
+            public Map<String, List<String>> getAttributes() {
+                HashMap<String, List<String>> attributes = new HashMap<>();
+                UserModel userModel = keycloakSession.users().getUserById(getId(), realm);
+
+                if (userModel != null) {
+                    Set<RoleModel> roleMappings = userModel.getRoleMappings();
+                    List<String> roles = roleMappings.stream().map(RoleModel::getName).collect(Collectors.toList());
+                    attributes.put("roles", roles);
+                }
+
+                Map<String, String> givenAttributes = representation.getContext().get("attributes");
+
+                if (givenAttributes != null) {
+                    givenAttributes.forEach(new BiConsumer<String, String>() {
+                        @Override
+                        public void accept(String key, String value) {
+                            attributes.put(key, Arrays.asList(value));
+                        }
+                    });
+                }
+
+                return attributes;
+            }
+        };
     }
 }

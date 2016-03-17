@@ -115,7 +115,7 @@ module.factory('authInterceptor', function ($q, Identity) {
 
             var deferred = $q.defer();
 
-            Identity.authz.updateToken(5).success(function () {
+            Identity.authz.updateToken(60).success(function () {
                 config.headers = config.headers || {};
 
                 if (Identity.uma && Identity.uma.rpt && config.url.indexOf('/album') != -1) {
@@ -177,8 +177,6 @@ module.factory('errorInterceptor', function ($q, $injector) {
                             rpt: Identity.uma ? Identity.uma.rpt.rpt : ""
                         });
 
-                        Identity.uma = null;
-
                         $injector.get("$http").post('http://localhost:8080/auth/realms/photoz/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
                             .then(function (authzResponse) {
                                 if (authzResponse.data) {
@@ -206,8 +204,8 @@ module.factory('errorInterceptor', function ($q, $injector) {
             } else if (response.status == 404) {
                 alert("Not found");
             } else if (response.status) {
-                if (response.data && response.data.errorMessage) {
-                    alert(response.data.errorMessage);
+                if (response.data && response.data.message) {
+                    alert(response.data.message);
                 } else {
                     alert("An unexpected server error has occurred");
                 }

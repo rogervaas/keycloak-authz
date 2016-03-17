@@ -36,7 +36,9 @@ public class DefaultExecutionContext implements ExecutionContext {
 
         AccessToken accessToken = Tokens.getAccessToken(keycloakSession, realm);
 
-        attributes.put("kc.authz.context.client_id", Arrays.asList(accessToken.getIssuedFor()));
+        if (accessToken != null) {
+            attributes.put("kc.authz.context.client_id", Arrays.asList(accessToken.getIssuedFor()));
+        }
 
         List<String> userAgents = keycloakSession.getContext().getRequestHeaders().getRequestHeader("User-Agent");
 

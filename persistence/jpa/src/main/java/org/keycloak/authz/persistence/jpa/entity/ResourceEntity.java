@@ -40,7 +40,7 @@ import java.util.stream.Collectors;
  */
 @Entity
 @Table(uniqueConstraints = {
-        @UniqueConstraint(columnNames = {"name", "resourceServerId"})
+        @UniqueConstraint(columnNames = {"name", "resourceServerId", "owner"})
 })
 public class ResourceEntity implements Resource {
 

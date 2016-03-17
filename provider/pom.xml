@@ -22,6 +22,7 @@
         <module>resource</module>
         <module>scope</module>
         <module>javascript</module>
+        <module>time</module>
     </modules>
 
 </project>

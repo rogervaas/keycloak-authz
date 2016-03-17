@@ -16,7 +16,11 @@ public class ClientApplicationSynchronizer implements Synchronizer<RealmModel.Cl
         ResourceServer resourceServer = store.findByClient(clientEvent.getClient().getId());
 
         if (resourceServer != null) {
-            store.delete(resourceServer.getId());
+            String id = resourceServer.getId();
+            storeFactory.getResourceStore().findByResourceServer(id).forEach(resource -> storeFactory.getResourceStore().delete(resource.getId()));
+            storeFactory.getScopeStore().findByResourceServer(id).forEach(scope -> storeFactory.getScopeStore().delete(scope.getId()));
+            storeFactory.getPolicyStore().findByResourceServer(id).forEach(scope -> storeFactory.getPolicyStore().remove(scope.getId()));
+            storeFactory.getResourceServerStore().delete(id);
         }
     }
 }

@@ -726,6 +726,33 @@ module.controller('ResourceServerPolicyJSDetailCtrl', function($scope, $route, $
     }, realm, $scope);
 });
 
+module.controller('ResourceServerPolicyTimeDetailCtrl', function($scope, $route, $location, realm, PolicyController, ResourceServerPolicy, ResourceServerResource) {
+    PolicyController.onInit({
+        getPolicyType : function() {
+            return "time";
+        },
+
+        onInit : function() {
+        },
+
+        onInitUpdate : function(policy) {
+
+        },
+
+        onUpdate : function() {
+
+        },
+
+        onInitCreate : function(newPolicy) {
+            newPolicy.config = {};
+        },
+
+        onCreate : function() {
+
+        }
+    }, realm, $scope);
+});
+
 module.service("PolicyController", function($http, $route, $location, ResourceServer, ResourceServerPolicy, AuthzDialog, Notifications) {
 
     var PolicyController = {};

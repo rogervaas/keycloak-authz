@@ -1,12 +1,5 @@
 package org.keycloak.authz.server.admin.resource.util;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
@@ -25,6 +18,13 @@ import org.keycloak.models.UserModel;
 import org.keycloak.services.ErrorResponseException;
 
 import javax.ws.rs.core.Response;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Some utility methods to transform models to representations and vice-versa.

@@ -7,11 +7,13 @@ import org.keycloak.authz.client.representation.ScopeRepresentation;
 import org.keycloak.authz.policy.enforcer.jaxrs.annotation.Enforce;
 import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedResource;
 import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedScope;
+import org.keycloak.example.photoz.ErrorResponse;
 import org.keycloak.example.photoz.entity.Album;
 
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
+import javax.persistence.Query;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -23,7 +25,6 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
-import java.security.Principal;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -54,22 +55,31 @@ public class AlbumService {
     @POST
     @Consumes("application/json")
     @Enforce(scopes= AlbumService.SCOPE_ALBUM_CREATE)
-    public Response create(@Context SecurityContext securityContext, Album album) {
+    public Response create(@Context SecurityContext securityContext, Album newAlbum) {
         KeycloakPrincipal  userPrincipal = (KeycloakPrincipal) securityContext.getUserPrincipal();
 
-        album.setUserId(userPrincipal.getName());
+        newAlbum.setUserId(userPrincipal.getName());
 
-        this.entityManager.persist(album);
+        Query queryDuplicatedAlbum = this.entityManager.createQuery("from Album where name = :name and userId = :userId");
 
-        createProtectedResource(album);
+        queryDuplicatedAlbum.setParameter("name", newAlbum.getName());
+        queryDuplicatedAlbum.setParameter("userId", userPrincipal.getName());
 
-        return Response.ok(album).build();
+        if (!queryDuplicatedAlbum.getResultList().isEmpty()) {
+            throw new ErrorResponse("Name [" + newAlbum.getName() + "] already taken. Choose another one.", Response.Status.CONFLICT);
+        }
+
+        this.entityManager.persist(newAlbum);
+
+        createProtectedResource(newAlbum);
+
+        return Response.ok(newAlbum).build();
     }
 
-    @Path("{id}")
-    @DELETE
-    @Enforce(uri = "/album/{id}", scopes= AlbumService.SCOPE_ALBUM_DELETE)
-    public Response delete(@PathParam("id") String id) {
+        @Path("{id}")
+        @DELETE
+        @Enforce(uri = "/album/{id}", scopes= AlbumService.SCOPE_ALBUM_DELETE)
+        public Response delete(@PathParam("id") String id) {
         Album album = this.entityManager.find(Album.class, Long.valueOf(id));
 
         try {
