@@ -19,14 +19,17 @@ package org.keycloak.authz.server.admin.resource;
 
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.identity.Identity;
+import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
+import org.keycloak.authz.core.policy.Evaluation;
 import org.keycloak.authz.core.policy.EvaluationResult;
-import org.keycloak.authz.core.policy.ExecutionContext;
 import org.keycloak.authz.core.policy.PolicyManager;
+import org.keycloak.authz.core.policy.io.Decision;
+import org.keycloak.authz.core.policy.io.SingleThreadedEvaluation;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
 import org.keycloak.authz.server.services.core.DefaultExecutionContext;
@@ -38,18 +41,18 @@ import org.keycloak.models.UserModel;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -75,8 +78,7 @@ public class PolicyEvaluateResource {
     @POST
     @Consumes("application/json")
     @Produces("application/json")
-    public Response evaluate(PolicyEvaluationRequest representation) {
-        PolicyManager manager = this.authorizationManager.getPolicyManager();
+    public void  evaluate(PolicyEvaluationRequest representation, @Suspended AsyncResponse asyncResponse) {
         List<ResourcePermission> permissions = new ArrayList<>();
 
         representation.getResources().forEach(resource -> {
@@ -106,7 +108,7 @@ public class PolicyEvaluateResource {
 
                 givenAttributes.forEach((key, entryValue) -> {
                     if (entryValue != null) {
-                        List<String> values = Collections.emptyList();
+                        List<String> values = new ArrayList();
 
                         for (String value : entryValue.split(",")) {
                             values.add(value);
@@ -120,9 +122,75 @@ public class PolicyEvaluateResource {
             }
         });
 
-        List<EvaluationResult> results = manager.evaluate(context);
+        SingleThreadedEvaluation evaluation = new SingleThreadedEvaluation(context, this.authorizationManager.getStoreFactory().getPolicyStore(), this.authorizationManager.getPolicyManager().getProviderFactories());
+        Map<ResourcePermission, EvaluationResult> results = new HashMap();
 
-        return Response.ok(PolicyEvaluationResponse.build(this.realm, context, results, this.resourceServer, this.authorizationManager, this.keycloakSession)).build();
+        evaluation.evaluate(new Decision() {
+            @Override
+            public void onGrant(Evaluation evaluation) {
+                results.computeIfAbsent(evaluation.getPermission(), EvaluationResult::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
+            }
+
+            @Override
+            public void onDeny(Evaluation evaluation) {
+                results.computeIfAbsent(evaluation.getPermission(), EvaluationResult::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(EvaluationResult.PolicyResult.Status.DENIED);
+            }
+
+            @Override
+            public void onComplete() {
+                for (EvaluationResult result : results.values()) {
+                    for (EvaluationResult.PolicyResult policyResult : result.getResults()) {
+                        if (isGranted(policyResult)) {
+                            policyResult.setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
+                        } else {
+                            policyResult.setStatus(EvaluationResult.PolicyResult.Status.DENIED);
+                        }
+                    }
+
+                    if (result.getResults().stream()
+                            .filter(policyResult -> EvaluationResult.PolicyResult.Status.DENIED.equals(policyResult.getStatus())).count() > 0) {
+                        result.setStatus(EvaluationResult.PolicyResult.Status.DENIED);
+                    } else {
+                        result.setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
+                    }
+                }
+
+                asyncResponse.resume(Response.ok(PolicyEvaluationResponse.build(realm, context, results.values().stream().collect(Collectors.toList()), resourceServer, authorizationManager, keycloakSession)).build());
+            }
+
+            private boolean isGranted(EvaluationResult.PolicyResult policyResult) {
+                List<EvaluationResult.PolicyResult> values = policyResult.getAssociatedPolicies();
+
+                int grantCount = 0;
+                int denyCount = values.size();
+
+                for (EvaluationResult.PolicyResult decision : values) {
+                    if (decision.getStatus().equals(EvaluationResult.PolicyResult.Status.GRANTED)) {
+                        grantCount++;
+                        denyCount--;
+                    }
+                }
+
+                Policy policy = policyResult.getPolicy();
+                Policy.DecisionStrategy decisionStrategy = policy.getDecisionStrategy();
+
+                if (decisionStrategy == null) {
+                    decisionStrategy = Policy.DecisionStrategy.UNANIMOUS;
+                }
+
+                if (Policy.DecisionStrategy.AFFIRMATIVE.equals(decisionStrategy) && grantCount > 0) {
+                    return true;
+                } else if (Policy.DecisionStrategy.UNANIMOUS.equals(decisionStrategy) && denyCount == 0) {
+                    return true;
+                } else if (Policy.DecisionStrategy.CONSENSUS.equals(decisionStrategy)) {
+                    if (grantCount > denyCount) {
+                        return true;
+                    }
+                }
+
+                return false;
+            }
+        });
     }
 
     public Identity createIdentity(PolicyEvaluationRequest representation) {

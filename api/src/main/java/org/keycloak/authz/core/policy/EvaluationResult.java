@@ -1,9 +1,10 @@
 package org.keycloak.authz.core.policy;
 
-import java.util.ArrayList;
-import java.util.List;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.ResourcePermission;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -11,7 +12,7 @@ import org.keycloak.authz.core.model.ResourcePermission;
 public class EvaluationResult {
 
     private final ResourcePermission permission;
-    private List<PolicyResult> policies = new ArrayList<>();
+    private List<PolicyResult> results = new ArrayList<>();
     private PolicyResult.Status status;
 
     public EvaluationResult(ResourcePermission permission) {
@@ -22,14 +23,20 @@ public class EvaluationResult {
         return permission;
     }
 
-    public List<PolicyResult> getPolicies() {
-        return policies;
+    public List<PolicyResult> getResults() {
+        return results;
     }
 
     public PolicyResult policy(Policy policy) {
+        for (PolicyResult result : this.results) {
+            if (result.getPolicy().equals(policy)) {
+                return result;
+            }
+        }
+
         PolicyResult policyResult = new PolicyResult(policy);
 
-        this.policies.add(policyResult);
+        this.results.add(policyResult);
 
         return policyResult;
     }
@@ -58,9 +65,19 @@ public class EvaluationResult {
         }
 
         public PolicyResult policy(Policy policy) {
+            return getPolicy(policy, this.associatedPolicies);
+        }
+
+        private PolicyResult getPolicy(Policy policy, List<PolicyResult> results) {
+            for (PolicyResult result : results) {
+                if (result.getPolicy().equals(policy)) {
+                    return result;
+                }
+            }
+
             PolicyResult policyResult = new PolicyResult(policy);
 
-            this.associatedPolicies.add(policyResult);
+            results.add(policyResult);
 
             return policyResult;
         }

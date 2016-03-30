@@ -36,7 +36,7 @@ public class PolicyEvaluationResponse {
             rep.setResource(Models.toRepresentation(result.getPermission().getResource(), resourceServer, authorizationManager, realm, keycloakSession));
             rep.setScopes(result.getPermission().getScopes().stream().map(Models::toRepresentation).collect(Collectors.toList()));
             List<PolicyResultRepresentation> policies = new ArrayList<>();
-            for (EvaluationResult.PolicyResult policy : result.getPolicies()) {
+            for (EvaluationResult.PolicyResult policy : result.getResults()) {
                 policies.add(toRepresentation(authorizationManager, policy));
             }
             rep.setPolicies(policies);

@@ -62,13 +62,14 @@ public class DefaultPolicyManager implements PolicyManager {
 
             results.add(result);
 
-            Map<Policy, EvaluationResult.PolicyResult> toEvaluate = getEvaluationPolicies(permission, result);
             ResourceServer resourceServer = permission.getResource().getResourceServer();
 
             if (PolicyEnforcementMode.DISABLED.equals(resourceServer.getPolicyEnforcementMode())) {
                 result.setStatus(Status.GRANTED);
                 continue;
             }
+
+            Map<Policy, EvaluationResult.PolicyResult> toEvaluate = getEvaluationPolicies(permission, result);
 
             if (toEvaluate.isEmpty()) {
                 if (PolicyEnforcementMode.ENFORCING.equals(resourceServer.getPolicyEnforcementMode())) {
@@ -145,6 +146,7 @@ public class DefaultPolicyManager implements PolicyManager {
 
             toEvaluate.put(policy, policyResult);
         }
+
         return toEvaluate;
     }
 
