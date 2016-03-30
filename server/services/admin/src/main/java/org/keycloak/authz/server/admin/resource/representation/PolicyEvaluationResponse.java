@@ -33,7 +33,15 @@ public class PolicyEvaluationResponse {
             EvaluationResultRepresentation rep = new EvaluationResultRepresentation();
             rep.setStatus(result.getStatus());
             resultsRep.add(rep);
-            rep.setResource(Models.toRepresentation(result.getPermission().getResource(), resourceServer, authorizationManager, realm, keycloakSession));
+            if (result.getPermission().getResource() != null) {
+                rep.setResource(Models.toRepresentation(result.getPermission().getResource(), resourceServer, authorizationManager, realm, keycloakSession));
+            } else {
+                ResourceRepresentation resource = new ResourceRepresentation();
+
+                resource.setName("Any Resource with Scopes");
+
+                rep.setResource(resource);
+            }
             rep.setScopes(result.getPermission().getScopes().stream().map(Models::toRepresentation).collect(Collectors.toList()));
             List<PolicyResultRepresentation> policies = new ArrayList<>();
             for (EvaluationResult.PolicyResult policy : result.getResults()) {

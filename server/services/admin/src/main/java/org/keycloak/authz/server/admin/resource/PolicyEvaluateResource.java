@@ -27,7 +27,6 @@ import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.Evaluation;
 import org.keycloak.authz.core.policy.EvaluationResult;
-import org.keycloak.authz.core.policy.PolicyManager;
 import org.keycloak.authz.core.policy.io.Decision;
 import org.keycloak.authz.core.policy.io.SingleThreadedEvaluation;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
@@ -41,8 +40,6 @@ import org.keycloak.models.UserModel;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
-import javax.ws.rs.container.AsyncResponse;
-import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -53,7 +50,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
+
+import static javafx.scene.input.KeyCode.R;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -78,7 +80,7 @@ public class PolicyEvaluateResource {
     @POST
     @Consumes("application/json")
     @Produces("application/json")
-    public void  evaluate(PolicyEvaluationRequest representation, @Suspended AsyncResponse asyncResponse) {
+    public Response evaluate(PolicyEvaluationRequest representation) {
         List<ResourcePermission> permissions = new ArrayList<>();
 
         representation.getResources().forEach(resource -> {
@@ -96,6 +98,13 @@ public class PolicyEvaluateResource {
                 permissions.add(new ResourcePermission(resourceModel, scopes));
             } else if (resource.getType() != null) {
                 authorizationManager.getStoreFactory().getResourceStore().findByType(resource.getType()).forEach(resource1 -> permissions.add(new ResourcePermission(resource1, scopes)));
+            } else {
+                permissions.addAll(scopes.stream().map(new Function<Scope, ResourcePermission>() {
+                    @Override
+                    public ResourcePermission apply(Scope scope) {
+                        return new ResourcePermission(null, Arrays.asList(scope));
+                    }
+                }).collect(Collectors.toList()));
             }
         });
 
@@ -154,8 +163,10 @@ public class PolicyEvaluateResource {
                         result.setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
                     }
                 }
+            }
 
-                asyncResponse.resume(Response.ok(PolicyEvaluationResponse.build(realm, context, results.values().stream().collect(Collectors.toList()), resourceServer, authorizationManager, keycloakSession)).build());
+            @Override
+            public void onError(Throwable cause) {
             }
 
             private boolean isGranted(EvaluationResult.PolicyResult policyResult) {
@@ -191,6 +202,8 @@ public class PolicyEvaluateResource {
                 return false;
             }
         });
+
+        return Response.ok(PolicyEvaluationResponse.build(realm, context, results.values().stream().collect(Collectors.toList()), resourceServer, authorizationManager, keycloakSession)).build();
     }
 
     public Identity createIdentity(PolicyEvaluationRequest representation) {

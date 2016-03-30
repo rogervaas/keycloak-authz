@@ -5,6 +5,7 @@ import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.Evaluation;
 import org.keycloak.authz.core.policy.EvaluationContext;
+import org.keycloak.authz.core.policy.io.Schedulers.Scheduler;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.PolicyStore;
@@ -14,6 +15,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
@@ -24,6 +27,8 @@ public class SingleThreadedEvaluation implements PolicyEvaluation {
     private final EvaluationContext evaluationContex;
     private final PolicyStore policyStore;
     private Map<String, PolicyProviderFactory> policyProviders = new HashMap<>();
+    private Scheduler decideOn = Schedulers.blocking();
+    private CompletableFuture<?> future = CompletableFuture.completedFuture(null);
 
     public SingleThreadedEvaluation(EvaluationContext evaluationContext, PolicyStore policyStore, List<PolicyProviderFactory> providerFactories) {
         this.evaluationContex = evaluationContext;
@@ -34,29 +39,43 @@ public class SingleThreadedEvaluation implements PolicyEvaluation {
         }
     }
 
+    public SingleThreadedEvaluation decideOn(Scheduler scheduler) {
+        this.decideOn = scheduler;
+        return this;
+    }
+
     @Override
     public void evaluate(Decision decision) {
         try {
-            this.evaluationContex.getAllPermissions().forEach(permission -> getPolicies(permission).stream()
-                    .forEach(parentPolicy -> {
-                        parentPolicy.getAssociatedPolicies().forEach(policy -> {
-                            PolicyProvider policyProvider = policyProviders.get(policy.getType()).create(policy);
+            for (ResourcePermission permission : this.evaluationContex.getAllPermissions()) {
+                this.future = CompletableFuture.allOf(this.future, CompletableFuture.runAsync(() -> getPolicies(permission).stream()
+                        .forEach(parentPolicy -> {
+                            parentPolicy.getAssociatedPolicies().forEach(policy -> {
+                                PolicyProvider policyProvider = policyProviders.get(policy.getType()).create(policy);
 
-                            if (policyProvider == null) {
-                                throw new RuntimeException("Unknown policy provider for type [" + policy.getType() + "].");
-                            }
+                                if (policyProvider == null) {
+                                    throw new RuntimeException("Unknown policy provider for type [" + policy.getType() + "].");
+                                }
 
-                            DecisionWrapper decisionWrapper = new DecisionWrapper(decision);
-                            Evaluation evaluation = new Evaluation(permission, evaluationContex, parentPolicy, policy, decisionWrapper);
+                                DecisionWrapper decisionWrapper = new DecisionWrapper(decision);
+                                Evaluation evaluation = new Evaluation(permission, evaluationContex, parentPolicy, policy, decisionWrapper);
 
-                            policyProvider.evaluate(evaluation);
+                                policyProvider.evaluate(evaluation);
 
-                            if (decisionWrapper.hasStatus(DecisionWrapper.Status.UNKOWN)) {
-                                decision.onDeny(evaluation);
-                            }
-                        });
-                    }));
-            decision.onComplete();
+                                if (decisionWrapper.hasStatus(DecisionWrapper.Status.UNKOWN)) {
+                                    decision.onDeny(evaluation);
+                                }
+                            });
+                        }), decideOn.getExecutor()));
+            }
+
+            this.future.whenCompleteAsync((BiConsumer<Object, Throwable>) (o, cause) -> {
+                if (cause == null) {
+                    decision.onComplete();
+                } else {
+                    decision.onError(cause);
+                }
+            }, decideOn.getExecutor());
         } catch (Throwable cause) {
             decision.onError(cause);
         }
@@ -65,13 +84,16 @@ public class SingleThreadedEvaluation implements PolicyEvaluation {
     private Set<Policy> getPolicies(ResourcePermission permission) {
         Set<Policy> policies = new HashSet<>();
 
-        policies.addAll(permission.getResource().getPolicies());
-        policies.addAll(this.policyStore.findByResourceType(permission.getResource().getType()));
-        policies.addAll(this.policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())));
+        if (permission.getResource() != null) {
+            policies.addAll(permission.getResource().getPolicies());
+            policies.addAll(this.policyStore.findByResourceType(permission.getResource().getType()));
 
-        if (permission.getScopes().isEmpty()) {
-            policies.addAll(this.policyStore.findByScopeName(permission.getResource().getScopes().stream().map(Scope::getName).collect(Collectors.toList())));
+            if (permission.getScopes().isEmpty()) {
+                policies.addAll(this.policyStore.findByScopeName(permission.getResource().getScopes().stream().map(Scope::getName).collect(Collectors.toList())));
+            }
         }
+
+        policies.addAll(this.policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())));
 
         return policies.stream().filter(policy -> hasRequestedScopes(permission, policy)).collect(Collectors.toSet());
     }
