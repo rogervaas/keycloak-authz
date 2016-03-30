@@ -33,38 +33,37 @@
                 <div class="col-md-6">
                     <select class="form-control" id="reqActions"
                             ng-model="policy.config.resources"
-                            ng-change="resolveScopes()">
+                            ng-change="resolveScopes(policy)"
+                            data-ng-options="resource._id as resource.name for resource in resources">
                         <option value="">Any resource...</option>
-                        <option ng-repeat="resource in resources track by resource._id" value="{{resource._id}}">{{resource.name}}</option>
                     </select>
                 </div>
-                <kc-tooltip>Specifies that this policy must be applied to a one or more resource instance. If no particular resource instance is defined, this policy
-                will be applied to all resources associated with the scopes defined by this policy.</kc-tooltip>
+                <kc-tooltip>Limits the scopes to those associated with the selected resource. If not selected all scopes will be available.</kc-tooltip>
             </div>
             <div class="form-group clearfix" data-ng-show="policy.config.resources">
-                <label class="col-md-2 control-label" for="reqActions">Scopes</label>
+                <label class="col-md-2 control-label" for="reqActions">Scopes <span class="required">*</span></label>
 
                 <div class="col-md-6">
                     <select ui-select2 id="reqActions"
                             data-ng-model="policy.config.scopes"
-                            data-placeholder="Any scope..." multiple>
-                        <option ng-repeat="scope in scopes track by scope.id" value="{{scope.id}}">{{scope.name}}</option>
-                    </select>
+                            data-placeholder="Any scope..." multiple
+                            data-ng-required="policy.config.resources != ''"
+                            data-ng-options="scope.id as scope.name for scope in scopes track by scope.id"/>
                 </div>
 
                 <kc-tooltip>Specifies that this policy must be applied to one or more scopes.</kc-tooltip>
             </div>
             <div class="form-group clearfix" data-ng-show="!policy.config.resources">
-                <label class="col-md-2 control-label" for="reqActions">Scopes</label>
+                <label class="col-md-2 control-label" for="reqActions">Scopes <span class="required">*</span></label>
 
                 <div class="col-md-6">
                     <select ui-select2="{ minimumInputLength: 1}" id="reqActions"
                             data-ng-model="policy.config.scopes"
-                            data-placeholder="Any scope..." multiple>
-                        <option ng-repeat="scope in scopes track by scope.id" value="{{scope.id}}">{{scope.name}}</option>
+                            data-placeholder="Any scope..." multiple
+                            data-ng-required="policy.config.resources == ''"
+                            data-ng-options="scope.id as scope.name for scope in scopes track by scope.id"/>
                     </select>
                 </div>
-
                 <kc-tooltip>Specifies that this policy must be applied to one or more scopes.</kc-tooltip>
             </div>
             <div class="form-group clearfix">

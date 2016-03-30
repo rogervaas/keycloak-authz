@@ -527,37 +527,53 @@ module.controller('ResourceServerPolicyScopeDetailCtrl', function($scope, $route
                 }
             });
 
-            $scope.resolveScopes = function(policy) {
+            $scope.resolveScopes = function(policy, keepScopes) {
+                if (!keepScopes) {
+                    policy.config.scopes = [];
+                }
+
                 if (!policy) {
                     policy = $scope.policy;
                 }
 
-                if (!policy.config.resources || policy.config.resources == '') {
+                if (policy.config.resources != null) {
+                    ResourceServerResource.get({
+                        realm : $route.current.params.realm,
+                        rsid : $route.current.params.rsid,
+                        rsrid : policy.config.resources
+                    }, function(data) {
+                        $scope.scopes = data.scopes;
+                    });
+                } else {
                     ResourceServerScope.query({realm : realm.realm, rsid : $route.current.params.rsid}, function (data) {
                         $scope.scopes = data;
                     });
-                    return;
                 }
-
-                ResourceServerResource.get({
-                    realm : $route.current.params.realm,
-                    rsid : $route.current.params.rsid,
-                    rsrid : policy.config.resources
-                }, function(data) {
-                    $scope.scopes = data.scopes;
-                });
             }
         },
 
         onInitUpdate : function(policy) {
-            policy.config.resources = eval(policy.config.resources);
+            if (policy.config.resources) {
+                policy.config.resources = eval(policy.config.resources);
+
+                if (policy.config.resources.length > 0) {
+                    policy.config.resources = policy.config.resources[0];
+                } else {
+                    policy.config.resources = null;
+                }
+            }
+
+            $scope.resolveScopes(policy, true);
+
             policy.config.applyPolicies = eval(policy.config.applyPolicies);
             policy.config.scopes = eval(policy.config.scopes);
-            $scope.resolveScopes(policy);
         },
 
         onUpdate : function() {
-            $scope.policy.config.resources = JSON.stringify($scope.policy.config.resources);
+            if ($scope.policy.config.resources != null) {
+                $scope.policy.config.resources = JSON.stringify([$scope.policy.config.resources]);
+            }
+
             $scope.policy.config.scopes = JSON.stringify($scope.policy.config.scopes);
             $scope.policy.config.applyPolicies = JSON.stringify($scope.policy.config.applyPolicies);
         },
