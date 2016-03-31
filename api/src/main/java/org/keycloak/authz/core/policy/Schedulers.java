@@ -18,7 +18,7 @@ public class Schedulers {
     }
 
     public static Scheduler parallel() {
-        return new Scheduler(Executors.newWorkStealingPool(2));
+        return new Scheduler(Executors.newWorkStealingPool());
     }
 
     public static class Scheduler {

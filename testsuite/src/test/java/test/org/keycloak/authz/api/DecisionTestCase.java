@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  */
 public class DecisionTestCase {
 
-    static int NUM_PERMISSIONS = 1000 * 1000 * 10;
+    static int NUM_PERMISSIONS = 1000 * 1000 * 1;
 
     private RealmModel realmModel;
     private List<ResourcePermission> permissions;
