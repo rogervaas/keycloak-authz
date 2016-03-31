@@ -75,7 +75,7 @@ public class IdentityPolicyProvider implements PolicyProvider {
                     for (String roleId : roleIds) {
                         RoleModel role = context.getRealm().getRoleById(roleId);
 
-                        if (role != null && context.getIdentity().hasRole(role.getName())) {
+                        if (role != null && context.getIdentity().hasScope(role.getName())) {
                             roleGranted = true;
                             break;
                         }

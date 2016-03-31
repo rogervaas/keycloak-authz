@@ -179,7 +179,7 @@ public class PolicyResource {
     @Produces("application/json")
     public Response findPolicyProviders() {
         return Response.ok(
-                authorizationManager.getPolicyManager().getProviderFactories().stream()
+                authorizationManager.getProviderFactories().stream()
                         .map(provider -> {
                             PolicyProviderRepresentation representation = new PolicyProviderRepresentation();
 

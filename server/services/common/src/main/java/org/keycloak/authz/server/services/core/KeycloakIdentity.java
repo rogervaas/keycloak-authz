@@ -122,7 +122,7 @@ public class KeycloakIdentity implements Identity {
                 attributes.put(fieldName, values);
             }
 
-            attributes.put("roles", roleNames);
+            attributes.put("scopes", roleNames);
         } catch (Exception e) {
             throw new RuntimeException("Error while reading attributes from security token.", e);
         }

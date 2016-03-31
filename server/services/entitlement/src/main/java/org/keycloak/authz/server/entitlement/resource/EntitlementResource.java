@@ -27,7 +27,6 @@ import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
-import org.keycloak.authz.core.policy.ExecutionContext;
 import org.keycloak.authz.server.services.core.DefaultExecutionContext;
 import org.keycloak.authz.server.services.core.util.Tokens;
 import org.keycloak.jose.jws.JWSBuilder;
@@ -86,7 +85,7 @@ public class EntitlementResource {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Requires resourceServerId request parameter.", Response.Status.BAD_REQUEST);
         }
 
-        if (!this.identity.hasRole("kc_entitlement")) {
+        if (!this.identity.hasScope("kc_entitlement")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires kc_entitlement scope.", Response.Status.FORBIDDEN);
         }
 
@@ -111,7 +110,8 @@ public class EntitlementResource {
                 }).collect(Collectors.toList()));
 
         EvaluationContext evaluationContext = new DefaultEvaluationContext(identity, this.realm, permissions, new DefaultExecutionContext(this.keycloakSession, this.realm));
-        List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
+//        List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
+        List<EvaluationResult> evaluate = null;
 
         return Cors.add(this.request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, evaluate)))).allowedOrigins("*").build();
     }

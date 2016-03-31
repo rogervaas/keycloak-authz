@@ -6,7 +6,7 @@ rule "Authorize Admin Resources"
     dialect "mvel"
         when
            $evaluation : Evaluation(
-               $context : context, $context.identity.hasRole("admin")
+               $context : context, $context.identity.hasScope("admin")
            )
         then
            $evaluation.grant();

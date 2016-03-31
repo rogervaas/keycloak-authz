@@ -27,7 +27,6 @@ import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationContext;
 import org.keycloak.authz.core.policy.EvaluationResult;
-import org.keycloak.authz.core.policy.ExecutionContext;
 import org.keycloak.authz.server.services.core.DefaultExecutionContext;
 import org.keycloak.authz.server.services.core.KeycloakIdentity;
 import org.keycloak.authz.server.services.core.util.Tokens;
@@ -47,9 +46,6 @@ import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -86,13 +82,14 @@ public class AuthorizationService {
     public Response authorize(AuthorizationRequest request) {
         Identity identity = KeycloakIdentity.create(this.realm, this.keycloakSession);
 
-        if (!identity.hasRole("uma_authorization")) {
+        if (!identity.hasScope("uma_authorization")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_authorization scope.", Response.Status.FORBIDDEN);
         }
 
         PermissionTicket ticket = verifyPermissionTicket(request);
         EvaluationContext evaluationContext = createEvaluationContext(identity, ticket, request);
-        List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
+//        List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
+        List<EvaluationResult> evaluate = null;
 
         if (evaluationContext.isGranted()) {
             return Cors.add(this.request, Response.status(Response.Status.CREATED).entity(new AuthorizationResponse(createRequestingPartyToken(identity, evaluate)))).allowedOrigins("*").build();

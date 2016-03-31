@@ -24,11 +24,10 @@ import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
+import org.keycloak.authz.core.policy.Decision;
 import org.keycloak.authz.core.policy.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.Evaluation;
 import org.keycloak.authz.core.policy.EvaluationResult;
-import org.keycloak.authz.core.policy.io.Decision;
-import org.keycloak.authz.core.policy.io.SingleThreadedEvaluation;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
 import org.keycloak.authz.server.services.core.DefaultExecutionContext;
@@ -50,12 +49,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 import java.util.function.Function;
-import java.util.function.IntFunction;
 import java.util.stream.Collectors;
-
-import static javafx.scene.input.KeyCode.R;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -65,7 +60,7 @@ public class PolicyEvaluateResource {
     private final RealmModel realm;
 
     @Context
-    private Authorization authorizationManager;
+    private Authorization authorization;
 
     @Context
     private KeycloakSession keycloakSession;
@@ -90,14 +85,14 @@ public class PolicyEvaluateResource {
                 givenScopes = new HashSet();
             }
 
-            List<Scope> scopes = givenScopes.stream().map(scopeName -> authorizationManager.getStoreFactory().getScopeStore().findByName(scopeName))
+            List<Scope> scopes = givenScopes.stream().map(scopeName -> authorization.getStoreFactory().getScopeStore().findByName(scopeName))
                     .collect(Collectors.toList());
 
             if (resource.getId() != null) {
-                Resource resourceModel = authorizationManager.getStoreFactory().getResourceStore().findById(resource.getId());
+                Resource resourceModel = authorization.getStoreFactory().getResourceStore().findById(resource.getId());
                 permissions.add(new ResourcePermission(resourceModel, scopes));
             } else if (resource.getType() != null) {
-                authorizationManager.getStoreFactory().getResourceStore().findByType(resource.getType()).forEach(resource1 -> permissions.add(new ResourcePermission(resource1, scopes)));
+                authorization.getStoreFactory().getResourceStore().findByType(resource.getType()).forEach(resource1 -> permissions.add(new ResourcePermission(resource1, scopes)));
             } else {
                 permissions.addAll(scopes.stream().map(new Function<Scope, ResourcePermission>() {
                     @Override
@@ -131,10 +126,9 @@ public class PolicyEvaluateResource {
             }
         });
 
-        SingleThreadedEvaluation evaluation = new SingleThreadedEvaluation(context, this.authorizationManager.getStoreFactory().getPolicyStore(), this.authorizationManager.getPolicyManager().getProviderFactories());
         Map<ResourcePermission, EvaluationResult> results = new HashMap();
 
-        evaluation.evaluate(new Decision() {
+        this.authorization.evaluators().from(context).evaluate(new Decision() {
             @Override
             public void onGrant(Evaluation evaluation) {
                 results.computeIfAbsent(evaluation.getPermission(), EvaluationResult::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
@@ -203,7 +197,7 @@ public class PolicyEvaluateResource {
             }
         });
 
-        return Response.ok(PolicyEvaluationResponse.build(realm, context, results.values().stream().collect(Collectors.toList()), resourceServer, authorizationManager, keycloakSession)).build();
+        return Response.ok(PolicyEvaluationResponse.build(realm, context, results.values().stream().collect(Collectors.toList()), resourceServer, authorization, keycloakSession)).build();
     }
 
     public Identity createIdentity(PolicyEvaluationRequest representation) {
@@ -221,7 +215,7 @@ public class PolicyEvaluateResource {
                 if (userModel != null) {
                     Set<RoleModel> roleMappings = userModel.getRoleMappings();
                     List<String> roles = roleMappings.stream().map(RoleModel::getName).collect(Collectors.toList());
-                    attributes.put("roles", roles);
+                    attributes.put("scopes", roles);
                 }
 
                 Map<String, String> givenAttributes = representation.getContext().get("attributes");

@@ -1,11 +1,9 @@
-package org.keycloak.authz.core.policy.io;
+package org.keycloak.authz.core.policy;
 
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.policy.Evaluation;
-import org.keycloak.authz.core.policy.EvaluationContext;
-import org.keycloak.authz.core.policy.io.Schedulers.Scheduler;
+import org.keycloak.authz.core.policy.Schedulers.Scheduler;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.PolicyStore;
@@ -16,21 +14,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class SingleThreadedEvaluation implements PolicyEvaluation {
+public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
     private final EvaluationContext evaluationContex;
     private final PolicyStore policyStore;
     private Map<String, PolicyProviderFactory> policyProviders = new HashMap<>();
-    private Scheduler decideOn = Schedulers.blocking();
+    private Scheduler decideOn = Schedulers.sync();
     private CompletableFuture<?> future = CompletableFuture.completedFuture(null);
 
-    public SingleThreadedEvaluation(EvaluationContext evaluationContext, PolicyStore policyStore, List<PolicyProviderFactory> providerFactories) {
+    public DefaultPolicyEvaluator(EvaluationContext evaluationContext, PolicyStore policyStore, List<PolicyProviderFactory> providerFactories) {
         this.evaluationContex = evaluationContext;
         this.policyStore = policyStore;
 
@@ -39,7 +36,7 @@ public class SingleThreadedEvaluation implements PolicyEvaluation {
         }
     }
 
-    public SingleThreadedEvaluation decideOn(Scheduler scheduler) {
+    public DefaultPolicyEvaluator decideOn(Scheduler scheduler) {
         this.decideOn = scheduler;
         return this;
     }
@@ -48,34 +45,29 @@ public class SingleThreadedEvaluation implements PolicyEvaluation {
     public void evaluate(Decision decision) {
         try {
             for (ResourcePermission permission : this.evaluationContex.getAllPermissions()) {
-                this.future = CompletableFuture.allOf(this.future, CompletableFuture.runAsync(() -> getPolicies(permission).stream()
-                        .forEach(parentPolicy -> {
-                            parentPolicy.getAssociatedPolicies().forEach(policy -> {
-                                PolicyProvider policyProvider = policyProviders.get(policy.getType()).create(policy);
+                Set<Policy> policies = getPolicies(permission);
 
-                                if (policyProvider == null) {
-                                    throw new RuntimeException("Unknown policy provider for type [" + policy.getType() + "].");
-                                }
+                for (Policy parentPolicy : policies) {
+                    for (Policy policy : parentPolicy.getAssociatedPolicies()) {
+                        PolicyProvider policyProvider = policyProviders.get(policy.getType()).create(policy);
 
-                                DecisionWrapper decisionWrapper = new DecisionWrapper(decision);
-                                Evaluation evaluation = new Evaluation(permission, evaluationContex, parentPolicy, policy, decisionWrapper);
+                        if (policyProvider == null) {
+                            throw new RuntimeException("Unknown policy provider for type [" + policy.getType() + "].");
+                        }
 
-                                policyProvider.evaluate(evaluation);
+                        DecisionWrapper decisionWrapper = new DecisionWrapper(decision);
+                        Evaluation evaluation = new Evaluation(permission, evaluationContex, parentPolicy, policy, decisionWrapper);
 
-                                if (decisionWrapper.hasStatus(DecisionWrapper.Status.UNKOWN)) {
-                                    decision.onDeny(evaluation);
-                                }
-                            });
-                        }), decideOn.getExecutor()));
+                        policyProvider.evaluate(evaluation);
+
+                        if (decisionWrapper.hasStatus(DecisionWrapper.Status.UNKOWN)) {
+                            decision.onDeny(evaluation);
+                        }
+                    }
+                }
             }
 
-            this.future.whenCompleteAsync((BiConsumer<Object, Throwable>) (o, cause) -> {
-                if (cause == null) {
-                    decision.onComplete();
-                } else {
-                    decision.onError(cause);
-                }
-            }, decideOn.getExecutor());
+            decision.onComplete();
         } catch (Throwable cause) {
             decision.onError(cause);
         }

@@ -23,18 +23,18 @@ import java.util.Map;
 /**
  * <p>Represents a security identity, which can be a person or non-person entity that was previously authenticated.
  *
- * <p>An identity plays an important role during the evaluation of policies as they represent the entity which one or more permissions
- * should be granted or not. Beside that, they also provides additional information and attributes that can be relevant to the different
- * access control methods involved.
+ * <p>An {@link Identity} plays an important role during the evaluation of policies as they represent the entity to which one or more permissions
+ * should be granted or not, providing additional information and attributes that can be relevant to the different
+ * access control methods involved during the evaluation of policies.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public interface Identity {
 
     /**
-     * Returns the unique identifier of the identity.
+     * Returns the unique identifier of this identity.
      *
-     * @return the unique identifier of the identity
+     * @return the unique identifier of this identity
      */
     String getId();
 
@@ -46,14 +46,14 @@ public interface Identity {
     Map<String, List<String>> getAttributes();
 
     /**
-     * Indicates if this identity has a given <code>role</code>.
+     * Indicates if this identity has a given <code>scopes</code>.
      *
      * @param role the name of the role
      *
      * @return true if the identity has the given role. Otherwise, it returns false.
      */
-    default boolean hasRole(String role) {
-        List<String> roles = getAttributes().get("roles");
+    default boolean hasScope(String role) {
+        List<String> roles = getAttributes().get("scopes");
         return roles != null && roles.contains(role);
     }
 }

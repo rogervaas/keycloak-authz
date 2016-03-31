@@ -24,7 +24,6 @@ import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.authz.persistence.PersistenceProviderFactory;
-import org.keycloak.authz.server.services.core.KeycloakAuthorizationManager;
 import org.keycloak.authz.server.services.core.KeycloakIdentity;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
@@ -34,9 +33,7 @@ import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 import org.kohsuke.MetaInfServices;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -47,7 +44,7 @@ import java.util.ServiceLoader;
 public class RealmEntitlementResourceProviderFactory implements RealmResourceProviderFactory {
 
     private PersistenceProviderFactory persistenceProviderFactory;
-    private List<PolicyProviderFactory> policyProviders = new ArrayList<>();
+    private Authorization authorization;
 
     @Override
     public RealmResourceProvider create(RealmModel realm, KeycloakSession keycloakSession) {
@@ -57,7 +54,8 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
                     EntitlementResource resource = new EntitlementResource(realm, keycloakSession);
 
                     ResteasyProviderFactory.getInstance().pushContext(Identity.class, KeycloakIdentity.create(realm, keycloakSession));
-                    ResteasyProviderFactory.getInstance().pushContext(Authorization.class, createAuthorizationManager(keycloakSession, realm));
+                    ResteasyProviderFactory.getInstance().pushContext(StoreFactory.class, persistenceProviderFactory.create(keycloakSession));
+                    ResteasyProviderFactory.getInstance().pushContext(Authorization.class, authorization);
                     ResteasyProviderFactory.getInstance().injectProperties(resource);
 
                     return resource;
@@ -83,13 +81,33 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-        initPolicyProviders(factory);
+        KeycloakSession session = factory.create();
+        KeycloakTransactionManager transaction = session.getTransaction();
+        try {
+            transaction.begin();
+
+            this.authorization = Authorization.builder().storeFactory(() -> {
+                StoreFactory storeFactory = ResteasyProviderFactory.getContextData(StoreFactory.class);
+
+                if (storeFactory == null) {
+                    return persistenceProviderFactory.create(session);
+                }
+
+                return storeFactory;
+            }).build();
+
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+        } finally {
+            session.close();
+        }
         this.persistenceProviderFactory.registerSynchronizationListeners(factory);
     }
 
     @Override
     public void close() {
-        this.policyProviders.forEach(PolicyProviderFactory::dispose);
+        this.authorization.getProviderFactories().forEach(PolicyProviderFactory::dispose);
     }
 
     @Override
@@ -97,16 +115,12 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
         return "keycloak-authz-entitlement-restapi";
     }
 
-    private Authorization createAuthorizationManager(KeycloakSession keycloakSession, RealmModel realm) {
-        return new KeycloakAuthorizationManager(this.persistenceProviderFactory.create(keycloakSession), this.policyProviders);
-    }
-
     @Override
     public Map<String, String> getOperationalInfo() {
         HashMap<String, String> info = new HashMap<>();
         StringBuilder policyProvidersInfo = new StringBuilder();
 
-        this.policyProviders.forEach(provider -> policyProvidersInfo.append(provider.getType()).append(", "));
+        this.authorization.getProviderFactories().forEach(provider -> policyProvidersInfo.append(provider.getType()).append(", "));
 
         info.put("Persistence Provider", this.persistenceProviderFactory.getClass().getName());
         info.put("Policy Providers", policyProvidersInfo.substring(0, policyProvidersInfo.lastIndexOf(",")));
@@ -122,27 +136,5 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
         }
 
         throw new RuntimeException("No persistence provider found.");
-    }
-
-    private void initPolicyProviders(KeycloakSessionFactory factory) {
-        KeycloakSession session = factory.create();
-        KeycloakTransactionManager transaction = session.getTransaction();
-        try {
-            transaction.begin();
-
-            ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach(providerFactory -> {
-                StoreFactory persistenceProvider = this.persistenceProviderFactory.create(session);
-
-                providerFactory.init(persistenceProvider.getPolicyStore());
-
-                this.policyProviders.add(providerFactory);
-            });
-
-            transaction.commit();
-        } catch (Exception e) {
-            transaction.rollback();
-        } finally {
-            session.close();
-        }
     }
 }

@@ -23,7 +23,6 @@ import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.authz.persistence.PersistenceProviderFactory;
-import org.keycloak.authz.server.services.core.KeycloakAuthorizationManager;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakTransactionManager;
@@ -46,6 +45,7 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
 
     private PersistenceProviderFactory persistenceProviderFactory;
     private List<PolicyProviderFactory> policyProviders = new ArrayList<>();
+    private Authorization authorization;
 
     @Override
     public RealmAdminResourceProvider create(RealmModel realm, KeycloakSession keycloakSession) {
@@ -54,7 +54,8 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
                 if (pathName.equals("authz")) {
                     RootResource resource = new RootResource(realm);
 
-                    ResteasyProviderFactory.getInstance().pushContext(Authorization.class, createAuthorizationManager(keycloakSession));
+                    ResteasyProviderFactory.getInstance().pushContext(StoreFactory.class, persistenceProviderFactory.create(keycloakSession));
+                    ResteasyProviderFactory.getInstance().pushContext(Authorization.class, authorization);
                     ResteasyProviderFactory.getInstance().injectProperties(resource);
 
                     return resource;
@@ -80,7 +81,27 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-        initPolicyProviders(factory);
+        KeycloakSession session = factory.create();
+        KeycloakTransactionManager transaction = session.getTransaction();
+        try {
+            transaction.begin();
+
+            this.authorization = Authorization.builder().storeFactory(() -> {
+                StoreFactory storeFactory = ResteasyProviderFactory.getContextData(StoreFactory.class);
+
+                if (storeFactory == null) {
+                    return persistenceProviderFactory.create(session);
+                }
+
+                return storeFactory;
+            }).build();
+
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+        } finally {
+            session.close();
+        }
         this.persistenceProviderFactory.registerSynchronizationListeners(factory);
     }
 
@@ -94,16 +115,12 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
         return "keycloak-authz-admin-restapi";
     }
 
-    private Authorization createAuthorizationManager(KeycloakSession keycloakSession) {
-        return new KeycloakAuthorizationManager(this.persistenceProviderFactory.create(keycloakSession), this.policyProviders);
-    }
-
     @Override
     public Map<String, String> getOperationalInfo() {
         HashMap<String, String> info = new HashMap<>();
         StringBuilder policyProvidersInfo = new StringBuilder();
 
-        this.policyProviders.forEach(provider -> policyProvidersInfo.append(provider.getType()).append(", "));
+        this.authorization.getProviderFactories().forEach(provider -> policyProvidersInfo.append(provider.getType()).append(", "));
 
         info.put("Persistence Provider", this.persistenceProviderFactory.getClass().getName());
         info.put("Policy Providers", policyProvidersInfo.substring(0, policyProvidersInfo.lastIndexOf(",")));
@@ -119,27 +136,5 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
         }
 
         throw new RuntimeException("No persistence provider found.");
-    }
-
-    private void initPolicyProviders(KeycloakSessionFactory factory) {
-        KeycloakSession session = factory.create();
-        KeycloakTransactionManager transaction = session.getTransaction();
-        try {
-            transaction.begin();
-
-            ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach(providerFactory -> {
-                StoreFactory persistenceProvider = this.persistenceProviderFactory.create(session);
-
-                providerFactory.init(persistenceProvider.getPolicyStore());
-
-                this.policyProviders.add(providerFactory);
-            });
-
-            transaction.commit();
-        } catch (Exception e) {
-            transaction.rollback();
-        } finally {
-            session.close();
-        }
     }
 }

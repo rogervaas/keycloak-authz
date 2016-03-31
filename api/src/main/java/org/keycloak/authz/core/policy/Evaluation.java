@@ -2,7 +2,6 @@ package org.keycloak.authz.core.policy;
 
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.ResourcePermission;
-import org.keycloak.authz.core.policy.io.Decision;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 
 import java.util.Collections;

@@ -23,23 +23,17 @@ import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.authz.persistence.PersistenceProviderFactory;
-import org.keycloak.authz.server.services.core.KeycloakAuthorizationManager;
 import org.keycloak.authz.server.uma.config.Configuration;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakTransactionManager;
 import org.keycloak.models.RealmModel;
-import org.keycloak.representations.AccessToken;
-import org.keycloak.services.managers.AppAuthManager;
-import org.keycloak.services.managers.AuthenticationManager;
 import org.keycloak.services.resource.RealmResourceProvider;
 import org.keycloak.services.resource.RealmResourceProviderFactory;
 import org.kohsuke.MetaInfServices;
 
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -50,14 +44,16 @@ import java.util.ServiceLoader;
 public class RealmAuthzResourceProviderFactory implements RealmResourceProviderFactory {
 
     private PersistenceProviderFactory persistenceProviderFactory;
-    private List<PolicyProviderFactory> policyProviders = new ArrayList<>();
+    private Authorization authorization;
 
     @Override
     public RealmResourceProvider create(RealmModel realm, KeycloakSession keycloakSession) {
         return new RealmResourceProvider() {
             public Object getResource(final String pathName) {
                 if (pathName.equals("authz")) {
-                    RootResource resource = new RootResource(realm, createAuthorizationManager(realm, keycloakSession), keycloakSession, createConfiguration(realm));
+                    ResteasyProviderFactory.getInstance().pushContext(StoreFactory.class, persistenceProviderFactory.create(keycloakSession));
+
+                    RootResource resource = new RootResource(realm, authorization, keycloakSession, createConfiguration(realm));
 
                     ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -84,13 +80,33 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
 
     @Override
     public void postInit(KeycloakSessionFactory factory) {
-        initPolicyProviders(factory);
+        KeycloakSession session = factory.create();
+        KeycloakTransactionManager transaction = session.getTransaction();
+        try {
+            transaction.begin();
+
+            this.authorization = Authorization.builder().storeFactory(() -> {
+                StoreFactory storeFactory = ResteasyProviderFactory.getContextData(StoreFactory.class);
+
+                if (storeFactory == null) {
+                    return persistenceProviderFactory.create(session);
+                }
+
+                return storeFactory;
+            }).build();
+
+            transaction.commit();
+        } catch (Exception e) {
+            transaction.rollback();
+        } finally {
+            session.close();
+        }
         this.persistenceProviderFactory.registerSynchronizationListeners(factory);
     }
 
     @Override
     public void close() {
-        this.policyProviders.forEach(PolicyProviderFactory::dispose);
+        this.authorization.getProviderFactories().forEach(PolicyProviderFactory::dispose);
     }
 
     @Override
@@ -98,16 +114,12 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
         return "keycloak-authz-restapi";
     }
 
-    private Authorization createAuthorizationManager(RealmModel realm, KeycloakSession keycloakSession) {
-        return new KeycloakAuthorizationManager(this.persistenceProviderFactory.create(keycloakSession), this.policyProviders);
-    }
-
     @Override
     public Map<String, String> getOperationalInfo() {
         HashMap<String, String> info = new HashMap<>();
         StringBuilder policyProvidersInfo = new StringBuilder();
 
-        this.policyProviders.forEach(provider -> policyProvidersInfo.append(provider.getType()).append(", "));
+        this.authorization.getProviderFactories().forEach(provider -> policyProvidersInfo.append(provider.getType()).append(", "));
 
         info.put("Persistence Provider", this.persistenceProviderFactory.getClass().getName());
         info.put("Policy Providers", policyProvidersInfo.substring(0, policyProvidersInfo.lastIndexOf(",")));
@@ -125,43 +137,10 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
         throw new RuntimeException("No persistence provider found.");
     }
 
-    private void initPolicyProviders(KeycloakSessionFactory factory) {
-        KeycloakSession session = factory.create();
-        KeycloakTransactionManager transaction = session.getTransaction();
-        try {
-            transaction.begin();
-
-            ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach(providerFactory -> {
-                StoreFactory persistenceProvider = this.persistenceProviderFactory.create(session);
-
-                providerFactory.init(persistenceProvider.getPolicyStore());
-
-                this.policyProviders.add(providerFactory);
-            });
-
-            transaction.commit();
-        } catch (Exception e) {
-            transaction.rollback();
-        } finally {
-            session.close();
-        }
-    }
-
     private Configuration createConfiguration(RealmModel realm) {
         return Configuration.fromDefault("http://localhost:8080/auth/", realm.getName(),
                 URI.create("http://localhost:8080/auth/realms/" + realm.getName() + "/protocol/openid-connect/token"),
                 URI.create("http://localhost:8080/auth/realms/" + realm.getName() + "/protocol/openid-connect/token"),
                 realm.getPublicKeyPem());
-    }
-
-    private AccessToken getAccessToken(KeycloakSession keycloakSession, RealmModel realm) {
-        AppAuthManager authManager = new AppAuthManager();
-        AuthenticationManager.AuthResult authResult = authManager.authenticateBearerToken(keycloakSession, realm, keycloakSession.getContext().getUri(), keycloakSession.getContext().getConnection(), keycloakSession.getContext().getRequestHeaders());
-
-        if (authResult != null) {
-            return authResult.getToken();
-        }
-
-        return null;
     }
 }

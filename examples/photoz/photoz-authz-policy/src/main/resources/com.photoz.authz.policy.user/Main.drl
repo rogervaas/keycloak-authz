@@ -6,7 +6,7 @@ rule "Authorize View User Album"
     dialect "mvel"
     when
        $evaluation : Evaluation(
-           $context : context, $context.identity.hasRole("user")
+           $context : context, $context.identity.hasScope("user")
        )
     then
        $evaluation.grant();

@@ -1,4 +1,4 @@
-package org.keycloak.authz.core.policy.io;
+package org.keycloak.authz.core.policy;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -8,7 +8,7 @@ import java.util.concurrent.Executors;
  */
 public class Schedulers {
 
-    public static Scheduler blocking() {
+    public static Scheduler sync() {
         return new Scheduler(new Executor() {
             @Override
             public void execute(Runnable command) {
@@ -17,8 +17,8 @@ public class Schedulers {
         });
     }
 
-    public static Scheduler single() {
-        return new Scheduler(Executors.newSingleThreadExecutor());
+    public static Scheduler parallel() {
+        return new Scheduler(Executors.newWorkStealingPool(2));
     }
 
     public static class Scheduler {

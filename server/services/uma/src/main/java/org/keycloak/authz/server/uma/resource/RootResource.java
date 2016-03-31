@@ -62,7 +62,7 @@ public class RootResource {
     public Object resource() {
         Identity identity = createIdentity();
 
-        if (!identity.hasRole("uma_protection")) {
+        if (!identity.hasScope("uma_protection")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_protection scope.", Response.Status.FORBIDDEN);
         }
 
@@ -77,7 +77,7 @@ public class RootResource {
     public Object permission() {
         Identity identity = createIdentity();
 
-        if (!identity.hasRole("uma_protection")) {
+        if (!identity.hasScope("uma_protection")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_protection scope.", Response.Status.FORBIDDEN);
         }
 

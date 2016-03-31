@@ -1,38 +1,157 @@
 package org.keycloak.authz.core;
 
-import org.keycloak.authz.core.policy.PolicyManager;
+import org.keycloak.authz.core.policy.Evaluators;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ServiceLoader;
+import java.util.function.Supplier;
+
 /**
- * An entry point to all authorization related services.
+ * <p>The main contract here is the creation of {@link org.keycloak.authz.core.policy.PolicyEvaluator} instances.  Usually
+ * an application has a single {@link Authorization} instance and threads servicing client requests obtain {@link org.keycloak.authz.core.policy.PolicyEvaluator}
+ * from the {@link #evaluators()} method.
+ *
+ * <p>The internal state of a {@link Authorization} is immutable.  This internal state includes all of the metadata
+ * used during the evaluation of policies.
+ *
+ * <p>Instances of this class are thread-safe and must be created using a {@link Builder}:
+ *
+ * <pre>
+ *     Authorization authorization = Authorization.builder().build();
+ * </pre>
+ *
+ * <p>For more information about the different configuration options, please take a look at {@link Builder} documentation.
+ *
+ * <p>Once created, {@link org.keycloak.authz.core.policy.PolicyEvaluator} instances can be obtained from the {@link #evaluators()} method:
+ *
+ * <pre>
+ *     EvaluationContext context = createEvaluationContext();
+ *     PolicyEvaluator evaluator = authorization.evaluators().from(context);
+ *
+ *     evaluator.evaluate(new Decision() {
+ *
+ *         public void onGrant(Evaluation evaluation) {
+ *              // do something on grant
+ *         }
+ *
+ *     });
+ * </pre>
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public interface Authorization {
+public final class Authorization {
+
+    public synchronized static final Builder builder() {
+        return new Builder();
+    }
+
+    private final Supplier<StoreFactory> storeFactory;
+    private final List<PolicyProviderFactory> policyProviderFactories;
+
+    private Authorization(Supplier<StoreFactory> storeFactorySupplier, List<PolicyProviderFactory> policyProviderFactories) {
+        this.storeFactory = storeFactorySupplier;
+        this.policyProviderFactories = Collections.unmodifiableList(policyProviderFactories);
+    }
 
     /**
-     * Returns a {@link PolicyManager}.
+     * Returns a {@link Evaluators} instance from where {@link org.keycloak.authz.core.policy.PolicyEvaluator} instances
+     * can be obtained.
      *
-     * @return the policy manager
+     * @return a {@link Evaluators} instance
      */
-    PolicyManager getPolicyManager();
+    public Evaluators evaluators() {
+        return new Evaluators(this.storeFactory.get(), this.policyProviderFactories);
+    }
 
     /**
      * Returns a {@link StoreFactory}.
      *
-     * @return the store factory
+     * @return the {@link StoreFactory}
      */
-    StoreFactory getStoreFactory();
+    public StoreFactory getStoreFactory() {
+        return this.storeFactory.get();
+    }
 
     /**
-     * Returns a given policy provider given its <code>type</code>.
+     * Returns the registered {@link PolicyProviderFactory}.
+     *
+     * @return a {@link List} containing all registered {@link PolicyProviderFactory}
+     */
+    public List<PolicyProviderFactory> getProviderFactories() {
+        return this.policyProviderFactories;
+    }
+
+    /**
+     * Returns a {@link PolicyProviderFactory} given a <code>type</code>.
      *
      * @param type the type of the policy provider
      * @param <F> the expected type of the provider
-     * @return the policy provider with the given type.
+     * @return a {@link PolicyProviderFactory} with the given <code>type</code>
      */
-    default <F extends PolicyProviderFactory> F getProviderFactory(String type) {
-        return (F) getPolicyManager().getProviderFactories().stream().filter(policyProviderFactory -> policyProviderFactory.getType().equals(type)).findFirst().orElse(null);
+    public <F extends PolicyProviderFactory> F getProviderFactory(String type) {
+        return (F) getProviderFactories().stream().filter(policyProviderFactory -> policyProviderFactory.getType().equals(type)).findFirst().orElse(null);
+    }
+
+    /**
+     * A builder that provides a fluent API to configure and create {@link Authorization} instances.
+     */
+    public static final class Builder {
+
+        private Supplier<StoreFactory> storeFactorySupplier;
+
+        private Builder() {
+
+        }
+
+        /**
+         * A {@link Supplier} of {@link StoreFactory}.
+         *
+         * @param supplier a supplier of store factory
+         * @return this instance
+         */
+        public Builder storeFactory(Supplier<StoreFactory> supplier) {
+            this.storeFactorySupplier = supplier;
+            return this;
+        }
+
+        /**
+         * Returns a new {@link Authorization} instance based on the configuration previously provided.
+         *
+         * @return a new {@link Authorization} instance
+         */
+        public Authorization build() {
+            if (this.storeFactorySupplier == null) {
+                StoreFactory storeFactory = configureStoreFactory();
+                this.storeFactorySupplier = () -> storeFactory;
+            }
+
+            return new Authorization(this.storeFactorySupplier, configurePolicyProviderFactories(this.storeFactorySupplier));
+        }
+
+        private List<PolicyProviderFactory> configurePolicyProviderFactories(Supplier<StoreFactory> storeFactorySupplier) {
+            List<PolicyProviderFactory> factories = new ArrayList<>();
+
+            ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach((policyProviderFactory) -> {
+                policyProviderFactory.init(storeFactorySupplier.get().getPolicyStore());
+                factories.add(policyProviderFactory);
+            });
+
+            return factories;
+        }
+
+        private StoreFactory configureStoreFactory() {
+            Iterator<StoreFactory> iterator = ServiceLoader.load(StoreFactory.class).iterator();
+
+            if (!iterator.hasNext()) {
+                throw new RuntimeException("No " + StoreFactory.class + " found in classpath.");
+            }
+
+            return iterator.next();
+        }
     }
 }
