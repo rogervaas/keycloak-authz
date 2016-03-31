@@ -14,7 +14,6 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -37,31 +36,29 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         }
     }
 
-    public DefaultPolicyEvaluator decideOn(Scheduler scheduler) {
-        this.decideOn = scheduler;
-        return this;
-    }
-
     @Override
     public void evaluate(Decision decision) {
         try {
-            DecisionWrapper decisionWrapper = new DecisionWrapper(decision);
-
             for (ResourcePermission permission : this.evaluationContex.getAllPermissions()) {
                 Consumer<Policy> consumer = parentPolicy -> {
                     for (Policy associatedPolicy : parentPolicy.getAssociatedPolicies()) {
+                        if (hasRequestedScopes(permission, associatedPolicy)) {
+                            continue;
+                        }
+
                         PolicyProvider policyProvider = policyProviders.get(associatedPolicy.getType()).create(associatedPolicy);
 
                         if (policyProvider == null) {
                             throw new RuntimeException("Unknown parentPolicy provider for type [" + associatedPolicy.getType() + "].");
                         }
 
+                        DecisionWrapper decisionWrapper = new DecisionWrapper(decision);
                         Evaluation evaluation = new Evaluation(permission, evaluationContex, parentPolicy, associatedPolicy, decisionWrapper);
 
                         policyProvider.evaluate(evaluation);
 
                         if (decisionWrapper.hasStatus(DecisionWrapper.Status.UNKOWN)) {
-                            decision.onDeny(evaluation);
+                            decisionWrapper.onDeny(evaluation);
                         }
                     }
                 };
@@ -83,37 +80,16 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
     private void evaluate(ResourcePermission permission, Consumer<Policy> consumer) {
         if (permission.getResource() != null) {
-            permission.getResource().getPolicies().stream().filter(new Predicate<Policy>() {
-                @Override
-                public boolean test(Policy policy) {
-                    return hasRequestedScopes(permission, policy);
-                }
-            }).forEach(consumer);
+            permission.getResource().getPolicies().stream().forEach(consumer);
 
-            this.policyStore.findByResourceType(permission.getResource().getType()).stream().filter(new Predicate<Policy>() {
-                @Override
-                public boolean test(Policy policy) {
-                    return hasRequestedScopes(permission, policy);
-                }
-            }).forEach(consumer);
+            this.policyStore.findByResourceType(permission.getResource().getType()).stream().forEach(consumer);
 
             if (permission.getScopes().isEmpty()) {
-                this.policyStore.findByScopeName(permission.getResource().getScopes().stream().map(Scope::getName).collect(Collectors.toList())).stream().filter(new Predicate<Policy>() {
-                    @Override
-                    public boolean test(Policy policy) {
-                        return hasRequestedScopes(permission, policy);
-                    }
-                }).forEach(consumer);
+                this.policyStore.findByScopeName(permission.getResource().getScopes().stream().map(Scope::getName).collect(Collectors.toList())).stream().forEach(consumer);
             }
         }
 
-        List<Policy> policies = this.policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList()));
-
-        for (Policy policy : policies) {
-            if (hasRequestedScopes(permission, policy)) {
-                consumer.accept(policy);
-            }
-        }
+        this.policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).stream().forEach(consumer);
     }
 
     private boolean hasRequestedScopes(final ResourcePermission permission, final Policy policy) {
