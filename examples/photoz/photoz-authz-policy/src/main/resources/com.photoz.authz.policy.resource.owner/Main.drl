@@ -7,7 +7,8 @@ rule "Authorize Resource Owner"
     when
        $evaluation : Evaluation(
            $permission: permission,
-           $identity: context.identity,
+           $context: context,
+           $identity: $context.identity,
            $permission.resource != null && $permission.resource.owner.equals($identity.id)
        )
     then

@@ -6,19 +6,7 @@ import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.persistence.jpa.entity.PolicyEntity;
-import org.keycloak.authz.persistence.jpa.entity.ResourceEntity;
-import org.keycloak.authz.persistence.jpa.entity.ResourceServerEntity;
-import org.keycloak.authz.persistence.jpa.entity.ScopeEntity;
 
-import javax.persistence.CollectionTable;
-import javax.persistence.Column;
-import javax.persistence.ElementCollection;
-import javax.persistence.FetchType;
-import javax.persistence.Id;
-import javax.persistence.ManyToMany;
-import javax.persistence.ManyToOne;
-import javax.persistence.MapKeyColumn;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -77,7 +65,7 @@ public class MapPolicy implements Policy {
 
     @Override
     public void addAssociatedPolicy(Policy policy) {
-        this.associatedPolicies.add((PolicyEntity) policy);
+        this.associatedPolicies.add(policy);
     }
 
     @Override
@@ -87,7 +75,7 @@ public class MapPolicy implements Policy {
 
     @Override
     public void addScope(Scope scope) {
-        this.scopes.add((ScopeEntity) scope);
+        this.scopes.add(scope);
     }
 
     @Override
@@ -97,7 +85,7 @@ public class MapPolicy implements Policy {
 
     @Override
     public void addResource(Resource resource) {
-        this.resources.add((ResourceEntity) resource);
+        this.resources.add(resource);
     }
 
     @Override

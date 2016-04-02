@@ -11,23 +11,35 @@ import org.keycloak.authz.core.store.StoreFactory;
  */
 public class MapStoreFactory implements StoreFactory {
 
+    private final MapResourceStore resourceStore;
+    private final MapResourceServerStore resourceServerStore;
+    private final MapPolicyStore policyStore;
+    private MapScopeStore scopeStore;
+
+    public MapStoreFactory() {
+        this.resourceStore = new MapResourceStore();
+        this.resourceServerStore = new MapResourceServerStore();
+        this.scopeStore = new MapScopeStore();
+        this.policyStore = new MapPolicyStore();
+    }
+
     @Override
     public ResourceStore getResourceStore() {
-        return new MapResourceStore();
+        return this.resourceStore;
     }
 
     @Override
     public ResourceServerStore getResourceServerStore() {
-        return new MapResourceServerStore();
+        return this.resourceServerStore;
     }
 
     @Override
     public ScopeStore getScopeStore() {
-        return new MapScopeStore();
+        return this.scopeStore;
     }
 
     @Override
     public PolicyStore getPolicyStore() {
-        return new MapPolicyStore();
+        return this.policyStore;
     }
 }

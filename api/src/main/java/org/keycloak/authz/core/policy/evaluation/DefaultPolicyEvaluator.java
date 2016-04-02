@@ -1,6 +1,7 @@
 package org.keycloak.authz.core.policy.evaluation;
 
 import org.keycloak.authz.core.model.Policy;
+import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.Decision;
@@ -26,7 +27,7 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
     private final EvaluationContext evaluationContex;
     private final PolicyStore policyStore;
     private Map<String, PolicyProviderFactory> policyProviders = new HashMap<>();
-    private Executor decideOn = Executors.newWorkStealingPool();
+    private Executor decideOn = Runnable::run;
     private CompletableFuture<?> future = CompletableFuture.completedFuture(null);
 
     public DefaultPolicyEvaluator(EvaluationContext evaluationContext, PolicyStore policyStore, List<PolicyProviderFactory> providerFactories) {
@@ -40,27 +41,23 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
     @Override
     public void evaluate(Decision decision) {
-        try {
+        this.future = CompletableFuture.allOf(this.future, CompletableFuture.runAsync(() -> {
             for (;;) {
-                ResourcePermission permission = this.evaluationContex.getPermissions().get();
+                ResourcePermission permission = evaluationContex.getPermissions().get();
 
                 if (permission == null) {
                     break;
                 }
 
-                this.future = CompletableFuture.allOf(this.future, CompletableFuture.runAsync(() -> evaluate(permission, createDecisionConsumer(permission, decision)), this.decideOn));
+                evaluate(permission, createDecisionConsumer(permission, decision));
             }
-
-            this.future.whenCompleteAsync((BiConsumer<Object, Throwable>) (o, cause) -> {
-                if (cause == null) {
-                    decision.onComplete();
-                } else {
-                    decision.onError(cause);
-                }
-            }, this.decideOn);
-        } catch (Throwable cause) {
-            decision.onError(cause);
-        }
+        }, this.decideOn).whenCompleteAsync((BiConsumer<Object, Throwable>) (o, cause) -> {
+            if (cause == null) {
+                decision.onComplete();
+            } else {
+                decision.onError(cause);
+            }
+        }, this.decideOn));
     }
 
     public Consumer<Policy> createDecisionConsumer(ResourcePermission permission, Decision decision) {
@@ -76,7 +73,11 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
                     DecisionWrapper decisionWrapper = new DecisionWrapper(decision);
                     Evaluation evaluation = new Evaluation(permission, evaluationContex, parentPolicy, associatedPolicy, decisionWrapper);
 
-                    policyProvider.evaluate(evaluation);
+                    try {
+                        policyProvider.evaluate(evaluation);
+                    } catch (Throwable cause) {
+                        cause.printStackTrace();
+                    }
 
                     if (decisionWrapper.hasStatus(DecisionWrapper.Status.UNKOWN)) {
                         decisionWrapper.onDeny(evaluation);
@@ -87,17 +88,27 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
     }
 
     private void evaluate(ResourcePermission permission, Consumer<Policy> consumer) {
-        if (permission.getResource() != null) {
-            permission.getResource().getPolicies().stream().forEach(consumer);
+        Resource resource = permission.getResource();
 
-            this.policyStore.findByResourceType(permission.getResource().getType()).stream().forEach(consumer);
+        if (resource != null) {
+            List<? extends Policy> resourcePolicies = this.policyStore.findByResource(resource.getId());
 
-            if (permission.getScopes().isEmpty()) {
-                this.policyStore.findByScopeName(permission.getResource().getScopes().stream().map(Scope::getName).collect(Collectors.toList())).stream().forEach(consumer);
+            if (!resourcePolicies.isEmpty()) {
+                resourcePolicies.forEach(consumer);
+            }
+
+            if (resource.getType() != null) {
+                this.policyStore.findByResourceType(resource.getType()).forEach(consumer);
+            }
+
+            if (permission.getScopes().isEmpty() && !resource.getScopes().isEmpty()) {
+                this.policyStore.findByScopeName(resource.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
             }
         }
 
-        this.policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).stream().forEach(consumer);
+        if (!permission.getScopes().isEmpty()) {
+            this.policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
+        }
     }
 
     private boolean hasRequestedScopes(final ResourcePermission permission, final Policy policy) {
