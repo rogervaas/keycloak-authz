@@ -1,6 +1,6 @@
 package org.keycloak.authz.core.policy;
 
-import org.keycloak.authz.core.policy.Evaluation;
+import org.keycloak.authz.core.policy.evaluation.Evaluation;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

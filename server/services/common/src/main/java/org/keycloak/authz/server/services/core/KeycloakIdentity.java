@@ -20,6 +20,7 @@ package org.keycloak.authz.server.services.core;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.models.ClientSessionModel;
@@ -32,10 +33,10 @@ import org.keycloak.services.managers.AppAuthManager;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 
 import static org.keycloak.authz.server.services.core.util.Tokens.getAccessToken;
 
@@ -47,7 +48,7 @@ public class KeycloakIdentity implements Identity {
     private final AccessToken accessToken;
     private final KeycloakSession keycloakSession;
 
-    public static Identity create(RealmModel realm, KeycloakSession keycloakSession) {
+    public static KeycloakIdentity create(RealmModel realm, KeycloakSession keycloakSession) {
         AccessToken token = getAccessToken(keycloakSession, realm);
 
         if (token == null) {
@@ -73,8 +74,8 @@ public class KeycloakIdentity implements Identity {
     }
 
     @Override
-    public Map<String, List<String>> getAttributes() {
-        HashMap<String, List<String>> attributes = new HashMap<>();
+    public Attributes getAttributes() {
+        HashMap<String, Collection<String>> attributes = new HashMap<>();
         AppAuthManager authManager = new AppAuthManager();
         String token = authManager.extractAuthorizationHeaderToken(this.keycloakSession.getContext().getRequestHeaders());
 
@@ -122,13 +123,25 @@ public class KeycloakIdentity implements Identity {
                 attributes.put(fieldName, values);
             }
 
-            attributes.put("scopes", roleNames);
+            attributes.put("roles", roleNames);
         } catch (Exception e) {
             throw new RuntimeException("Error while reading attributes from security token.", e);
         }
 
-        return attributes;
+        return Attributes.from(attributes);
     }
+
+    /**
+     * Indicates if this identity is granted with a role with the given <code>roleName</code>.
+     *
+     * @param roleName the name of the role
+     *
+     * @return true if the identity has the given role. Otherwise, it returns false.
+     */
+    public boolean hasRole(String roleName) {
+        return getAttributes().containsValue("roles", roleName);
+    }
+
 
     public boolean isResourceServer() {
         ClientSessionModel clientSession = this.keycloakSession.sessions().getClientSession(this.accessToken.getClientSession());

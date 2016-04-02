@@ -60,9 +60,9 @@ public class RootResource {
 
     @Path("/resource_set")
     public Object resource() {
-        Identity identity = createIdentity();
+        KeycloakIdentity identity = createIdentity();
 
-        if (!identity.hasScope("uma_protection")) {
+        if (!identity.hasRole("uma_protection")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_protection scope.", Response.Status.FORBIDDEN);
         }
 
@@ -75,9 +75,9 @@ public class RootResource {
 
     @Path("/permission")
     public Object permission() {
-        Identity identity = createIdentity();
+        KeycloakIdentity identity = createIdentity();
 
-        if (!identity.hasScope("uma_protection")) {
+        if (!identity.hasRole("uma_protection")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_protection scope.", Response.Status.FORBIDDEN);
         }
 
@@ -106,7 +106,7 @@ public class RootResource {
         return resource;
     }
 
-    private Identity createIdentity() {
+    private KeycloakIdentity createIdentity() {
         return KeycloakIdentity.create(realm, keycloakSession);
     }
 

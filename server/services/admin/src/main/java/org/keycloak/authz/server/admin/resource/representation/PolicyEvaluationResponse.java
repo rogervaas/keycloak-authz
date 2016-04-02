@@ -1,34 +1,36 @@
 package org.keycloak.authz.server.admin.resource.representation;
 
+import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.model.ResourceServer;
+import org.keycloak.authz.core.policy.evaluation.EvaluationResult;
+import org.keycloak.authz.server.admin.resource.util.Models;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.policy.DefaultEvaluationContext;
-import org.keycloak.authz.core.model.ResourceServer;
-import org.keycloak.authz.core.policy.EvaluationResult;
-import org.keycloak.authz.server.admin.resource.util.Models;
-import org.keycloak.models.KeycloakSession;
-import org.keycloak.models.RealmModel;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class PolicyEvaluationResponse {
 
-    private Authorization authorizationManager;
     private List<EvaluationResultRepresentation> results;
     private EvaluationResult.PolicyResult.Status status;
 
-    public static PolicyEvaluationResponse build(RealmModel realm, DefaultEvaluationContext context, List<EvaluationResult> results, ResourceServer resourceServer, Authorization authorizationManager, KeycloakSession keycloakSession) {
+    public static PolicyEvaluationResponse build(RealmModel realm, List<EvaluationResult> results, ResourceServer resourceServer, Authorization authorizationManager, KeycloakSession keycloakSession) {
         PolicyEvaluationResponse response = new PolicyEvaluationResponse();
-        if (context.isGranted()) {
-            response.setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
-        } else {
+
+        if (results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(EvaluationResult.PolicyResult.Status.DENIED))) {
             response.setStatus(EvaluationResult.PolicyResult.Status.DENIED);
+        } else {
+            response.setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
         }
+
         List<EvaluationResultRepresentation> resultsRep = new ArrayList<>();
+
         for (EvaluationResult result : results) {
             EvaluationResultRepresentation rep = new EvaluationResultRepresentation();
             rep.setStatus(result.getStatus());

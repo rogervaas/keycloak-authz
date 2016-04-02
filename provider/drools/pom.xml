@@ -10,11 +10,16 @@
         <version>1.0-SNAPSHOT</version>
     </parent>
 
-    <artifactId>keycloak-authz-drools</artifactId>
-    <packaging>jar</packaging>
+    <artifactId>keycloak-authz-drools-parent</artifactId>
+    <packaging>pom</packaging>
 
-    <name>KeyCloak Authz: Drools Policy Provider</name>
-    <description>KeyCloak: Drools Policy Provider</description>
+    <name>KeyCloak Authz: Drools Policy Provider Parent</name>
+    <description>KeyCloak: Drools Policy Provider Parent</description>
+
+    <modules>
+        <module>api</module>
+        <module>provider</module>
+    </modules>
 
     <dependencyManagement>
         <dependencies>
@@ -25,49 +30,19 @@
                 <version>6.2.0.Final</version>
                 <scope>import</scope>
             </dependency>
+
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-authz-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.keycloak</groupId>
+                <artifactId>keycloak-authz-server-admin-services</artifactId>
+                <version>${project.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-authz-api</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-authz-server-admin-services</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <!-- JAX-RS API -->
-        <dependency>
-            <groupId>org.jboss.spec.javax.ws.rs</groupId>
-            <artifactId>jboss-jaxrs-api_2.0_spec</artifactId>
-            <scope>compile</scope>
-            <optional>true</optional>
-        </dependency>
-
-        <!-- Drools -->
-        <dependency>
-            <groupId>org.kie</groupId>
-            <artifactId>kie-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.kie</groupId>
-            <artifactId>kie-ci</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.drools</groupId>
-            <artifactId>drools-compiler</artifactId>
-            <scope>runtime</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.kohsuke.metainf-services</groupId>
-            <artifactId>metainf-services</artifactId>
-        </dependency>
-    </dependencies>
 
 </project>

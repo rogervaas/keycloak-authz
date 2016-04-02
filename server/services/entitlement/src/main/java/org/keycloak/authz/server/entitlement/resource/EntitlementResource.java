@@ -24,10 +24,11 @@ import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.policy.DefaultEvaluationContext;
-import org.keycloak.authz.core.policy.EvaluationContext;
-import org.keycloak.authz.core.policy.EvaluationResult;
+import org.keycloak.authz.core.policy.evaluation.DefaultEvaluationContext;
+import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
+import org.keycloak.authz.core.policy.evaluation.EvaluationResult;
 import org.keycloak.authz.server.services.core.DefaultExecutionContext;
+import org.keycloak.authz.server.services.core.KeycloakIdentity;
 import org.keycloak.authz.server.services.core.util.Tokens;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.models.ClientModel;
@@ -43,10 +44,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -63,7 +64,7 @@ public class EntitlementResource {
     private Authorization authorizationManager;
 
     @Context
-    private Identity identity;
+    private KeycloakIdentity identity;
 
     @Context
     private HttpRequest request;
@@ -85,7 +86,7 @@ public class EntitlementResource {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Requires resourceServerId request parameter.", Response.Status.BAD_REQUEST);
         }
 
-        if (!this.identity.hasScope("kc_entitlement")) {
+        if (!this.identity.hasRole("kc_entitlement")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires kc_entitlement scope.", Response.Status.FORBIDDEN);
         }
 
@@ -96,9 +97,7 @@ public class EntitlementResource {
         }
 
         ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(client.getId());
-        ArrayList<ResourcePermission> permissions = new ArrayList<>();
-
-        permissions.addAll(this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(resourceServer.getId()).stream()
+        Iterator<ResourcePermission> permissions = this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(resourceServer.getId()).stream()
                 .flatMap(resource -> {
                     List<Scope> scopes = resource.getScopes();
 
@@ -107,9 +106,9 @@ public class EntitlementResource {
                     }
 
                     return scopes.stream().map(scope -> new ResourcePermission(resource, Arrays.asList(scope)));
-                }).collect(Collectors.toList()));
+                }).collect(Collectors.toList()).iterator();
 
-        EvaluationContext evaluationContext = new DefaultEvaluationContext(identity, this.realm, permissions, new DefaultExecutionContext(this.keycloakSession, this.realm));
+        EvaluationContext evaluationContext = new DefaultEvaluationContext(identity, this.realm, () -> permissions.hasNext() ? permissions.next() : null, new DefaultExecutionContext(this.keycloakSession, this.realm));
 //        List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
         List<EvaluationResult> evaluate = null;
 

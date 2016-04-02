@@ -9,6 +9,7 @@
         <artifact name="${org.keycloak:keycloak-authz-server-services-common}"/>
         <artifact name="${org.keycloak:keycloak-authz-api}"/>
         <artifact name="${org.keycloak:keycloak-authz-drools}"/>
+        <artifact name="${org.keycloak:keycloak-authz-drools-api}"/>
         <artifact name="${org.keycloak:keycloak-authz-identity}"/>
         <artifact name="${org.keycloak:keycloak-authz-resource}"/>
         <artifact name="${org.keycloak:keycloak-authz-scope}"/>

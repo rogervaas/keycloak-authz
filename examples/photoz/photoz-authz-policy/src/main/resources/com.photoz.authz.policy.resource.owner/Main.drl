@@ -1,6 +1,6 @@
 package com.photoz.authz.policy.admin
 
-import org.keycloak.authz.core.policy.Evaluation;
+import org.keycloak.authz.core.policy.evaluation.Evaluation;
 
 rule "Authorize Resource Owner"
     dialect "mvel"

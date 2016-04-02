@@ -24,9 +24,9 @@ import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.policy.DefaultEvaluationContext;
-import org.keycloak.authz.core.policy.EvaluationContext;
-import org.keycloak.authz.core.policy.EvaluationResult;
+import org.keycloak.authz.core.policy.evaluation.DefaultEvaluationContext;
+import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
+import org.keycloak.authz.core.policy.evaluation.EvaluationResult;
 import org.keycloak.authz.server.services.core.DefaultExecutionContext;
 import org.keycloak.authz.server.services.core.KeycloakIdentity;
 import org.keycloak.authz.server.services.core.util.Tokens;
@@ -48,6 +48,7 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -80,9 +81,9 @@ public class AuthorizationService {
     @Consumes("application/json")
     @Produces("application/json")
     public Response authorize(AuthorizationRequest request) {
-        Identity identity = KeycloakIdentity.create(this.realm, this.keycloakSession);
+        KeycloakIdentity identity = KeycloakIdentity.create(this.realm, this.keycloakSession);
 
-        if (!identity.hasScope("uma_authorization")) {
+        if (!identity.hasRole("uma_authorization")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_authorization scope.", Response.Status.FORBIDDEN);
         }
 
@@ -136,7 +137,7 @@ public class AuthorizationService {
             }
         }
 
-        List<ResourcePermission> finalPermissions = permissionsToEvaluate.entrySet().stream().map(entry -> {
+        Iterator<ResourcePermission> finalPermissions = permissionsToEvaluate.entrySet().stream().map(entry -> {
             Resource resource = authorizationManager.getStoreFactory().getResourceStore().findById(entry.getKey());
 
             if (resource != null) {
@@ -148,9 +149,9 @@ public class AuthorizationService {
             }
 
             return null;
-        }).filter(resourcePermission -> resourcePermission != null).collect(Collectors.toList());
+        }).filter(resourcePermission -> resourcePermission != null).collect(Collectors.toList()).iterator();
 
-        return new DefaultEvaluationContext(identity, this.realm, finalPermissions, new DefaultExecutionContext(this.keycloakSession, this.realm));
+        return new DefaultEvaluationContext(identity, this.realm, () -> finalPermissions.hasNext() ? finalPermissions.next() : null, new DefaultExecutionContext(this.keycloakSession, this.realm));
     }
 
     private String createRequestingPartyToken(Identity identity, List<EvaluationResult> evaluation) {

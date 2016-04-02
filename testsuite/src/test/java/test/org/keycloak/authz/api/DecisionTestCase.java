@@ -5,23 +5,22 @@ import mockit.MockUp;
 import org.junit.Before;
 import org.junit.Test;
 import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.policy.Decision;
-import org.keycloak.authz.core.policy.Evaluation;
-import org.keycloak.authz.core.policy.EvaluationContext;
-import org.keycloak.authz.core.policy.ExecutionContext;
+import org.keycloak.authz.core.policy.evaluation.Evaluation;
+import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
+import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
 import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleContainerModel;
 import org.keycloak.models.RoleModel;
 
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -32,12 +31,12 @@ import java.util.function.Supplier;
  */
 public class DecisionTestCase {
 
-    static int NUM_PERMISSIONS = 1000 * 1000 * 3;
+    static int NUM_PERMISSIONS = 1000 * 1000 * 1;
 
     private RealmModel realmModel;
-    private List<ResourcePermission> permissions;
     private MapStoreFactory mapStoreFactory;
     private Authorization authorization;
+    private Supplier<ResourcePermission> permissionSupplier;
 
     @Before
     public void onBefore() {
@@ -51,7 +50,14 @@ public class DecisionTestCase {
         }).build();
 
         this.realmModel = createRealmModel();
-        this.permissions = createPermissions();
+        this.permissionSupplier = new Supplier<ResourcePermission>() {
+            int i = 0;
+
+            @Override
+            public ResourcePermission get() {
+                return i++ <= NUM_PERMISSIONS ? new ResourcePermission(null, Collections.emptyList()) : null;
+            }
+        };
     }
 
     @Test
@@ -100,8 +106,8 @@ public class DecisionTestCase {
     public EvaluationContext createEvaluationContext() {
         return new MockUp<EvaluationContext>() {
             @Mock
-            public List<ResourcePermission> getAllPermissions() {
-                return permissions;
+            public Supplier<ResourcePermission> getPermissions() {
+                return permissionSupplier;
             }
 
             @Mock
@@ -113,24 +119,19 @@ public class DecisionTestCase {
                     }
 
                     @Override
-                    public Map<String, List<String>> getAttributes() {
-                        HashMap<String, List<String>> attributes = new HashMap<>();
+                    public Attributes getAttributes() {
+                        HashMap<String, Collection<String>> attributes = new HashMap<>();
 
-                        attributes.put("scopes", Arrays.asList("user"));
+                        attributes.put("roles", Arrays.asList("user"));
 
-                        return attributes;
+                        return Attributes.from(attributes);
                     }
                 };
             }
 
             @Mock
             public ExecutionContext getExecutionContext() {
-                return new ExecutionContext() {
-                    @Override
-                    public Map<String, List<String>> getAttributes() {
-                        return Collections.emptyMap();
-                    }
-                };
+                return () -> Attributes.EMPTY;
             }
 
             @Mock
@@ -139,16 +140,6 @@ public class DecisionTestCase {
             }
 
         }.getMockInstance();
-    }
-
-    private List<ResourcePermission> createPermissions() {
-        List<ResourcePermission> permissions = new ArrayList();
-
-        for (int i = 0 ; i < NUM_PERMISSIONS; i++) {
-            permissions.add(new ResourcePermission(null, Collections.emptyList()));
-        }
-
-        return permissions;
     }
 
     public RealmModel createRealmModel() {

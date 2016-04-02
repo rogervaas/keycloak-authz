@@ -18,6 +18,7 @@
 package org.keycloak.authz.server.admin.resource;
 
 import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
@@ -25,9 +26,9 @@ import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.Decision;
-import org.keycloak.authz.core.policy.DefaultEvaluationContext;
-import org.keycloak.authz.core.policy.Evaluation;
-import org.keycloak.authz.core.policy.EvaluationResult;
+import org.keycloak.authz.core.policy.evaluation.DefaultEvaluationContext;
+import org.keycloak.authz.core.policy.evaluation.Evaluation;
+import org.keycloak.authz.core.policy.evaluation.EvaluationResult;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
 import org.keycloak.authz.server.services.core.DefaultExecutionContext;
@@ -43,12 +44,13 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -103,10 +105,12 @@ public class PolicyEvaluateResource {
             }
         });
 
-        DefaultEvaluationContext context = new DefaultEvaluationContext(createIdentity(representation), this.realm, permissions, new DefaultExecutionContext(this.keycloakSession, this.realm) {
+        Iterator<ResourcePermission> iterator = permissions.iterator();
+
+        DefaultEvaluationContext context = new DefaultEvaluationContext(createIdentity(representation), this.realm, () -> iterator.hasNext() ? iterator.next() : null, new DefaultExecutionContext(this.keycloakSession, this.realm) {
             @Override
-            public Map<String, List<String>> getAttributes() {
-                Map<String, List<String>> attributes = super.getAttributes();
+            public Attributes getAttributes() {
+                Map<String, Collection<String>> attributes = new HashMap<>(super.getAttributes().toMap());
 
                 Map<String, String> givenAttributes = representation.getContext().get("attributes");
 
@@ -122,7 +126,7 @@ public class PolicyEvaluateResource {
                     }
                 });
 
-                return attributes;
+                return Attributes.from(attributes);
             }
         });
 
@@ -161,6 +165,7 @@ public class PolicyEvaluateResource {
 
             @Override
             public void onError(Throwable cause) {
+                cause.printStackTrace();
             }
 
             private boolean isGranted(EvaluationResult.PolicyResult policyResult) {
@@ -197,7 +202,7 @@ public class PolicyEvaluateResource {
             }
         });
 
-        return Response.ok(PolicyEvaluationResponse.build(realm, context, results.values().stream().collect(Collectors.toList()), resourceServer, authorization, keycloakSession)).build();
+        return Response.ok(PolicyEvaluationResponse.build(realm, results.values().stream().collect(Collectors.toList()), resourceServer, authorization, keycloakSession)).build();
     }
 
     public Identity createIdentity(PolicyEvaluationRequest representation) {
@@ -208,28 +213,23 @@ public class PolicyEvaluateResource {
             }
 
             @Override
-            public Map<String, List<String>> getAttributes() {
-                HashMap<String, List<String>> attributes = new HashMap<>();
+            public Attributes getAttributes() {
+                HashMap<String, Collection<String>> attributes = new HashMap<>();
                 UserModel userModel = keycloakSession.users().getUserById(getId(), realm);
 
                 if (userModel != null) {
                     Set<RoleModel> roleMappings = userModel.getRoleMappings();
                     List<String> roles = roleMappings.stream().map(RoleModel::getName).collect(Collectors.toList());
-                    attributes.put("scopes", roles);
+                    attributes.put("roles", roles);
                 }
 
                 Map<String, String> givenAttributes = representation.getContext().get("attributes");
 
                 if (givenAttributes != null) {
-                    givenAttributes.forEach(new BiConsumer<String, String>() {
-                        @Override
-                        public void accept(String key, String value) {
-                            attributes.put(key, Arrays.asList(value));
-                        }
-                    });
+                    givenAttributes.forEach((key, value) -> attributes.put(key, Arrays.asList(value)));
                 }
 
-                return attributes;
+                return Attributes.from(attributes);
             }
         };
     }

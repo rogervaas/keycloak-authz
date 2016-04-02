@@ -18,7 +18,7 @@
 package org.keycloak.authz.policy.provider.resource;
 
 import org.keycloak.authz.core.model.Policy;
-import org.keycloak.authz.core.policy.Evaluation;
+import org.keycloak.authz.core.policy.evaluation.Evaluation;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 
 /**

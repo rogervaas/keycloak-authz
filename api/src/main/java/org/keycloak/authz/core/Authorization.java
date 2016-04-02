@@ -1,6 +1,6 @@
 package org.keycloak.authz.core;
 
-import org.keycloak.authz.core.policy.Evaluators;
+import org.keycloak.authz.core.policy.evaluation.PolicyEvaluator;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
 
@@ -12,8 +12,8 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
 /**
- * <p>The main contract here is the creation of {@link org.keycloak.authz.core.policy.PolicyEvaluator} instances.  Usually
- * an application has a single {@link Authorization} instance and threads servicing client requests obtain {@link org.keycloak.authz.core.policy.PolicyEvaluator}
+ * <p>The main contract here is the creation of {@link PolicyEvaluator} instances.  Usually
+ * an application has a single {@link Authorization} instance and threads servicing client requests obtain {@link PolicyEvaluator}
  * from the {@link #evaluators()} method.
  *
  * <p>The internal state of a {@link Authorization} is immutable.  This internal state includes all of the metadata
@@ -27,7 +27,7 @@ import java.util.function.Supplier;
  *
  * <p>For more information about the different configuration options, please take a look at {@link Builder} documentation.
  *
- * <p>Once created, {@link org.keycloak.authz.core.policy.PolicyEvaluator} instances can be obtained from the {@link #evaluators()} method:
+ * <p>Once created, {@link PolicyEvaluator} instances can be obtained from the {@link #evaluators()} method:
  *
  * <pre>
  *     EvaluationContext context = createEvaluationContext();
@@ -59,13 +59,13 @@ public final class Authorization {
     }
 
     /**
-     * Returns a {@link Evaluators} instance from where {@link org.keycloak.authz.core.policy.PolicyEvaluator} instances
+     * Returns a {@link Evaluator} instance from where {@link PolicyEvaluator} instances
      * can be obtained.
      *
-     * @return a {@link Evaluators} instance
+     * @return a {@link Evaluator} instance
      */
-    public Evaluators evaluators() {
-        return new Evaluators(this.storeFactory.get(), this.policyProviderFactories);
+    public Evaluator evaluators() {
+        return new Evaluator(this.storeFactory.get(), this.policyProviderFactories);
     }
 
     /**

@@ -57,7 +57,7 @@
       "type": "scope",
       "decisionStrategy": "UNANIMOUS",
       "config": {
-        "resources": "\"\"",
+        "resources": "[]",
         "scopes": "[\"urn:photoz.com:scopes:album:delete\"]",
         "applyPolicies": "[\"Only Owner Album Policy\"]"
       }
@@ -107,11 +107,12 @@
       "description": "A policy that validates the client address",
       "type": "js",
       "config": {
-        "code": "var context = $evaluation.getContext();\nvar executionContext = context.getExecutionContext();\nvar clientIpAddress = executionContext.getAttributes().get(\"kc.authz.context.client.network.ip_address\");\n\nprint(\"From JavaScript Rule: \" + clientIpAddress);\n\nif (clientIpAddress.contains('127.0.0.1')) {\n    $evaluation.grant();\n}"
+        "code": "var context = $evaluation.getContext();\nvar executionContext = context.getExecutionContext();\nvar contextAttributes = executionContext.getAttributes();\n\nif (contextAttributes.containsValue('kc.authz.context.client.network.ip_address', '127.0.0.1')) {\n    $evaluation.grant();\n}"
       }
     },
     {
       "name": "Create Album Policy",
+      "description": "A policy that roles the creation of albums",
       "type": "scope",
       "decisionStrategy": "UNANIMOUS",
       "config": {
@@ -130,7 +131,11 @@
     {
       "name": "urn:photoz.com:scopes:album:create",
       "iconUri": "",
-      "policies": []
+      "policies": [
+        {
+          "name": "Create Album Policy"
+        }
+      ]
     },
     {
       "name": "urn:photoz.com:scopes:album:delete",

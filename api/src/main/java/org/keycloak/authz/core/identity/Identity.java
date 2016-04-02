@@ -17,8 +17,7 @@
  */
 package org.keycloak.authz.core.identity;
 
-import java.util.List;
-import java.util.Map;
+import org.keycloak.authz.core.attribute.Attributes;
 
 /**
  * <p>Represents a security identity, which can be a person or non-person entity that was previously authenticated.
@@ -39,21 +38,9 @@ public interface Identity {
     String getId();
 
     /**
-     * Returns the attributes or claims for this identity.
+     * Returns the attributes or claims associated with this identity.
      *
-     * @return the attributes or claims for this identity
+     * @return the attributes or claims associated with this identity
      */
-    Map<String, List<String>> getAttributes();
-
-    /**
-     * Indicates if this identity has a given <code>scopes</code>.
-     *
-     * @param role the name of the role
-     *
-     * @return true if the identity has the given role. Otherwise, it returns false.
-     */
-    default boolean hasScope(String role) {
-        List<String> roles = getAttributes().get("scopes");
-        return roles != null && roles.contains(role);
-    }
+    Attributes getAttributes();
 }
