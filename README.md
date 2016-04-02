@@ -90,7 +90,7 @@ use the following commands to clone and build the modified Keycloak version:
     git clone git@github.com:pedroigor/keycloak.git
     cd keycloak
     git checkout -b KEYCLOAK-2615    
-    mvn -DskipTests clean install
+    mvn -DskipTests -Pdistribution clean install
     
 Now you can clone and this project using the following command:
 
