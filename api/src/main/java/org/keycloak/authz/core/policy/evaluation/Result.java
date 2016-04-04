@@ -1,4 +1,4 @@
-package org.keycloak.authz.server.services.common.policy.evaluation;
+package org.keycloak.authz.core.policy.evaluation;
 
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.permission.ResourcePermission;
@@ -11,13 +11,13 @@ import java.util.function.Predicate;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class EvaluationResult {
+public class Result {
 
     private final ResourcePermission permission;
     private List<PolicyResult> results = new ArrayList<>();
     private Decision.Effect status;
 
-    public EvaluationResult(ResourcePermission permission) {
+    public Result(ResourcePermission permission) {
         this.permission = permission;
     }
 

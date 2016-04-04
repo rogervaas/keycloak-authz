@@ -107,20 +107,13 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
             session.close();
         }
         this.persistenceProviderFactory.registerSynchronizationListeners(factory);
-        this.threadFactory = new ThreadFactory() {
+        this.threadFactory = r -> {
+            Map<Class<?>, Object> contextDataMap = ResteasyProviderFactory.getContextDataMap();
 
-            @Override
-            public Thread newThread(Runnable r) {
-                Map<Class<?>, Object> contextDataMap = ResteasyProviderFactory.getContextDataMap();
-
-                return new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ResteasyProviderFactory.pushContextDataMap(contextDataMap);
-                        r.run();
-                    }
-                });
-            }
+            return new Thread(() -> {
+                ResteasyProviderFactory.pushContextDataMap(contextDataMap);
+                r.run();
+            });
         };
     }
 

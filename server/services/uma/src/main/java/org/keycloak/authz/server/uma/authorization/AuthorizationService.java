@@ -26,8 +26,8 @@ import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.server.services.common.DefaultExecutionContext;
 import org.keycloak.authz.server.services.common.KeycloakIdentity;
-import org.keycloak.authz.server.services.common.policy.evaluation.DecisionCollector;
-import org.keycloak.authz.server.services.common.policy.evaluation.EvaluationResult;
+import org.keycloak.authz.core.policy.evaluation.DecisionResultCollector;
+import org.keycloak.authz.core.policy.evaluation.Result;
 import org.keycloak.authz.server.services.common.util.Tokens;
 import org.keycloak.authz.server.uma.protection.permission.PermissionTicket;
 import org.keycloak.jose.jws.JWSBuilder;
@@ -93,13 +93,13 @@ public class AuthorizationService {
 
         PermissionTicket ticket = verifyPermissionTicket(authorizationRequest);
 
-        this.authorizationManager.evaluators().schedule(createPermissions(ticket, authorizationRequest), new DefaultExecutionContext(identity, this.realm), Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionCollector() {
+        this.authorizationManager.evaluators().schedule(createPermissions(ticket, authorizationRequest), new DefaultExecutionContext(identity, this.realm), Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionResultCollector() {
             @Override
-            public void onComplete(List<EvaluationResult> evaluationResults) {
-                if (anyDenial(evaluationResults)) {
+            public void onComplete(List<Result> results) {
+                if (anyDenial(results)) {
                     asyncResponse.resume(new ErrorResponseException("not_authorized", "Authorization  denied for resource [" + ticket.getResourceSetId() + "].", Response.Status.FORBIDDEN));
                 } else {
-                    asyncResponse.resume(Cors.add(httpRequest, Response.status(Response.Status.CREATED).entity(new AuthorizationResponse(createRequestingPartyToken(evaluationResults)))).allowedOrigins("*").build());
+                    asyncResponse.resume(Cors.add(httpRequest, Response.status(Response.Status.CREATED).entity(new AuthorizationResponse(createRequestingPartyToken(results)))).allowedOrigins("*").build());
                 }
             }
 
@@ -108,8 +108,8 @@ public class AuthorizationService {
                 asyncResponse.resume(cause);
             }
 
-            private boolean anyDenial(List<EvaluationResult> evaluationResults) {
-                return evaluationResults.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.DENY));
+            private boolean anyDenial(List<Result> results) {
+                return results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.DENY));
             }
         });
     }
@@ -167,10 +167,10 @@ public class AuthorizationService {
         }).filter(resourcePermission -> resourcePermission != null).collect(Collectors.toList());
     }
 
-    private String createRequestingPartyToken(List<EvaluationResult> evaluation) {
-        List<Permission> permissions = evaluation.stream().filter(new Predicate<EvaluationResult>() {
+    private String createRequestingPartyToken(List<Result> evaluation) {
+        List<Permission> permissions = evaluation.stream().filter(new Predicate<Result>() {
             @Override
-            public boolean test(EvaluationResult evaluationResult) {
+            public boolean test(Result evaluationResult) {
                 return !evaluationResult.anyDenial();
             }
         }).map(evaluationResult -> {

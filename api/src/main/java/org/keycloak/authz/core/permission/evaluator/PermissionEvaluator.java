@@ -18,8 +18,8 @@
 package org.keycloak.authz.core.permission.evaluator;
 
 import org.keycloak.authz.core.Decision;
-import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.EvaluationContext;
+import org.keycloak.authz.core.permission.ResourcePermission;
 
 /**
  * An {@link PermissionEvaluator} represents a source of {@link ResourcePermission}, responsible for emitting these permissions
@@ -30,5 +30,4 @@ import org.keycloak.authz.core.EvaluationContext;
 public interface PermissionEvaluator {
 
     void evaluate(Decision decision);
-
 }

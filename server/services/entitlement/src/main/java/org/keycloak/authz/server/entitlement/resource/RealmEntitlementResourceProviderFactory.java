@@ -36,6 +36,10 @@ import org.kohsuke.MetaInfServices;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.ThreadFactory;
+import java.util.function.Supplier;
+
+import static org.jboss.resteasy.spi.ResteasyProviderFactory.pushContext;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -45,17 +49,19 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
 
     private PersistenceProviderFactory persistenceProviderFactory;
     private Authorization authorization;
+    private ThreadFactory threadFactory;
 
     @Override
     public RealmResourceProvider create(RealmModel realm, KeycloakSession keycloakSession) {
         return new RealmResourceProvider() {
             public Object getResource(final String pathName) {
                 if (pathName.equals("entitlement")) {
-                    EntitlementResource resource = new EntitlementResource(realm, keycloakSession);
+                    EntitlementResource resource = new EntitlementResource(realm, threadFactory);
 
-                    ResteasyProviderFactory.getInstance().pushContext(Identity.class, KeycloakIdentity.create(realm));
-                    ResteasyProviderFactory.getInstance().pushContext(StoreFactory.class, persistenceProviderFactory.create(keycloakSession));
-                    ResteasyProviderFactory.getInstance().pushContext(Authorization.class, authorization);
+                    pushContext(Identity.class, KeycloakIdentity.create(realm));
+                    pushContext(StoreFactory.class, persistenceProviderFactory.create(keycloakSession));
+                    pushContext(Authorization.class, authorization);
+
                     ResteasyProviderFactory.getInstance().injectProperties(resource);
 
                     return resource;
@@ -86,14 +92,20 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
         try {
             transaction.begin();
 
-            this.authorization = Authorization.builder().storeFactory(() -> {
-                StoreFactory storeFactory = ResteasyProviderFactory.getContextData(StoreFactory.class);
+            this.authorization = Authorization.builder().storeFactory(new Supplier<StoreFactory>() {
+                private boolean initialized = false;
 
-                if (storeFactory == null) {
-                    return persistenceProviderFactory.create(session);
+                @Override
+                public StoreFactory get() {
+                    StoreFactory storeFactory = ResteasyProviderFactory.getContextData(StoreFactory.class);
+
+                    if (!initialized) {
+                        initialized = true;
+                        return persistenceProviderFactory.create(session);
+                    }
+
+                    return storeFactory;
                 }
-
-                return storeFactory;
             }).build();
 
             transaction.commit();
@@ -103,6 +115,19 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
             session.close();
         }
         this.persistenceProviderFactory.registerSynchronizationListeners(factory);
+        this.threadFactory = r -> {
+            Map<Class<?>, Object> contextDataMap = ResteasyProviderFactory.getInstance().getContextDataMap();
+
+            if (contextDataMap.isEmpty()) {
+                System.out.println("Empty !!");
+            }
+
+            return new Thread(() -> {
+                ResteasyProviderFactory.pushContextDataMap(contextDataMap);
+                ResteasyProviderFactory.pushContext(StoreFactory.class, persistenceProviderFactory.create(ResteasyProviderFactory.getContextData(KeycloakSession.class)));
+                r.run();
+            });
+        };
     }
 
     @Override

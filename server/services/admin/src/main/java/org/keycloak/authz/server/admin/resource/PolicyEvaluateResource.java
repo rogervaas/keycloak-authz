@@ -20,18 +20,18 @@ package org.keycloak.authz.server.admin.resource;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.EvaluationContext;
+import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.policy.evaluation.DecisionResultCollector;
+import org.keycloak.authz.core.policy.evaluation.Result;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
 import org.keycloak.authz.server.services.common.DefaultExecutionContext;
-import org.keycloak.authz.server.services.common.policy.evaluation.DecisionCollector;
-import org.keycloak.authz.server.services.common.policy.evaluation.EvaluationResult;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
@@ -88,9 +88,9 @@ public class PolicyEvaluateResource {
     @Produces("application/json")
     public void evaluate(PolicyEvaluationRequest representation, @Suspended AsyncResponse asyncResponse) {
         this.authorization.evaluators().schedule(createPermissions(representation), createEvaluationContext(representation), Executors.newSingleThreadExecutor(this.threadFactory))
-                .evaluate(new DecisionCollector() {
+                .evaluate(new DecisionResultCollector() {
                     @Override
-                    protected void onComplete(List<EvaluationResult> results) {
+                    protected void onComplete(List<Result> results) {
                         KeycloakSession keycloakSession = ResteasyProviderFactory.getContextData(KeycloakSession.class);
 
                         try {

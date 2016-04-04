@@ -4,7 +4,7 @@ import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.server.admin.resource.util.Models;
-import org.keycloak.authz.server.services.common.policy.evaluation.EvaluationResult;
+import org.keycloak.authz.core.policy.evaluation.Result;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
@@ -21,7 +21,7 @@ public class PolicyEvaluationResponse {
     private List<EvaluationResultRepresentation> results;
     private Decision.Effect status;
 
-    public static PolicyEvaluationResponse build(RealmModel realm, List<EvaluationResult> results, ResourceServer resourceServer, Authorization authorizationManager, KeycloakSession keycloakSession) {
+    public static PolicyEvaluationResponse build(RealmModel realm, List<Result> results, ResourceServer resourceServer, Authorization authorizationManager, KeycloakSession keycloakSession) {
         PolicyEvaluationResponse response = new PolicyEvaluationResponse();
 
         if (results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.PERMIT.DENY))) {
@@ -32,7 +32,7 @@ public class PolicyEvaluationResponse {
 
         List<EvaluationResultRepresentation> resultsRep = new ArrayList<>();
 
-        for (EvaluationResult result : results) {
+        for (Result result : results) {
             EvaluationResultRepresentation rep = new EvaluationResultRepresentation();
             rep.setStatus(result.getStatus());
             resultsRep.add(rep);
@@ -47,7 +47,7 @@ public class PolicyEvaluationResponse {
             }
             rep.setScopes(result.getPermission().getScopes().stream().map(Models::toRepresentation).collect(Collectors.toList()));
             List<PolicyResultRepresentation> policies = new ArrayList<>();
-            for (EvaluationResult.PolicyResult policy : result.getResults()) {
+            for (Result.PolicyResult policy : result.getResults()) {
                 policies.add(toRepresentation(authorizationManager, policy));
             }
             rep.setPolicies(policies);
@@ -56,14 +56,14 @@ public class PolicyEvaluationResponse {
         return response;
     }
 
-    public static PolicyResultRepresentation toRepresentation(final Authorization authorizationManager, final EvaluationResult.PolicyResult policy) {
+    public static PolicyResultRepresentation toRepresentation(final Authorization authorizationManager, final Result.PolicyResult policy) {
         PolicyResultRepresentation policyResultRep = new PolicyResultRepresentation();
 
         policyResultRep.setPolicy(Models.toRepresentation(policy.getPolicy(), authorizationManager));
         policyResultRep.setStatus(policy.getStatus());
-        policyResultRep.setAssociatedPolicies(policy.getAssociatedPolicies().stream().map(new Function<EvaluationResult.PolicyResult, PolicyResultRepresentation>() {
+        policyResultRep.setAssociatedPolicies(policy.getAssociatedPolicies().stream().map(new Function<Result.PolicyResult, PolicyResultRepresentation>() {
             @Override
-            public PolicyResultRepresentation apply(final EvaluationResult.PolicyResult result) {
+            public PolicyResultRepresentation apply(final Result.PolicyResult result) {
                 return toRepresentation(authorizationManager, result);
             }
         }).collect(Collectors.toList()));

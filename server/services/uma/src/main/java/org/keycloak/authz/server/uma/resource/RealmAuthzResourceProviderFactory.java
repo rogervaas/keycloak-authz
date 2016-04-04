@@ -114,25 +114,18 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
             session.close();
         }
         this.persistenceProviderFactory.registerSynchronizationListeners(factory);
-        this.threadFactory = new ThreadFactory() {
+        this.threadFactory = r -> {
+            Map<Class<?>, Object> contextDataMap = ResteasyProviderFactory.getInstance().getContextDataMap();
 
-            @Override
-            public Thread newThread(Runnable r) {
-                Map<Class<?>, Object> contextDataMap = ResteasyProviderFactory.getInstance().getContextDataMap();
-
-                if (contextDataMap.isEmpty()) {
-                    System.out.println("Empty !!");
-                }
-
-                return new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        ResteasyProviderFactory.pushContextDataMap(contextDataMap);
-                        ResteasyProviderFactory.pushContext(StoreFactory.class, persistenceProviderFactory.create(ResteasyProviderFactory.getContextData(KeycloakSession.class)));
-                        r.run();
-                    }
-                });
+            if (contextDataMap.isEmpty()) {
+                System.out.println("Empty !!");
             }
+
+            return new Thread(() -> {
+                ResteasyProviderFactory.pushContextDataMap(contextDataMap);
+                ResteasyProviderFactory.pushContext(StoreFactory.class, persistenceProviderFactory.create(ResteasyProviderFactory.getContextData(KeycloakSession.class)));
+                r.run();
+            });
         };
     }
 

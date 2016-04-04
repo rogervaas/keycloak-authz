@@ -1,41 +1,30 @@
-package org.keycloak.authz.server.services.common.policy.evaluation;
+package org.keycloak.authz.core.policy.evaluation;
 
 import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.permission.ResourcePermission;
-import org.keycloak.authz.core.policy.evaluation.Evaluation;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class DecisionCollector implements Decision {
+public abstract class DecisionResultCollector implements Decision {
 
-    private Map<ResourcePermission, EvaluationResult> results = new HashMap();
-    private Consumer<List<EvaluationResult>> consumer;
-
-    public DecisionCollector() {
-        this(null);
-    }
-
-    public DecisionCollector(Consumer<List<EvaluationResult>> consumer) {
-        this.consumer = consumer;
-    }
+    private Map<ResourcePermission, Result> results = new HashMap();
 
     @Override
     public void onDecision(Evaluation evaluation) {
-        results.computeIfAbsent(evaluation.getPermission(), EvaluationResult::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(evaluation.getEffect());
+        results.computeIfAbsent(evaluation.getPermission(), Result::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(evaluation.getEffect());
     }
 
     @Override
     public void onComplete() {
-        for (EvaluationResult result : results.values()) {
-            for (EvaluationResult.PolicyResult policyResult : result.getResults()) {
+        for (Result result : results.values()) {
+            for (Result.PolicyResult policyResult : result.getResults()) {
                 if (isGranted(policyResult)) {
                     policyResult.setStatus(Effect.PERMIT);
                 } else {
@@ -54,17 +43,15 @@ public class DecisionCollector implements Decision {
         onComplete(results.values().stream().collect(Collectors.toList()));
     }
 
-    protected void onComplete(List<EvaluationResult> results) {
-        this.consumer.accept(results);
-    }
+    protected abstract void onComplete(List<Result> results);
 
-    private boolean isGranted(EvaluationResult.PolicyResult policyResult) {
-        List<EvaluationResult.PolicyResult> values = policyResult.getAssociatedPolicies();
+    private boolean isGranted(Result.PolicyResult policyResult) {
+        List<Result.PolicyResult> values = policyResult.getAssociatedPolicies();
 
         int grantCount = 0;
         int denyCount = values.size();
 
-        for (EvaluationResult.PolicyResult decision : values) {
+        for (Result.PolicyResult decision : values) {
             if (decision.getStatus().equals(Effect.PERMIT)) {
                 grantCount++;
                 denyCount--;

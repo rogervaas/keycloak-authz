@@ -20,19 +20,17 @@ package org.keycloak.authz.server.entitlement.resource;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.identity.Identity;
-import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.Decision;
+import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.policy.evaluation.DecisionResultCollector;
+import org.keycloak.authz.core.policy.evaluation.Result;
 import org.keycloak.authz.server.services.common.DefaultExecutionContext;
-import org.keycloak.authz.server.services.common.KeycloakIdentity;
-import org.keycloak.authz.server.services.common.policy.evaluation.DecisionCollector;
-import org.keycloak.authz.server.services.common.policy.evaluation.EvaluationResult;
 import org.keycloak.authz.server.services.common.util.Tokens;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.models.ClientModel;
-import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.services.ErrorResponseException;
@@ -51,6 +49,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 /**
@@ -59,20 +59,20 @@ import java.util.stream.Collectors;
 public class EntitlementResource {
 
     private final RealmModel realm;
-    private final KeycloakSession keycloakSession;
+    private final ThreadFactory threadFactory;
 
     @Context
     private Authorization authorizationManager;
 
     @Context
-    private KeycloakIdentity identity;
+    private Identity identity;
 
     @Context
     private HttpRequest request;
 
-    EntitlementResource(RealmModel realm, KeycloakSession keycloakSession) {
+    EntitlementResource(RealmModel realm, ThreadFactory threadFactory) {
         this.realm = realm;
-        this.keycloakSession = keycloakSession;
+        this.threadFactory = threadFactory;
     }
 
     @OPTIONS
@@ -97,7 +97,18 @@ public class EntitlementResource {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Identifier is not associated with any client and resource server.", Response.Status.BAD_REQUEST);
         }
 
-        this.authorizationManager.evaluators().from(createPermissions(client), new DefaultExecutionContext(this.identity, this.realm)).evaluate(new DecisionCollector(evaluationResults -> asyncResponse.resume(Cors.add(request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, evaluationResults)))).allowedOrigins("*").build())));
+        this.authorizationManager.evaluators().schedule(createPermissions(client), new DefaultExecutionContext(this.identity, this.realm), Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionResultCollector() {
+
+            @Override
+            public void onError(Throwable cause) {
+                asyncResponse.resume(cause);
+            }
+
+            @Override
+            protected void onComplete(List<Result> results) {
+                asyncResponse.resume(Cors.add(request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, results)))).allowedOrigins("*").build());
+            }
+        });
     }
 
     public List<ResourcePermission> createPermissions(ClientModel client) {
@@ -115,7 +126,7 @@ public class EntitlementResource {
                 }).collect(Collectors.toList());
     }
 
-    private String createRequestingPartyToken(Identity identity, List<EvaluationResult> evaluation) {
+    private String createRequestingPartyToken(Identity identity, List<Result> evaluation) {
         List<Permission> permissions = evaluation.stream()
                 .filter(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.PERMIT))
                 .map(evaluationResult -> {
