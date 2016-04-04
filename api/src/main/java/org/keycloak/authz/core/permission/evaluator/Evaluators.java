@@ -1,9 +1,8 @@
 package org.keycloak.authz.core.permission.evaluator;
 
-import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.evaluation.DefaultPolicyEvaluator;
-import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 
 import java.util.List;
@@ -11,16 +10,16 @@ import java.util.concurrent.Executor;
 import java.util.function.Supplier;
 
 /**
+ * A factory for the different {@link PermissionEvaluator} implementations.
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public final class Evaluators {
 
-    private final Authorization authorization;
     private final List<PolicyProviderFactory> policyProviderFactories;
     private final DefaultPolicyEvaluator policyEvaluator;
 
-    public Evaluators(Authorization authorization, List<PolicyProviderFactory> policyProviderFactories, DefaultPolicyEvaluator policyEvaluator) {
-        this.authorization = authorization;
+    public Evaluators(List<PolicyProviderFactory> policyProviderFactories, DefaultPolicyEvaluator policyEvaluator) {
         this.policyProviderFactories = policyProviderFactories;
         this.policyEvaluator = policyEvaluator;
     }

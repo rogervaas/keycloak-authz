@@ -1,11 +1,11 @@
 package org.keycloak.authz.core.policy.evaluation;
 
+import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.permission.ResourcePermission;
-import org.keycloak.authz.core.policy.Advice;
-import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.permission.evaluator.PermissionEvaluator;
+import org.keycloak.authz.core.policy.Advice;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 
 import java.util.Collections;
@@ -60,12 +60,12 @@ public class Evaluation {
      */
     public void grant() {
         this.effect = Decision.Effect.PERMIT;
-        this.decision.onDecision(this, this.effect);
+        this.decision.onDecision(this);
     }
 
     public void deny() {
         this.effect = Decision.Effect.DENY;
-        this.decision.onDecision(this, this.effect);
+        this.decision.onDecision(this);
     }
 
     public void grantWithAdvices(List<Advice> advices) {
@@ -81,9 +81,13 @@ public class Evaluation {
         return this.parentPolicy;
     }
 
+    public Decision.Effect getEffect() {
+        return effect;
+    }
+
     void denyIfNoEffect() {
         if (this.effect == null) {
-            this.decision.onDecision(this, Decision.Effect.DENY);
+            deny();
         }
     }
 }

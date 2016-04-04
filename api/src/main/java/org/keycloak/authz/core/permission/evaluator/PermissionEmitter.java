@@ -7,7 +7,7 @@ import java.util.function.Consumer;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public interface PermissionEmitter extends PermissionEvaluator {
+public interface PermissionEmitter {
 
     void forEach(Consumer<ResourcePermission> permission);
 

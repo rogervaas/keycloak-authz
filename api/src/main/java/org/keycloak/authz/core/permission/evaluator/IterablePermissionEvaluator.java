@@ -17,9 +17,9 @@
  */
 package org.keycloak.authz.core.permission.evaluator;
 
-import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.EvaluationContext;
+import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.evaluation.PolicyEvaluator;
 
 import java.util.Iterator;
@@ -27,9 +27,8 @@ import java.util.function.Consumer;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- * @see PermissionEvaluator
  */
-class IterablePermissionEvaluator implements PermissionEmitter {
+class IterablePermissionEvaluator implements PermissionEvaluator, PermissionEmitter {
 
     private final Iterator<ResourcePermission> permissions;
     private final EvaluationContext executionContext;

@@ -1,8 +1,8 @@
 package org.keycloak.authz.server.services.common.policy.evaluation;
 
+import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.permission.ResourcePermission;
-import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
 
 import java.util.HashMap;
@@ -28,8 +28,8 @@ public class DecisionCollector implements Decision {
     }
 
     @Override
-    public void onDecision(Evaluation evaluation, Effect effect) {
-        results.computeIfAbsent(evaluation.getPermission(), EvaluationResult::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(effect);
+    public void onDecision(Evaluation evaluation) {
+        results.computeIfAbsent(evaluation.getPermission(), EvaluationResult::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(evaluation.getEffect());
     }
 
     @Override

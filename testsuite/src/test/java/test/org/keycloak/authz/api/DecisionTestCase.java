@@ -5,15 +5,16 @@ import mockit.MockUp;
 import org.junit.Before;
 import org.junit.Test;
 import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.Decision;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
-import org.keycloak.authz.core.Decision;
+import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.permission.evaluator.PermissionEvaluator;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
-import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleContainerModel;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -36,11 +38,15 @@ import java.util.function.Supplier;
  */
 public class DecisionTestCase {
 
-    static int NUM_PERMISSIONS = 1000 * 1000 * 5;
+    static int NUM_PERMISSIONS = 1000 * 1000 * 50;
 
     private MapStoreFactory mapStoreFactory;
     private Authorization authorization;
     private Supplier<ResourcePermission> permissionSupplier;
+    private Supplier<ResourcePermission> permissionSupplier2;
+    private Supplier<ResourcePermission> permissionSupplier3;
+    private Supplier<ResourcePermission> permissionSupplier4;
+    private Supplier<ResourcePermission> permissionSupplier5;
 
     @Before
     public void onBefore() {
@@ -58,10 +64,39 @@ public class DecisionTestCase {
 
         Policy policy = this.mapStoreFactory.getPolicyStore().create("Resource A Policy", "resource", resourceServer);
 
-//        policy.addResource(resource);
+        policy.addResource(resource);
 
         this.mapStoreFactory.getPolicyStore().save(policy);
 
+//        Policy droolsPolicy = createDroolsPolicy(resourceServer);
+//
+//        policy.addAssociatedPolicy(droolsPolicy);
+
+        Policy staticDecisionPolicy = createStaticDecisionPolicy(resourceServer, Decision.Effect.PERMIT);
+
+        policy.addAssociatedPolicy(staticDecisionPolicy);
+
+        this.permissionSupplier = createPermissionSupplier(resource);
+        this.permissionSupplier2 = createPermissionSupplier(resource);
+        this.permissionSupplier3 = createPermissionSupplier(resource);
+        this.permissionSupplier4 = createPermissionSupplier(resource);
+        this.permissionSupplier5 = createPermissionSupplier(resource);
+
+        this.authorization = Authorization.builder().storeFactory(() -> mapStoreFactory).build();
+    }
+
+    public Policy createStaticDecisionPolicy(ResourceServer resourceServer, Decision.Effect effect) {
+        Policy staticDecisionPolicy = this.mapStoreFactory.getPolicyStore().create("Static Decision Policy", "tests-static-decision", resourceServer);
+
+        Map<String, String> config = new HashMap<>();
+
+        config.put("EFFECT", effect.toString());
+
+        staticDecisionPolicy.setConfig(config);
+        return staticDecisionPolicy;
+    }
+
+    public Policy createDroolsPolicy(ResourceServer resourceServer) {
         Policy droolsPolicy = this.mapStoreFactory.getPolicyStore().create("Drools Policy", "drools", resourceServer);
 
         this.mapStoreFactory.getPolicyStore().save(droolsPolicy);
@@ -77,22 +112,35 @@ public class DecisionTestCase {
 
         droolsPolicy.setConfig(config);
 
-        policy.addAssociatedPolicy(droolsPolicy);
-
-        this.permissionSupplier = createPermissionSupplier(resource);
-
-        this.authorization = Authorization.builder().storeFactory(() -> mapStoreFactory).build();
+        return droolsPolicy;
     }
 
     @Test
     public void test() throws Exception {
         final long start = System.nanoTime();
-        CountDownLatch latch = new CountDownLatch(1);
+        CountDownLatch latch = new CountDownLatch(5);
         System.out.println("Starting ...");
 
+        EvaluationContext evaluationContext = createEvaluationContext();
+        ExecutorService scheduler = Executors.newWorkStealingPool();
         this.authorization.evaluators()
-                .schedule(this.permissionSupplier, createExecutionContext(), Executors.newWorkStealingPool())
-//                .from(this.permissionSupplier, createExecutionContext())
+                .schedule(this.permissionSupplier, evaluationContext, scheduler)
+                .evaluate(createDecision(latch));
+
+        this.authorization.evaluators()
+                .schedule(this.permissionSupplier2, evaluationContext, scheduler)
+                .evaluate(createDecision(latch));
+
+        this.authorization.evaluators()
+                .schedule(this.permissionSupplier3, evaluationContext, scheduler)
+                .evaluate(createDecision(latch));
+
+        this.authorization.evaluators()
+                .schedule(this.permissionSupplier4, evaluationContext, scheduler)
+                .evaluate(createDecision(latch));
+
+        this.authorization.evaluators()
+                .schedule(this.permissionSupplier5, evaluationContext, scheduler)
                 .evaluate(createDecision(latch));
 
         latch.await(200, TimeUnit.SECONDS);
@@ -110,8 +158,8 @@ public class DecisionTestCase {
     private Decision createDecision(final CountDownLatch latch) {
         return new Decision() {
             @Override
-            public void onDecision(Evaluation evaluation, Effect effect) {
-                System.out.println(effect + ": " + evaluation.getPolicy().getName() + " / " + Thread.currentThread().getName());
+            public void onDecision(Evaluation evaluation) {
+//                System.out.println(evaluation.getEffect() + ": " + evaluation.getPolicy().getName() + " / " + Thread.currentThread().getName());
             }
 
             @Override
@@ -203,7 +251,7 @@ public class DecisionTestCase {
         }.getMockInstance();
     }
 
-    private EvaluationContext createExecutionContext() {
+    private EvaluationContext createEvaluationContext() {
         return new EvaluationContext() {
             @Override
             public Identity getIdentity() {
@@ -226,7 +274,7 @@ public class DecisionTestCase {
         return new Identity() {
             @Override
             public String getId() {
-                return "admin";
+                return "alice";
             }
 
             @Override
@@ -241,14 +289,12 @@ public class DecisionTestCase {
     }
 
     private Supplier<ResourcePermission> createPermissionSupplier(final Resource resource) {
-        List<ResourcePermission> resourcePermissions = new ArrayList<>();
-
         return new Supplier<ResourcePermission>() {
             private int count = 0;
 
             @Override
             public ResourcePermission get() {
-                if (count++ > NUM_PERMISSIONS) {
+                if (count++ > NUM_PERMISSIONS / 5) {
                     return null;
                 }
 

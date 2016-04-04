@@ -1,7 +1,7 @@
 package org.keycloak.authz.core;
 
-import org.keycloak.authz.core.policy.evaluation.DefaultPolicyEvaluator;
 import org.keycloak.authz.core.permission.evaluator.Evaluators;
+import org.keycloak.authz.core.policy.evaluation.DefaultPolicyEvaluator;
 import org.keycloak.authz.core.policy.evaluation.PolicyEvaluator;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
@@ -14,8 +14,8 @@ import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
 /**
- * <p>The main contract here is the creation of {@link PolicyEvaluator} instances.  Usually
- * an application has a single {@link Authorization} instance and threads servicing client requests obtain {@link PolicyEvaluator}
+ * <p>The main contract here is the creation of {@link org.keycloak.authz.core.permission.evaluator.PermissionEvaluator} instances.  Usually
+ * an application has a single {@link Authorization} instance and threads servicing client requests obtain {@link org.keycloak.authz.core.permission.evaluator.PermissionEvaluator}
  * from the {@link #evaluators()} method.
  *
  * <p>The internal state of a {@link Authorization} is immutable.  This internal state includes all of the metadata
@@ -29,11 +29,12 @@ import java.util.function.Supplier;
  *
  * <p>For more information about the different configuration options, please take a look at {@link Builder} documentation.
  *
- * <p>Once created, {@link PolicyEvaluator} instances can be obtained from the {@link #evaluators()} method:
+ * <p>Once created, {@link org.keycloak.authz.core.permission.evaluator.PermissionEvaluator} instances can be obtained from the {@link #evaluators()} method:
  *
  * <pre>
- *     EvaluationContext context = createEvaluationContext();
- *     PolicyEvaluator evaluator = authorization.evaluators().from(context);
+ *     Supplier<ResourcePermission> permissionsToEvaluate = getPermissions(); // the permissions to evaluate
+ *     EvaluationContext evaluationContext = createEvaluationContext(); // the context with runtime environment information
+ *     PermissionEvaluator evaluator = authorization.evaluators().from(permissionsToEvaluate, context);
  *
  *     evaluator.evaluate(new Decision() {
  *
@@ -70,7 +71,7 @@ public final class Authorization {
      * @return a {@link Evaluators} instance
      */
     public Evaluators evaluators() {
-        return new Evaluators(this, this.policyProviderFactories, this.policyEvaluator);
+        return new Evaluators(this.policyProviderFactories, this.policyEvaluator);
     }
 
     /**

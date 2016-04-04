@@ -12,7 +12,7 @@ public interface Decision {
         DENY
     }
 
-    void onDecision(Evaluation evaluation, Effect effect);
+    void onDecision(Evaluation evaluation);
 
     default void onError(Throwable cause) {
         throw new RuntimeException("Not implemented.", cause);
