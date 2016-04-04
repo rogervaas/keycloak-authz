@@ -85,28 +85,27 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
             return true;
         }
 
-        if (!policy.getScopes().isEmpty()) {
-            boolean hasScope = true;
+        if (policy.getScopes().isEmpty()) {
+            return true;
+        }
 
-            for (Scope givenScope : policy.getScopes()) {
-                boolean hasGivenScope = false;
+        boolean hasScope = true;
 
-                for (Scope scope : permission.getScopes()) {
-                    if (givenScope.getId().equals(scope.getId())) {
-                        hasGivenScope = true;
-                        break;
-                    }
-                }
+        for (Scope givenScope : policy.getScopes()) {
+            boolean hasGivenScope = false;
 
-                if (!hasGivenScope) {
-                    hasScope = false;
+            for (Scope scope : permission.getScopes()) {
+                if (givenScope.getId().equals(scope.getId())) {
+                    hasGivenScope = true;
                     break;
                 }
             }
 
-            return hasScope;
-        } else {
-            return true;
+            if (!hasGivenScope) {
+                return false;
+            }
         }
+
+        return hasScope;
     }
 }

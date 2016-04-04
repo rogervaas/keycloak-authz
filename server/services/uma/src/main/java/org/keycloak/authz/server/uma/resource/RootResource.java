@@ -118,7 +118,7 @@ public class RootResource {
     }
 
     private KeycloakIdentity createIdentity() {
-        return KeycloakIdentity.create(realm);
+        return new KeycloakIdentity(realm);
     }
 
     private ResourceServer getResourceServer(Identity identity) {

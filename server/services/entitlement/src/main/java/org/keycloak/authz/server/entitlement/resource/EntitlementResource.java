@@ -27,7 +27,8 @@ import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.evaluation.DecisionResultCollector;
 import org.keycloak.authz.core.policy.evaluation.Result;
-import org.keycloak.authz.server.services.common.DefaultExecutionContext;
+import org.keycloak.authz.server.services.common.KeycloakExecutionContext;
+import org.keycloak.authz.server.services.common.util.Permissions;
 import org.keycloak.authz.server.services.common.util.Tokens;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.models.ClientModel;
@@ -44,8 +45,6 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +96,9 @@ public class EntitlementResource {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Identifier is not associated with any client and resource server.", Response.Status.BAD_REQUEST);
         }
 
-        this.authorizationManager.evaluators().schedule(createPermissions(client), new DefaultExecutionContext(this.identity, this.realm), Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionResultCollector() {
+        ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(client.getId());
+
+        this.authorizationManager.evaluators().schedule(Permissions.all(resourceServer, this.identity, this.authorizationManager), new KeycloakExecutionContext(this.realm), Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionResultCollector() {
 
             @Override
             public void onError(Throwable cause) {
@@ -106,27 +107,12 @@ public class EntitlementResource {
 
             @Override
             protected void onComplete(List<Result> results) {
-                asyncResponse.resume(Cors.add(request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, results)))).allowedOrigins("*").build());
+                asyncResponse.resume(Cors.add(request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(results)))).allowedOrigins("*").build());
             }
         });
     }
 
-    public List<ResourcePermission> createPermissions(ClientModel client) {
-        ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(client.getId());
-
-        return this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(resourceServer.getId()).stream()
-                .flatMap(resource -> {
-                    List<Scope> scopes = resource.getScopes();
-
-                    if (scopes.isEmpty()) {
-                        return Arrays.asList(new ResourcePermission(resource, Collections.emptyList())).stream();
-                    }
-
-                    return scopes.stream().map(scope -> new ResourcePermission(resource, Arrays.asList(scope)));
-                }).collect(Collectors.toList());
-    }
-
-    private String createRequestingPartyToken(Identity identity, List<Result> evaluation) {
+    private String createRequestingPartyToken(List<Result> evaluation) {
         List<Permission> permissions = evaluation.stream()
                 .filter(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.PERMIT))
                 .map(evaluationResult -> {

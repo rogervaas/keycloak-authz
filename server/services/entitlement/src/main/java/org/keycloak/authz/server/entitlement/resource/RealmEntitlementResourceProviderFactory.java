@@ -58,7 +58,7 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
                 if (pathName.equals("entitlement")) {
                     EntitlementResource resource = new EntitlementResource(realm, threadFactory);
 
-                    pushContext(Identity.class, KeycloakIdentity.create(realm));
+                    pushContext(Identity.class, new KeycloakIdentity(realm));
                     pushContext(StoreFactory.class, persistenceProviderFactory.create(keycloakSession));
                     pushContext(Authorization.class, authorization);
 

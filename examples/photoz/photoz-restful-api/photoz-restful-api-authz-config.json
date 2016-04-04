@@ -107,7 +107,7 @@
       "description": "A policy that validates the client address",
       "type": "js",
       "config": {
-        "code": "var context = $evaluation.getContext();\nvar executionContext = context.getExecutionContext();\nvar contextAttributes = executionContext.getAttributes();\n\nif (contextAttributes.containsValue('kc.authz.context.client.network.ip_address', '127.0.0.1')) {\n    $evaluation.grant();\n}"
+        "code": "var contextAttributes = $evaluation.getContext().getAttributes();\n\nif (contextAttributes.containsValue('kc.authz.context.client.network.ip_address', '127.0.0.1')) {\n    $evaluation.grant();\n}"
       }
     },
     {

@@ -58,6 +58,13 @@
 
                         <kc-tooltip>Specifies which user(s) are allowed by this policy.</kc-tooltip>
                     </div>
+
+                    <div class="form-group">
+                        <div class="col-md-10 col-md-offset-2">
+                            <button kc-save data-ng-click="entitlements()" data-ng-disabled="authzRequest.userId == null || authzRequest.clientId == null">Entitlements</button>
+                        </div>
+                    </div>
+
                     <div class="form-group clearfix">
                         <label class="col-md-2 control-label" for="reqActions">Roles <span class="required"
                                                                                            data-ng-show="!authzRequest.userId || authzRequest.userId == null">*</span></label>
@@ -168,7 +175,7 @@
                             <select ui-select2="{ minimumInputLength: 1, allowClear:true }"
                                     ng-model="newResource._id"
                                     data-placeholder="Select a resource..."
-                                    data-ng-required="!applyResourceType && authzRequest.resources.length == 0"
+                                    data-ng-required="!applyResourceType && authzRequest.resources.length == 0 && !authzRequest.entitlements"
                                     data-ng-click="resolveScopes()"
                                     ng-options="resource._id as resource.name for resource in resources track by resource._id">
                                 <option value=""></option>
@@ -184,7 +191,7 @@
                         <div class="col-md-6">
                             <input class="form-control" type="text" id="newResource.type" name="newResource.type"
                                    data-ng-model="authzRequest.resources[0].type"
-                                   data-ng-required="applyResourceType && !authzRequest.resources[0].type">
+                                   data-ng-required="applyResourceType && !authzRequest.resources[0].type && !authzRequest.entitlements">
                         </div>
 
                         <kc-tooltip>Specifies that this policy must be applied to all resources instances of a given

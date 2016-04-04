@@ -22,7 +22,6 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.attribute.Attributes;
-import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
@@ -31,11 +30,17 @@ import org.keycloak.authz.core.policy.evaluation.DecisionResultCollector;
 import org.keycloak.authz.core.policy.evaluation.Result;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
-import org.keycloak.authz.server.services.common.DefaultExecutionContext;
+import org.keycloak.authz.server.services.common.KeycloakExecutionContext;
+import org.keycloak.authz.server.services.common.KeycloakIdentity;
+import org.keycloak.authz.server.services.common.util.Permissions;
+import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.models.UserModel;
+import org.keycloak.protocol.oidc.TokenManager;
+import org.keycloak.representations.AccessToken;
+import org.keycloak.services.Urls;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
@@ -87,7 +92,9 @@ public class PolicyEvaluateResource {
     @Consumes("application/json")
     @Produces("application/json")
     public void evaluate(PolicyEvaluationRequest representation, @Suspended AsyncResponse asyncResponse) {
-        this.authorization.evaluators().schedule(createPermissions(representation), createEvaluationContext(representation), Executors.newSingleThreadExecutor(this.threadFactory))
+        EvaluationContext evaluationContext = createEvaluationContext(representation);
+
+        this.authorization.evaluators().schedule(createPermissions(representation, evaluationContext), evaluationContext, Executors.newSingleThreadExecutor(this.threadFactory))
                 .evaluate(new DecisionResultCollector() {
                     @Override
                     protected void onComplete(List<Result> results) {
@@ -108,7 +115,7 @@ public class PolicyEvaluateResource {
     }
 
     public EvaluationContext createEvaluationContext(final PolicyEvaluationRequest representation) {
-        return new DefaultExecutionContext(createIdentity(representation), this.realm) {
+        return new KeycloakExecutionContext(createIdentity(representation), this.realm) {
             @Override
             public Attributes getAttributes() {
                 Map<String, Collection<String>> attributes = new HashMap<>(super.getAttributes().toMap());
@@ -132,7 +139,11 @@ public class PolicyEvaluateResource {
         };
     }
 
-    public List<ResourcePermission> createPermissions(PolicyEvaluationRequest representation) {
+    public List<ResourcePermission> createPermissions(PolicyEvaluationRequest representation, EvaluationContext evaluationContext) {
+        if (representation.isEntitlements()) {
+            return Permissions.all(this.resourceServer, evaluationContext.getIdentity(), this.authorization);
+        }
+
         return representation.getResources().stream().flatMap((Function<PolicyEvaluationRequest.Resource, Stream<ResourcePermission>>) resource -> {
             Set<String> givenScopes = resource.getScopes();
 
@@ -153,32 +164,45 @@ public class PolicyEvaluateResource {
         }).collect(Collectors.toList());
     }
 
-    public Identity createIdentity(PolicyEvaluationRequest representation) {
-        return new Identity() {
-            @Override
-            public String getId() {
-                return representation.getUserId();
+    public KeycloakIdentity createIdentity(PolicyEvaluationRequest representation) {
+        AccessToken accessToken = new AccessToken();
+
+        accessToken.subject(representation.getUserId());
+        accessToken.issuedFor(representation.getClientId());
+        accessToken.audience(representation.getClientId());
+        accessToken.issuer(Urls.realmIssuer(this.keycloakSession.getContext().getUri().getBaseUri(), realm.getName()));
+
+        Map<String, Object> claims = accessToken.getOtherClaims();
+        Map<String, String> givenAttributes = representation.getContext().get("attributes");
+
+        if (givenAttributes != null) {
+            givenAttributes.forEach((key, value) -> {
+                claims.put(key, Arrays.asList(value));
+            });
+        }
+
+        UserModel userModel = keycloakSession.users().getUserById(accessToken.getSubject(), realm);
+
+        if (userModel != null) {
+            Set<RoleModel> roleMappings = userModel.getRoleMappings();
+
+            accessToken.setRealmAccess(new AccessToken.Access());
+
+            roleMappings.stream().map(RoleModel::getName).forEach(roleName -> accessToken.getRealmAccess().addRole(roleName));
+
+            String clientId = representation.getClientId();
+
+            if (clientId != null) {
+                ClientModel clientModel = this.realm.getClientById(clientId);
+
+                accessToken.addAccess(clientModel.getClientId());
+
+                userModel.getClientRoleMappings(clientModel).stream().map(RoleModel::getName).forEach(roleName -> accessToken.getResourceAccess(clientModel.getClientId()).addRole(roleName));
+
+                //TODO: would be awesome if we could transform the access token using the configured protocol mappers. Tried, but without a clientSession and userSession is tuff.
             }
+        }
 
-            @Override
-            public Attributes getAttributes() {
-                HashMap<String, Collection<String>> attributes = new HashMap<>();
-                UserModel userModel = keycloakSession.users().getUserById(getId(), realm);
-
-                if (userModel != null) {
-                    Set<RoleModel> roleMappings = userModel.getRoleMappings();
-                    List<String> roles = roleMappings.stream().map(RoleModel::getName).collect(Collectors.toList());
-                    attributes.put("roles", roles);
-                }
-
-                Map<String, String> givenAttributes = representation.getContext().get("attributes");
-
-                if (givenAttributes != null) {
-                    givenAttributes.forEach((key, value) -> attributes.put(key, Arrays.asList(value)));
-                }
-
-                return Attributes.from(attributes);
-            }
-        };
+        return new KeycloakIdentity(accessToken, this.realm);
     }
 }

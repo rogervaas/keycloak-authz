@@ -1064,6 +1064,15 @@ module.controller('PolicyEvaluateCtrl', function($scope, $http, $route, $locatio
                 });
     }
 
+    $scope.entitlements = function() {
+        $scope.authzRequest.entitlements = true;
+        $http.post(authUrl + '/admin/realms/'+ $route.current.params.realm + '/authz/resource-server/' + $scope.server.id  + '/policy/evaluate'
+            , $scope.authzRequest).success(function(data) {
+            $scope.evaluationResult = data;
+            $scope.showResultTab();
+        });
+    }
+
     $scope.showResultTab = function() {
         $scope.showResult = true;
     }

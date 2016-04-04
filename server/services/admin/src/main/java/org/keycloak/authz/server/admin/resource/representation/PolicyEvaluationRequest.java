@@ -14,6 +14,7 @@ public class PolicyEvaluationRequest {
     private String clientId;
     private String userId;
     private List<String> roleIds;
+    private boolean entitlements;
 
     public Map<String, Map<String, String>> getContext() {
         return this.context;
@@ -53,6 +54,14 @@ public class PolicyEvaluationRequest {
 
     public void setRoleIds(List<String> roleIds) {
         this.roleIds = roleIds;
+    }
+
+    public boolean isEntitlements() {
+        return entitlements;
+    }
+
+    public void setEntitlements(boolean entitlements) {
+        this.entitlements = entitlements;
     }
 
     public static class Resource {

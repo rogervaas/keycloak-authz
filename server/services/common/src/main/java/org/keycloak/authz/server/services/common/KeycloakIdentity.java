@@ -18,19 +18,19 @@
 package org.keycloak.authz.server.services.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
-import org.keycloak.jose.jws.JWSInput;
+import org.keycloak.authz.server.services.common.util.Tokens;
+import org.keycloak.models.ClientModel;
 import org.keycloak.models.ClientSessionModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.services.ErrorResponseException;
-import org.keycloak.services.managers.AppAuthManager;
+import org.keycloak.util.JsonSerialization;
 
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -39,27 +39,26 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.keycloak.authz.server.services.common.util.Tokens.getAccessToken;
-
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class KeycloakIdentity implements Identity {
 
     private final AccessToken accessToken;
+    private final RealmModel realm;
 
-    public static KeycloakIdentity create(RealmModel realm) {
-        AccessToken token = getAccessToken(realm);
+    public KeycloakIdentity(RealmModel realm) {
+        this(Tokens.getAccessToken(realm), realm);
+    }
 
-        if (token == null) {
+    public KeycloakIdentity(AccessToken accessToken, RealmModel realm) {
+        this.accessToken = accessToken;
+
+        if (this.accessToken == null) {
             throw new ErrorResponseException("invalid_bearer_token", "Could not obtain bearer access_token from request.", Response.Status.FORBIDDEN);
         }
 
-        return new KeycloakIdentity(token);
-    }
-
-    private KeycloakIdentity(AccessToken accessToken) {
-        this.accessToken = accessToken;
+        this.realm = realm;
     }
 
     @Override
@@ -75,12 +74,9 @@ public class KeycloakIdentity implements Identity {
     @Override
     public Attributes getAttributes() {
         HashMap<String, Collection<String>> attributes = new HashMap<>();
-        AppAuthManager authManager = new AppAuthManager();
-        String token = authManager.extractAuthorizationHeaderToken(getKeycloakSession().getContext().getRequestHeaders());
 
         try {
-            String claims = new JWSInput(token).readContentAsString();
-            ObjectNode objectNode = (ObjectNode) new ObjectMapper().readTree(claims);
+            ObjectNode objectNode = JsonSerialization.createObjectNode(this.accessToken);
             Iterator<String> iterator = objectNode.fieldNames();
             List<String> roleNames = new ArrayList<>();
 
@@ -89,7 +85,7 @@ public class KeycloakIdentity implements Identity {
                 JsonNode fieldValue = objectNode.get(fieldName);
                 List<String> values = new ArrayList<>();
 
-                values.add(fieldValue.toString());
+                values.add(fieldValue.asText());
 
                 if (fieldName.equals("realm_access")) {
                     JsonNode grantedRoles = fieldValue.get("roles");
@@ -130,9 +126,21 @@ public class KeycloakIdentity implements Identity {
         return Attributes.from(attributes);
     }
 
+    public AccessToken getAccessToken() {
+        return this.accessToken;
+    }
+
     private  boolean isResourceServer() {
-        ClientSessionModel clientSession = getKeycloakSession().sessions().getClientSession(this.accessToken.getClientSession());
-        UserModel clientUser = getKeycloakSession().users().getUserByServiceAccountClient(clientSession.getClient());
+        UserModel clientUser = null;
+
+        if (this.accessToken.getClientSession() != null) {
+            ClientSessionModel clientSession = getKeycloakSession().sessions().getClientSession(this.accessToken.getClientSession());
+            clientUser = getKeycloakSession().users().getUserByServiceAccountClient(clientSession.getClient());
+        } else if (this.accessToken.getIssuedFor() != null) {
+            ClientModel clientModel = getKeycloakSession().realms().getClientById(this.accessToken.getIssuedFor(), this.realm);
+            clientUser = getKeycloakSession().users().getUserByServiceAccountClient(clientModel);
+        }
+
 
         if (clientUser == null) {
             return false;

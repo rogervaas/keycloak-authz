@@ -1,10 +1,9 @@
 package org.keycloak.authz.server.services.common;
 
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
-import org.keycloak.authz.core.EvaluationContext;
-import org.keycloak.authz.server.services.common.util.Tokens;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.representations.AccessToken;
@@ -19,16 +18,18 @@ import java.util.List;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class DefaultExecutionContext implements EvaluationContext {
+public class KeycloakExecutionContext implements EvaluationContext {
 
     private final RealmModel realm;
-    private final AccessToken accessToken;
-    private final Identity identity;
+    private final KeycloakIdentity identity;
 
-    public DefaultExecutionContext(Identity identity, RealmModel realm) {
+    public KeycloakExecutionContext(RealmModel realm) {
+        this(new KeycloakIdentity(realm), realm);
+    }
+
+    public KeycloakExecutionContext(KeycloakIdentity identity, RealmModel realm) {
         this.identity = identity;
         this.realm = realm;
-        this.accessToken = Tokens.getAccessToken(realm);
     }
 
     @Override
@@ -50,8 +51,10 @@ public class DefaultExecutionContext implements EvaluationContext {
         attributes.put("kc.authz.context.client.network.ip_address", Arrays.asList(keycloakSession.getContext().getConnection().getRemoteAddr()));
         attributes.put("kc.authz.context.client.network.host", Arrays.asList(keycloakSession.getContext().getConnection().getRemoteHost()));
 
-        if (this.accessToken != null) {
-            attributes.put("kc.authz.context.client_id", Arrays.asList(this.accessToken.getIssuedFor()));
+        AccessToken accessToken = this.identity.getAccessToken();
+
+        if (accessToken != null) {
+            attributes.put("kc.authz.context.client_id", Arrays.asList(accessToken.getIssuedFor()));
         }
 
         List<String> userAgents = keycloakSession.getContext().getRequestHeaders().getRequestHeader("User-Agent");

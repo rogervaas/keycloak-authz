@@ -20,14 +20,14 @@ package org.keycloak.authz.server.uma.authorization;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.permission.ResourcePermission;
-import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.Decision;
-import org.keycloak.authz.server.services.common.DefaultExecutionContext;
-import org.keycloak.authz.server.services.common.KeycloakIdentity;
+import org.keycloak.authz.core.model.Resource;
+import org.keycloak.authz.core.model.Scope;
+import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.evaluation.DecisionResultCollector;
 import org.keycloak.authz.core.policy.evaluation.Result;
+import org.keycloak.authz.server.services.common.KeycloakExecutionContext;
+import org.keycloak.authz.server.services.common.KeycloakIdentity;
 import org.keycloak.authz.server.services.common.util.Tokens;
 import org.keycloak.authz.server.uma.protection.permission.PermissionTicket;
 import org.keycloak.jose.jws.JWSBuilder;
@@ -85,7 +85,7 @@ public class AuthorizationService {
     @Consumes("application/json")
     @Produces("application/json")
     public void authorize(AuthorizationRequest authorizationRequest, @Suspended AsyncResponse asyncResponse) {
-        KeycloakIdentity identity = KeycloakIdentity.create(this.realm);
+        KeycloakIdentity identity = new KeycloakIdentity(this.realm);
 
         if (!identity.hasRole("uma_authorization")) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_authorization scope.", Response.Status.FORBIDDEN);
@@ -93,7 +93,7 @@ public class AuthorizationService {
 
         PermissionTicket ticket = verifyPermissionTicket(authorizationRequest);
 
-        this.authorizationManager.evaluators().schedule(createPermissions(ticket, authorizationRequest), new DefaultExecutionContext(identity, this.realm), Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionResultCollector() {
+        this.authorizationManager.evaluators().schedule(createPermissions(ticket, authorizationRequest), new KeycloakExecutionContext(identity, this.realm), Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionResultCollector() {
             @Override
             public void onComplete(List<Result> results) {
                 if (anyDenial(results)) {
