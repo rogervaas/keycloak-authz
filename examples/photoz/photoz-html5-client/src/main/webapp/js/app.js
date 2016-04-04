@@ -145,7 +145,7 @@ module.factory('authInterceptor', function ($q, $injector, $timeout, Identity) {
                             return $http(rejection.config).then(function (response) {
                                 return response;
                             });
-                        }, 1000);
+                        }, 10);
                     }
                 }
 
