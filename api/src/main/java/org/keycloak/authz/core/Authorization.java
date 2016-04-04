@@ -1,5 +1,6 @@
 package org.keycloak.authz.core;
 
+import org.keycloak.authz.core.policy.evaluation.DefaultPolicyEvaluator;
 import org.keycloak.authz.core.policy.evaluation.Evaluator;
 import org.keycloak.authz.core.policy.evaluation.PolicyEvaluator;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
@@ -47,6 +48,8 @@ import java.util.function.Supplier;
  */
 public final class Authorization {
 
+    private final DefaultPolicyEvaluator policyEvaluator;
+
     public synchronized static final Builder builder() {
         return new Builder();
     }
@@ -57,6 +60,7 @@ public final class Authorization {
     private Authorization(Supplier<StoreFactory> storeFactorySupplier, List<PolicyProviderFactory> policyProviderFactories) {
         this.storeFactory = storeFactorySupplier;
         this.policyProviderFactories = Collections.unmodifiableList(policyProviderFactories);
+        this.policyEvaluator = new DefaultPolicyEvaluator(this);
     }
 
     /**
@@ -66,7 +70,7 @@ public final class Authorization {
      * @return a {@link Evaluator} instance
      */
     public Evaluator evaluators() {
-        return new Evaluator(this, this.policyProviderFactories);
+        return new Evaluator(this, this.policyProviderFactories, this.policyEvaluator);
     }
 
     /**

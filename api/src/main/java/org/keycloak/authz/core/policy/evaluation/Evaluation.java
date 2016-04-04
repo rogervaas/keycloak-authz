@@ -13,7 +13,7 @@ import java.util.List;
  * <p>An {@link Evaluation} is mainly used by {@link PolicyProvider} in order to evaluate a single
  * and specific {@link ResourcePermission} against the configured policies.
  *
- * <p>Differently than {@link PermissionProducer}, the {@link Evaluation} has narrow scope, specific for a single {@link ResourcePermission}.
+ * <p>Differently than {@link EvaluationContext}, the {@link Evaluation} has narrow scope, specific for a single {@link ResourcePermission}.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
@@ -45,7 +45,7 @@ public class Evaluation {
     }
 
     /**
-     * Returns the {@link PermissionProducer}. Which provides access to the whole evaluation runtime context.
+     * Returns the {@link EvaluationContext}. Which provides access to the whole evaluation runtime context.
      *
      * @return the evaluation context
      */

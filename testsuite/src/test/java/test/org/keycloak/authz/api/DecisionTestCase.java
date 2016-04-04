@@ -27,20 +27,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Supplier;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class DecisionTestCase {
 
-    static int NUM_PERMISSIONS = 1;
+    static int NUM_PERMISSIONS = 1000 * 1000 * 5;
 
-    private RealmModel realmModel;
     private MapStoreFactory mapStoreFactory;
     private Authorization authorization;
-    private Identity identity;
-    private List<ResourcePermission> permissionSupplier;
+    private Supplier<ResourcePermission> permissionSupplier;
 
     @Before
     public void onBefore() {
@@ -58,7 +58,7 @@ public class DecisionTestCase {
 
         Policy policy = this.mapStoreFactory.getPolicyStore().create("Resource A Policy", "resource", resourceServer);
 
-        policy.addResource(resource);
+//        policy.addResource(resource);
 
         this.mapStoreFactory.getPolicyStore().save(policy);
 
@@ -90,7 +90,10 @@ public class DecisionTestCase {
         CountDownLatch latch = new CountDownLatch(1);
         System.out.println("Starting ...");
 
-        this.authorization.evaluators().from(this.permissionSupplier, createExecutionContext()).evaluate(createDecision(latch));
+        this.authorization.evaluators()
+                .schedule(this.permissionSupplier, createExecutionContext(), Executors.newWorkStealingPool())
+//                .from(this.permissionSupplier, createExecutionContext())
+                .evaluate(createDecision(latch));
 
         latch.await(200, TimeUnit.SECONDS);
 
@@ -237,13 +240,20 @@ public class DecisionTestCase {
         };
     }
 
-    private List<ResourcePermission> createPermissionSupplier(final Resource resource) {
+    private Supplier<ResourcePermission> createPermissionSupplier(final Resource resource) {
         List<ResourcePermission> resourcePermissions = new ArrayList<>();
 
-        for (int i = 0; i < NUM_PERMISSIONS; i++) {
-            resourcePermissions.add(new ResourcePermission(resource, Arrays.asList()));
-        }
+        return new Supplier<ResourcePermission>() {
+            private int count = 0;
 
-        return resourcePermissions;
+            @Override
+            public ResourcePermission get() {
+                if (count++ > NUM_PERMISSIONS) {
+                    return null;
+                }
+
+                return new ResourcePermission(resource, Arrays.asList());
+            }
+        };
     }
 }

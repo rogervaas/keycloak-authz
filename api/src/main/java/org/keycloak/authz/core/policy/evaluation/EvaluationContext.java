@@ -18,29 +18,16 @@
 package org.keycloak.authz.core.policy.evaluation;
 
 import org.keycloak.authz.core.model.ResourcePermission;
-
-import java.util.function.Consumer;
+import org.keycloak.authz.core.policy.Decision;
 
 /**
- * An {@link PermissionProducer} represents a source of {@link ResourcePermission}, responsible for emitting these permissions
+ * An {@link EvaluationContext} represents a source of {@link ResourcePermission}, responsible for emitting these permissions
  * to a consumer in order to evaluate the authorization policies based on a {@link ExecutionContext}.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public interface PermissionProducer {
+public interface EvaluationContext {
 
-    /**
-     * For each permission, deliver it to a <code>consumer</code>.
-     *
-     * @param consumer
-     */
-    void forEach(Consumer<ResourcePermission> consumer);
+    void evaluate(Decision decision);
 
-    /**
-     * Returns the {@link ExecutionContext} from where information from the runtime environment can be obtained and used
-     * during the evaluation of policies.
-     *
-     * @return the execution context from where information from the runtime environment can be obtained
-     */
-    ExecutionContext getExecutionContext();
 }

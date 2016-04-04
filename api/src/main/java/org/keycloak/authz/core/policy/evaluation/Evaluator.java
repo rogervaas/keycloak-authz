@@ -6,7 +6,6 @@ import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 
 import java.util.List;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.Supplier;
 
 /**
@@ -16,29 +15,35 @@ public final class Evaluator {
 
     private final Authorization authorization;
     private final List<PolicyProviderFactory> policyProviderFactories;
+    private final DefaultPolicyEvaluator policyEvaluator;
 
-    public Evaluator(Authorization authorization, List<PolicyProviderFactory> policyProviderFactories) {
+    public Evaluator(Authorization authorization, List<PolicyProviderFactory> policyProviderFactories, DefaultPolicyEvaluator policyEvaluator) {
         this.authorization = authorization;
         this.policyProviderFactories = policyProviderFactories;
+        this.policyEvaluator = policyEvaluator;
     }
 
-    public PolicyEvaluator from(List<ResourcePermission> permissions, ExecutionContext executionContext) {
-        return new DefaultPolicyEvaluator(createEvaluationContext(permissions, executionContext), this.authorization, this.policyProviderFactories, Runnable::run);
+    public EvaluationContext from(List<ResourcePermission> permissions, ExecutionContext executionContext) {
+        return createEvaluationContext(permissions, executionContext);
     }
 
-    public PolicyEvaluator from(Supplier<ResourcePermission> supplier, ExecutionContext executionContext) {
-        return new DefaultPolicyEvaluator(createEvaluationContext(supplier, executionContext), this.authorization, this.policyProviderFactories, Executors.newSingleThreadExecutor());
+    public EvaluationContext from(Supplier<ResourcePermission> supplier, ExecutionContext executionContext) {
+        return createEvaluationContext(supplier, executionContext);
     }
 
-    public PolicyEvaluator schedule(List<ResourcePermission> permissions, ExecutionContext executionContext, Executor scheduler) {
-        return new DefaultPolicyEvaluator(createEvaluationContext(permissions, executionContext), this.authorization, this.policyProviderFactories, scheduler);
+    public EvaluationContext schedule(List<ResourcePermission> permissions, ExecutionContext executionContext, Executor scheduler) {
+        return new ScheduledPermissionPublisher(createEvaluationContext(permissions, executionContext), scheduler);
     }
 
-    public IterablePermissionProducer createEvaluationContext(List<ResourcePermission> permissions, ExecutionContext executionContext) {
-        return new IterablePermissionProducer(permissions.iterator(), executionContext);
+    public EvaluationContext schedule(Supplier<ResourcePermission> permissions, ExecutionContext executionContext, Executor scheduler) {
+        return new ScheduledPermissionPublisher(createEvaluationContext(permissions, executionContext), scheduler);
     }
 
-    public SupplierPermissionProducer createEvaluationContext(Supplier<ResourcePermission> permissions, ExecutionContext executionContext) {
-        return new SupplierPermissionProducer(permissions, executionContext);
+    private IterablePermissionPublisher createEvaluationContext(List<ResourcePermission> permissions, ExecutionContext executionContext) {
+        return new IterablePermissionPublisher(permissions.iterator(), executionContext, this.policyEvaluator);
+    }
+
+    private SupplierPermissionPublisher createEvaluationContext(Supplier<ResourcePermission> permissions, ExecutionContext executionContext) {
+        return new SupplierPermissionPublisher(permissions, executionContext, this.policyEvaluator);
     }
 }

@@ -17,34 +17,27 @@
  */
 package org.keycloak.authz.core.policy.evaluation;
 
-import org.keycloak.authz.core.model.ResourcePermission;
+import org.keycloak.authz.core.policy.Decision;
 
-import java.util.Iterator;
-import java.util.function.Consumer;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- * @see PermissionProducer
+ * @see EvaluationContext
  */
-class IterablePermissionProducer implements PermissionProducer {
+class ScheduledPermissionPublisher implements EvaluationContext {
 
-    private final Iterator<ResourcePermission> permissions;
-    private final ExecutionContext executionContext;
+    private final EvaluationContext publisher;
+    private final Executor scheduler;
 
-    IterablePermissionProducer(Iterator<ResourcePermission> permissions, ExecutionContext executionContext) {
-        this.permissions = permissions;
-        this.executionContext = executionContext;
+    ScheduledPermissionPublisher(EvaluationContext publisher, Executor scheduler) {
+        this.publisher = publisher;
+        this.scheduler = scheduler;
     }
 
     @Override
-    public void forEach(Consumer<ResourcePermission> consumer) {
-        while (this.permissions.hasNext()) {
-            consumer.accept(permissions.next());
-        }
-    }
-
-    @Override
-    public ExecutionContext getExecutionContext() {
-        return this.executionContext;
+    public void evaluate(Decision decision) {
+        CompletableFuture.runAsync(() -> publisher.evaluate(decision), scheduler);
     }
 }

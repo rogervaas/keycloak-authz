@@ -1,5 +1,6 @@
 package org.keycloak.authz.core.policy.evaluation;
 
+import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.policy.Decision;
 
 /**
@@ -15,5 +16,5 @@ public interface PolicyEvaluator {
      *
      * @param decision a {@link Decision} point to where notifications events will be delivered during the evaluation
      */
-    void evaluate(Decision decision);
+    void evaluate(ResourcePermission permission, ExecutionContext executionContext, Decision decision);
 }

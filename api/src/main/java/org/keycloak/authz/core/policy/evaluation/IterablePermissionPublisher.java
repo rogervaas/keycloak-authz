@@ -18,35 +18,41 @@
 package org.keycloak.authz.core.policy.evaluation;
 
 import org.keycloak.authz.core.model.ResourcePermission;
+import org.keycloak.authz.core.policy.Decision;
 
+import java.util.Iterator;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- * @see PermissionProducer
+ * @see EvaluationContext
  */
-class SupplierPermissionProducer implements PermissionProducer {
+class IterablePermissionPublisher implements PermissionEmitter {
 
-    private final Supplier<ResourcePermission> permissions;
+    private final Iterator<ResourcePermission> permissions;
     private final ExecutionContext executionContext;
+    private final PolicyEvaluator policyEvaluator;
 
-    SupplierPermissionProducer(Supplier<ResourcePermission> permissions, ExecutionContext executionContext) {
+    IterablePermissionPublisher(Iterator<ResourcePermission> permissions, ExecutionContext executionContext, PolicyEvaluator policyEvaluator) {
         this.permissions = permissions;
         this.executionContext = executionContext;
+        this.policyEvaluator = policyEvaluator;
     }
 
     @Override
-    public void forEach(Consumer<ResourcePermission> consumer) {
-        ResourcePermission permission;
-
-        while ((permission = this.permissions.get()) != null) {
-            consumer.accept(permission);
+    public void evaluate(Decision decision) {
+        try {
+            forEach(permission -> this.policyEvaluator.evaluate(permission, this.executionContext, decision));
+            decision.onComplete();
+        } catch (Throwable cause) {
+            decision.onError(cause);
         }
     }
 
     @Override
-    public ExecutionContext getExecutionContext() {
-        return this.executionContext;
+    public void forEach(Consumer<ResourcePermission> consumer) {
+        while (this.permissions.hasNext()) {
+            consumer.accept(this.permissions.next());
+        }
     }
 }
