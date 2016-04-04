@@ -8,7 +8,7 @@ rule "Authorize Resource Owner"
        $evaluation : Evaluation(
            $identity: context.identity,
            $permission: permission,
-           $permission.resource != null && $permission.resource.owner.equals("2")
+           $permission.resource != null && $permission.resource.owner.equals($identity.id)
        )
     then
         $evaluation.grant();

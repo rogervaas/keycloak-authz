@@ -26,7 +26,7 @@ import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.policy.evaluation.DefaultEvaluationContext;
+import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
 import org.keycloak.authz.server.services.common.DefaultExecutionContext;
@@ -87,7 +87,7 @@ public class PolicyEvaluateResource {
     @Consumes("application/json")
     @Produces("application/json")
     public void evaluate(PolicyEvaluationRequest representation, @Suspended AsyncResponse asyncResponse) {
-        this.authorization.evaluators().schedule(createEvaluationContext(representation), Executors.newSingleThreadExecutor(this.threadFactory))
+        this.authorization.evaluators().schedule(createPermissions(representation), createEvaluationContext(representation), Executors.newSingleThreadExecutor(this.threadFactory))
                 .evaluate(new DecisionCollector() {
                     @Override
                     protected void onComplete(List<EvaluationResult> results) {
@@ -107,8 +107,8 @@ public class PolicyEvaluateResource {
                 });
     }
 
-    public DefaultEvaluationContext createEvaluationContext(final PolicyEvaluationRequest representation) {
-        return new DefaultEvaluationContext(createIdentity(representation), this.realm, createPermissions(representation), new DefaultExecutionContext(this.realm) {
+    public ExecutionContext createEvaluationContext(final PolicyEvaluationRequest representation) {
+        return new DefaultExecutionContext(createIdentity(representation), this.realm) {
             @Override
             public Attributes getAttributes() {
                 Map<String, Collection<String>> attributes = new HashMap<>(super.getAttributes().toMap());
@@ -129,7 +129,7 @@ public class PolicyEvaluateResource {
 
                 return Attributes.from(attributes);
             }
-        });
+        };
     }
 
     public List<ResourcePermission> createPermissions(PolicyEvaluationRequest representation) {

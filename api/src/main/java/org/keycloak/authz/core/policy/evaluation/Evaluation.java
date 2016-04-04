@@ -13,23 +13,23 @@ import java.util.List;
  * <p>An {@link Evaluation} is mainly used by {@link PolicyProvider} in order to evaluate a single
  * and specific {@link ResourcePermission} against the configured policies.
  *
- * <p>Differently than {@link EvaluationContext}, the {@link Evaluation} has narrow scope, specific for a single {@link ResourcePermission}.
+ * <p>Differently than {@link PermissionProducer}, the {@link Evaluation} has narrow scope, specific for a single {@link ResourcePermission}.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class Evaluation {
 
     private final ResourcePermission permission;
-    private final EvaluationContext evaluationContext;
+    private final ExecutionContext executionContext;
     private final Decision decision;
     private final Policy policy;
     private final Policy parentPolicy;
     private List<Advice> advices = Collections.emptyList();
     private Decision.Effect effect;
 
-    public Evaluation(ResourcePermission permission, EvaluationContext evaluationContext, Policy parentPolicy, Policy policy, Decision decision) {
+    public Evaluation(ResourcePermission permission, ExecutionContext executionContext, Policy parentPolicy, Policy policy, Decision decision) {
         this.permission = permission;
-        this.evaluationContext = evaluationContext;
+        this.executionContext = executionContext;
         this.parentPolicy = parentPolicy;
         this.policy = policy;
         this.decision = decision;
@@ -45,12 +45,12 @@ public class Evaluation {
     }
 
     /**
-     * Returns the {@link EvaluationContext}. Which provides access to the whole evaluation runtime context.
+     * Returns the {@link PermissionProducer}. Which provides access to the whole evaluation runtime context.
      *
      * @return the evaluation context
      */
-    public EvaluationContext getContext() {
-        return this.evaluationContext;
+    public ExecutionContext getContext() {
+        return this.executionContext;
     }
 
     /**

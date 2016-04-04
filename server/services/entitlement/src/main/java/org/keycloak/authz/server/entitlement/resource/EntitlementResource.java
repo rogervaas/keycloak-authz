@@ -25,8 +25,6 @@ import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.Decision;
-import org.keycloak.authz.core.policy.evaluation.DefaultEvaluationContext;
-import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
 import org.keycloak.authz.server.services.common.DefaultExecutionContext;
 import org.keycloak.authz.server.services.common.KeycloakIdentity;
 import org.keycloak.authz.server.services.common.policy.evaluation.DecisionCollector;
@@ -53,9 +51,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Spliterator;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -101,9 +97,7 @@ public class EntitlementResource {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Identifier is not associated with any client and resource server.", Response.Status.BAD_REQUEST);
         }
 
-        EvaluationContext evaluationContext = new DefaultEvaluationContext(identity, this.realm, createPermissions(client), new DefaultExecutionContext(this.realm));
-
-        this.authorizationManager.evaluators().from(evaluationContext).evaluate(new DecisionCollector(evaluationResults -> asyncResponse.resume(Cors.add(request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, evaluationResults)))).allowedOrigins("*").build())));
+        this.authorizationManager.evaluators().from(createPermissions(client), new DefaultExecutionContext(this.identity, this.realm)).evaluate(new DecisionCollector(evaluationResults -> asyncResponse.resume(Cors.add(request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, evaluationResults)))).allowedOrigins("*").build())));
     }
 
     public List<ResourcePermission> createPermissions(ClientModel client) {

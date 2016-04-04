@@ -17,49 +17,35 @@
  */
 package org.keycloak.authz.core.policy.evaluation;
 
-import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourcePermission;
-import org.keycloak.models.RealmModel;
 
-import java.util.List;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- * @see EvaluationContext
+ * @see PermissionProducer
  */
-public class DefaultEvaluationContext implements EvaluationContext {
+class SupplierPermissionProducer implements PermissionProducer {
 
-    private final List<ResourcePermission> permissions;
-    private final RealmModel realm;
+    private final Supplier<ResourcePermission> permissions;
     private final ExecutionContext executionContext;
-    private final Identity identity;
-    private boolean granted;
 
-    public DefaultEvaluationContext(Identity identity, RealmModel realm, List<ResourcePermission> permissions, ExecutionContext executionContext) {
-        this.identity = identity;
-        this.realm = realm;
+    SupplierPermissionProducer(Supplier<ResourcePermission> permissions, ExecutionContext executionContext) {
         this.permissions = permissions;
         this.executionContext = executionContext;
     }
 
     @Override
     public void forEach(Consumer<ResourcePermission> consumer) {
-        for (ResourcePermission permission : this.permissions) {
+        ResourcePermission permission;
+
+        while ((permission = this.permissions.get()) != null) {
             consumer.accept(permission);
         }
     }
 
     @Override
-    public Identity getIdentity() {
-        return this.identity;
-    }
-
-    @Override
-    public RealmModel getRealm() {
-        return this.realm;
-    }
-
     public ExecutionContext getExecutionContext() {
         return this.executionContext;
     }

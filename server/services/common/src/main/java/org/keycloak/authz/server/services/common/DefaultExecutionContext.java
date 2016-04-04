@@ -2,6 +2,7 @@ package org.keycloak.authz.server.services.common;
 
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.attribute.Attributes;
+import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
 import org.keycloak.authz.server.services.common.util.Tokens;
 import org.keycloak.models.KeycloakSession;
@@ -22,10 +23,22 @@ public class DefaultExecutionContext implements ExecutionContext {
 
     private final RealmModel realm;
     private final AccessToken accessToken;
+    private final Identity identity;
 
-    public DefaultExecutionContext(RealmModel realm) {
+    public DefaultExecutionContext(Identity identity, RealmModel realm) {
+        this.identity = identity;
         this.realm = realm;
         this.accessToken = Tokens.getAccessToken(realm);
+    }
+
+    @Override
+    public Identity getIdentity() {
+        return this.identity;
+    }
+
+    @Override
+    public RealmModel getRealm() {
+        return this.realm;
     }
 
     @Override

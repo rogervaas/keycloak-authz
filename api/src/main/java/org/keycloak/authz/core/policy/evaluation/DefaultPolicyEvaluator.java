@@ -16,23 +16,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class DefaultPolicyEvaluator implements PolicyEvaluator {
+class DefaultPolicyEvaluator implements PolicyEvaluator {
 
-    private final EvaluationContext evaluationContex;
+    private final PermissionProducer evaluationContex;
     private final Authorization authorization;
     private Map<String, PolicyProviderFactory> policyProviders = new HashMap<>();
     private final Executor scheduler;
 
-    public DefaultPolicyEvaluator(EvaluationContext evaluationContext, Authorization authorization, List<PolicyProviderFactory> providerFactories, Executor scheduler) {
-        this.evaluationContex = evaluationContext;
+    DefaultPolicyEvaluator(PermissionProducer permissionProducer, Authorization authorization, List<PolicyProviderFactory> providerFactories, Executor scheduler) {
+        this.evaluationContex = permissionProducer;
         this.authorization = authorization;
 
         for (PolicyProviderFactory provider : providerFactories) {
@@ -53,52 +51,39 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         }, this.scheduler);
     }
 
-    public BiConsumer<Decision, Throwable> createOnCompleteTask() {
-        return (BiConsumer<Decision, Throwable>) (decision, cause) -> {
-            if (cause == null) {
-                decision.onComplete();
-            } else {
-                decision.onError(cause);
-            }
-        };
-    }
+    private CompletableFuture<Void> createDecisionTask(Decision decision) {
+        return CompletableFuture.runAsync(() -> {
+            StoreFactory storeFactory = authorization.getStoreFactory();
+            PolicyStore policyStore = storeFactory.getPolicyStore();
 
-    public CompletableFuture<Void> createDecisionTask(Decision decision) {
-        return CompletableFuture.runAsync(new Runnable() {
-            @Override
-            public void run() {
-                StoreFactory storeFactory = authorization.getStoreFactory();
-                PolicyStore policyStore = storeFactory.getPolicyStore();
+            evaluationContex.forEach(permission -> {
+                Resource resource = permission.getResource();
+                Consumer<Policy> consumer = createDecisionConsumer(permission, decision);
 
-                evaluationContex.forEach(permission -> {
-                    Resource resource = permission.getResource();
-                    Consumer<Policy> consumer = createDecisionConsumer(permission, decision);
+                if (resource != null) {
+                    List<? extends Policy> resourcePolicies = policyStore.findByResource(resource.getId());
 
-                    if (resource != null) {
-                        List<? extends Policy> resourcePolicies = policyStore.findByResource(resource.getId());
-
-                        if (!resourcePolicies.isEmpty()) {
-                            resourcePolicies.forEach(consumer);
-                        }
-
-                        if (resource.getType() != null) {
-                            policyStore.findByResourceType(resource.getType()).forEach(consumer);
-                        }
-
-                        if (permission.getScopes().isEmpty() && !resource.getScopes().isEmpty()) {
-                            policyStore.findByScopeName(resource.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
-                        }
+                    if (!resourcePolicies.isEmpty()) {
+                        resourcePolicies.forEach(consumer);
                     }
 
-                    if (!permission.getScopes().isEmpty()) {
-                        policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
+                    if (resource.getType() != null) {
+                        policyStore.findByResourceType(resource.getType()).forEach(consumer);
                     }
-                });
-            }
+
+                    if (permission.getScopes().isEmpty() && !resource.getScopes().isEmpty()) {
+                        policyStore.findByScopeName(resource.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
+                    }
+                }
+
+                if (!permission.getScopes().isEmpty()) {
+                    policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
+                }
+            });
         }, this.scheduler);
     }
 
-    public Consumer<Policy> createDecisionConsumer(ResourcePermission permission, Decision decision) {
+    private  Consumer<Policy> createDecisionConsumer(ResourcePermission permission, Decision decision) {
         return (parentPolicy) -> {
             if (hasRequestedScopes(permission, parentPolicy)) {
                 for (Policy associatedPolicy : parentPolicy.getAssociatedPolicies()) {
@@ -108,7 +93,8 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
                         throw new RuntimeException("Unknown parentPolicy provider for type [" + associatedPolicy.getType() + "].");
                     }
 
-                    Evaluation evaluation = new Evaluation(permission, evaluationContex, parentPolicy, associatedPolicy, decision);
+                    ExecutionContext executionContext = evaluationContex.getExecutionContext();
+                    Evaluation evaluation = new Evaluation(permission, executionContext, parentPolicy, associatedPolicy, decision);
 
                     policyProvider.evaluate(evaluation);
 

@@ -88,8 +88,6 @@ module.controller('AdminAlbumCtrl', function ($scope, $http, $route, AdminAlbum,
     $scope.albums = {};
     $http.get('/photoz-restful-api/admin/album').success(function (data) {
         $scope.albums = data;
-    }).error(function (data, status, headers, config) {
-        console.log('An error occured, please check the console logs for full information. Status code: ' + status + ':' + data);
     });
     $scope.deleteAlbum = function (album) {
         var newAlbum = new Album(album);
@@ -105,9 +103,12 @@ module.factory('AdminAlbum', ['$resource', function ($resource) {
     return $resource('http://localhost:8080/photoz-restful-api/admin/album/:id');
 }]);
 module.factory('authInterceptor', function ($q, $injector, $timeout, Identity) {
+    var retries = 0;
+
     return {
         request: function (request) {
             if (Identity.uma && Identity.uma.rpt && request.url.indexOf('/album') != -1) {
+                retries = 0;
                 request.headers.Authorization = 'Bearer ' + Identity.uma.rpt.rpt;
             } else {
                 request.headers.Authorization = 'Bearer ' + Identity.authc.token;
@@ -115,39 +116,39 @@ module.factory('authInterceptor', function ($q, $injector, $timeout, Identity) {
             return request;
         },
         responseError: function (rejection) {
-            var deferred = $q.defer(rejection);
+            var deferred = $q.defer();
+
+            console.log(retries);
 
             if (rejection.status === 403) {
-                if (rejection.config.url.indexOf('/album') != -1) {
+                if (rejection.config.url.indexOf('/album') != -1 && retries < 1) {
                     if (rejection.data.ticket) {
-                        var data = JSON.stringify({
-                            ticket: rejection.data.ticket,
-                            rpt: Identity.uma ? Identity.uma.rpt.rpt : ""
-                        });
-
-                        console.log(data);
-
-                        var $http = $injector.get("$http");
-
-                        $http.post('http://localhost:8080/auth/realms/photoz/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
-                            .then(function (authzResponse) {
-                                if (authzResponse.data) {
-                                    Identity.uma = {};
-                                    Identity.uma.rpt = authzResponse.data;
-                                    console.log("Received RPT");
-                                    console.log(Identity.uma.rpt);
-                                }
+                        return $timeout(function () {
+                            var data = JSON.stringify({
+                                ticket: rejection.data.ticket,
+                                rpt: Identity.uma ? Identity.uma.rpt.rpt : ""
                             });
 
-                        return $timeout(function () {
+                            var $http = $injector.get("$http");
+
+                            $http.post('http://localhost:8080/auth/realms/photoz/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
+                                .then(function (authzResponse) {
+                                    if (authzResponse.data) {
+                                        Identity.uma = {};
+                                        Identity.uma.rpt = authzResponse.data;
+                                    }
+                                }, function (authzResponse) {
+                                    retries++
+                                    document.getElementById("output").innerHTML = 'You can not access or perform the requested operation on this resource.';
+                                });
+
                             return $http(rejection.config).then(function (response) {
                                 return response;
-                            }, function () {
-                                return $q.reject(rejection);
                             });
-                        }, 2000);
+                        }, 1000);
                     }
                 }
+
                 return $q.reject(rejection);
             }
 

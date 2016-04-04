@@ -6,8 +6,7 @@ rule "Authorize Using Context Information"
     dialect "mvel"
     when
        $evaluation : Evaluation(
-           $executionContext: context.executionContext,
-           $attributes: context.executionContext.attributes,
+           $attributes: context.attributes,
            $attributes.containsValue("kc.authz.context.authc.method", "otp"),
            $attributes.containsValue("someAttribute", "you_can_access")
        )

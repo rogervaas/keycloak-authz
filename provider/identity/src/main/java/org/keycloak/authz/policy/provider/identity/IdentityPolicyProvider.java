@@ -19,7 +19,7 @@ package org.keycloak.authz.policy.provider.identity;
 
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
-import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
+import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 import org.keycloak.models.RoleModel;
 import org.keycloak.util.JsonSerialization;
@@ -39,7 +39,7 @@ public class IdentityPolicyProvider implements PolicyProvider {
 
     @Override
     public void evaluate(Evaluation evaluation) {
-        EvaluationContext context = evaluation.getContext();
+        ExecutionContext context = evaluation.getContext();
         String users = policy.getConfig().get("users");
         String roles = policy.getConfig().get("roles");
 
@@ -75,7 +75,7 @@ public class IdentityPolicyProvider implements PolicyProvider {
                     for (String roleId : roleIds) {
                         RoleModel role = context.getRealm().getRoleById(roleId);
 
-                        if (role != null && hasScope(context, role.getName())) {
+                        if (role != null && context.getIdentity().hasRole(role.getName())) {
                             roleGranted = true;
                             break;
                         }
@@ -89,9 +89,5 @@ public class IdentityPolicyProvider implements PolicyProvider {
         if (userGranted && roleGranted) {
             evaluation.grant();
         }
-    }
-
-    private boolean hasScope(EvaluationContext context, String roleName) {
-        return context.getIdentity().getAttributes().containsValue("roles", roleName);
     }
 }

@@ -17,43 +17,24 @@
  */
 package org.keycloak.authz.core.policy.evaluation;
 
-import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourcePermission;
-import org.keycloak.models.RealmModel;
 
 import java.util.function.Consumer;
-import java.util.function.Supplier;
-import java.util.stream.Stream;
 
 /**
- * The evaluation context provides a contract from where policy providers will base their decisions. It represents all the
- * permissions that need to be checked and also provides methods for retrieving information from the runtime environment,
- * which can be used by different access control mechanisms.
+ * An {@link PermissionProducer} represents a source of {@link ResourcePermission}, responsible for emitting these permissions
+ * to a consumer in order to evaluate the authorization policies based on a {@link ExecutionContext}.
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public interface EvaluationContext {
+public interface PermissionProducer {
 
     /**
-     * Returns a list with all the requested permissions and that must be evaluated by the underlying policy providers.
+     * For each permission, deliver it to a <code>consumer</code>.
      *
-     * @return a list with all the permissions that must be evaluated
+     * @param consumer
      */
     void forEach(Consumer<ResourcePermission> consumer);
-
-    /**
-     * Returns the {@link Identity} that represents an entity (person or non-person) to which the permissions must be granted, or not.
-     *
-     * @return the identity to which the permissions must be granted, or not
-     */
-    Identity getIdentity();
-
-    /**
-     * Returns the {@link RealmModel} representing the security domain in which the evaluation must be done.
-     *
-     * @return the realm representing the security domain in which the evaluation must be done
-     */
-    RealmModel getRealm();
 
     /**
      * Returns the {@link ExecutionContext} from where information from the runtime environment can be obtained and used

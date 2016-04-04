@@ -13,7 +13,6 @@ import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.policy.Decision;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
-import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
 import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.RealmModel;
@@ -29,46 +28,23 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class DecisionTestCase {
 
-    static int NUM_PERMISSIONS = 1000 * 1000 * 5;
+    static int NUM_PERMISSIONS = 1;
 
     private RealmModel realmModel;
     private MapStoreFactory mapStoreFactory;
     private Authorization authorization;
     private Identity identity;
-    private ExecutionContext executionContext;
-    private Stream<ResourcePermission> permissionSupplier;
-    private Stream<ResourcePermission> permissionSupplier2;
-    private Stream<ResourcePermission> permissionSupplier3;
-    private Stream<ResourcePermission> permissionSupplier4;
+    private List<ResourcePermission> permissionSupplier;
 
     @Before
     public void onBefore() {
         this.mapStoreFactory = new MapStoreFactory();
-        this.realmModel = createRealmModel();
-        this.identity = new Identity() {
-            @Override
-            public String getId() {
-                return "alice";
-            }
-
-            @Override
-            public Attributes getAttributes() {
-                HashMap<String, Collection<String>> attributes = new HashMap<>();
-
-                attributes.put("roles", Arrays.asList("admin"));
-
-                return Attributes.from(attributes);
-            }
-        };
-        this.executionContext = () -> Attributes.EMPTY;
 
         ResourceServer resourceServer = this.mapStoreFactory.getResourceServerStore().create(new MockUp<ClientModel>() {
 
@@ -97,40 +73,24 @@ public class DecisionTestCase {
         config.put("mavenArtifactVersion", "1.0-SNAPSHOT");
         config.put("scannerPeriod", "1");
         config.put("scannerPeriodUnit", "Minutes");
-        config.put("sessionName", "MainAdminSession");
+        config.put("sessionName", "MainOwnerSession");
 
         droolsPolicy.setConfig(config);
 
         policy.addAssociatedPolicy(droolsPolicy);
 
         this.permissionSupplier = createPermissionSupplier(resource);
-        this.permissionSupplier2 = createPermissionSupplier(resource);
-        this.permissionSupplier3 = createPermissionSupplier(resource);
-        this.permissionSupplier4 = createPermissionSupplier(resource);
 
         this.authorization = Authorization.builder().storeFactory(() -> mapStoreFactory).build();
-    }
-
-    public Stream<ResourcePermission> createPermissionSupplier(final Resource resource) {
-        List<ResourcePermission> resourcePermissions = new ArrayList<>();
-
-        for (int i = 0; i < NUM_PERMISSIONS / 4; i++) {
-            resourcePermissions.add(new ResourcePermission(resource, Arrays.asList()));
-        }
-
-        return StreamSupport.stream(resourcePermissions.spliterator(), true);
     }
 
     @Test
     public void test() throws Exception {
         final long start = System.nanoTime();
-        CountDownLatch latch = new CountDownLatch(4);
+        CountDownLatch latch = new CountDownLatch(1);
         System.out.println("Starting ...");
 
-        this.authorization.evaluators().from(createEvaluationContext(this.permissionSupplier)).evaluate(createDecision(latch));
-        this.authorization.evaluators().from(createEvaluationContext(this.permissionSupplier2)).evaluate(createDecision(latch));
-        this.authorization.evaluators().from(createEvaluationContext(this.permissionSupplier3)).evaluate(createDecision(latch));
-        this.authorization.evaluators().from(createEvaluationContext(this.permissionSupplier4)).evaluate(createDecision(latch));
+        this.authorization.evaluators().from(this.permissionSupplier, createExecutionContext()).evaluate(createDecision(latch));
 
         latch.await(200, TimeUnit.SECONDS);
 
@@ -144,11 +104,11 @@ public class DecisionTestCase {
         System.out.format("elapsed = %.3f%n", elapsedSeconds);
     }
 
-    public Decision createDecision(final CountDownLatch latch) {
+    private Decision createDecision(final CountDownLatch latch) {
         return new Decision() {
             @Override
             public void onDecision(Evaluation evaluation, Effect effect) {
-//                System.out.println(effect + ": " + evaluation.getPolicy().getName() + " / " + Thread.currentThread().getName());
+                System.out.println(effect + ": " + evaluation.getPolicy().getName() + " / " + Thread.currentThread().getName());
             }
 
             @Override
@@ -166,32 +126,7 @@ public class DecisionTestCase {
         };
     }
 
-    public EvaluationContext createEvaluationContext(Stream<ResourcePermission> permissionSupplier) {
-        return new MockUp<EvaluationContext>() {
-            @Mock
-            public Stream<ResourcePermission> getPermissions() {
-                return permissionSupplier;
-            }
-
-            @Mock
-            public Identity getIdentity() {
-                return identity;
-            }
-
-            @Mock
-            public ExecutionContext getExecutionContext() {
-                return executionContext;
-            }
-
-            @Mock
-            public RealmModel getRealm() {
-                return realmModel;
-            }
-
-        }.getMockInstance();
-    }
-
-    public RealmModel createRealmModel() {
+    private RealmModel createRealmModel() {
         return new MockUp<RealmModel>() {
             @Mock
             public RoleModel getRoleById(String id) {
@@ -263,5 +198,52 @@ public class DecisionTestCase {
                 };
             }
         }.getMockInstance();
+    }
+
+    private  ExecutionContext createExecutionContext() {
+        return new ExecutionContext() {
+            @Override
+            public Identity getIdentity() {
+                return createIdentity();
+            }
+
+            @Override
+            public RealmModel getRealm() {
+                return createRealmModel();
+            }
+
+            @Override
+            public Attributes getAttributes() {
+                return Attributes.EMPTY;
+            }
+        };
+    }
+
+    private Identity createIdentity() {
+        return new Identity() {
+            @Override
+            public String getId() {
+                return "admin";
+            }
+
+            @Override
+            public Attributes getAttributes() {
+                HashMap<String, Collection<String>> attributes = new HashMap<>();
+
+                attributes.put("roles", Arrays.asList("admin"));
+
+                return Attributes.from(attributes);
+            }
+        };
+    }
+
+    private List<ResourcePermission> createPermissionSupplier(final Resource resource) {
+        List<ResourcePermission> resourcePermissions = new ArrayList<>();
+
+        for (int i = 0; i < NUM_PERMISSIONS; i++) {
+            resourcePermissions.add(new ResourcePermission(resource, Arrays.asList()));
+        }
+
+        return resourcePermissions;
     }
 }

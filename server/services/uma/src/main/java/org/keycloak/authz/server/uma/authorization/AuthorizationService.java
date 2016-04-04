@@ -20,13 +20,10 @@ package org.keycloak.authz.server.uma.authorization;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.policy.Decision;
-import org.keycloak.authz.core.policy.evaluation.DefaultEvaluationContext;
-import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
 import org.keycloak.authz.server.services.common.DefaultExecutionContext;
 import org.keycloak.authz.server.services.common.KeycloakIdentity;
 import org.keycloak.authz.server.services.common.policy.evaluation.DecisionCollector;
@@ -95,9 +92,8 @@ public class AuthorizationService {
         }
 
         PermissionTicket ticket = verifyPermissionTicket(authorizationRequest);
-        EvaluationContext evaluationContext = createEvaluationContext(identity, ticket, authorizationRequest);
 
-        this.authorizationManager.evaluators().schedule(evaluationContext, Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionCollector() {
+        this.authorizationManager.evaluators().schedule(createPermissions(ticket, authorizationRequest), new DefaultExecutionContext(identity, this.realm), Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionCollector() {
             @Override
             public void onComplete(List<EvaluationResult> evaluationResults) {
                 if (anyDenial(evaluationResults)) {
@@ -118,7 +114,7 @@ public class AuthorizationService {
         });
     }
 
-    private EvaluationContext createEvaluationContext(Identity identity, PermissionTicket ticket, AuthorizationRequest request) {
+    private List<ResourcePermission> createPermissions(PermissionTicket ticket, AuthorizationRequest request) {
         Map<String, Set<String>> permissionsToEvaluate = new HashMap<>();
 
         permissionsToEvaluate.put(ticket.getResourceSetId(), ticket.getScopes());
@@ -156,7 +152,7 @@ public class AuthorizationService {
             }
         }
 
-        List<ResourcePermission> finalPermissions = permissionsToEvaluate.entrySet().stream().map(entry -> {
+        return permissionsToEvaluate.entrySet().stream().map(entry -> {
             Resource resource = authorizationManager.getStoreFactory().getResourceStore().findById(entry.getKey());
 
             if (resource != null) {
@@ -169,8 +165,6 @@ public class AuthorizationService {
 
             return null;
         }).filter(resourcePermission -> resourcePermission != null).collect(Collectors.toList());
-
-        return new DefaultEvaluationContext(identity, this.realm, finalPermissions, new DefaultExecutionContext(this.realm));
     }
 
     private String createRequestingPartyToken(List<EvaluationResult> evaluation) {

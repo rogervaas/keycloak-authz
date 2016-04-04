@@ -39,7 +39,7 @@ public class DecisionCollector implements Decision {
                 if (isGranted(policyResult)) {
                     policyResult.setStatus(Effect.PERMIT);
                 } else {
-                    policyResult.setStatus(Effect.PERMIT);
+                    policyResult.setStatus(Effect.DENY);
                 }
             }
 

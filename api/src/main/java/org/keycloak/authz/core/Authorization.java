@@ -1,5 +1,6 @@
 package org.keycloak.authz.core;
 
+import org.keycloak.authz.core.policy.evaluation.Evaluator;
 import org.keycloak.authz.core.policy.evaluation.PolicyEvaluator;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
