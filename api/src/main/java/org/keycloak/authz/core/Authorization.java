@@ -35,7 +35,7 @@ import java.util.function.Supplier;
  *
  *     evaluator.evaluate(new Decision() {
  *
- *         public void onGrant(Evaluation evaluation) {
+ *         public void onDecision(Evaluation evaluation) {
  *              // do something on grant
  *         }
  *
@@ -65,7 +65,7 @@ public final class Authorization {
      * @return a {@link Evaluator} instance
      */
     public Evaluator evaluators() {
-        return new Evaluator(this.storeFactory.get(), this.policyProviderFactories);
+        return new Evaluator(this, this.policyProviderFactories);
     }
 
     /**
@@ -135,9 +135,10 @@ public final class Authorization {
 
         private List<PolicyProviderFactory> configurePolicyProviderFactories(Supplier<StoreFactory> storeFactorySupplier) {
             List<PolicyProviderFactory> factories = new ArrayList<>();
+            StoreFactory storeFactory = storeFactorySupplier.get();
 
             ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach((policyProviderFactory) -> {
-                policyProviderFactory.init(storeFactorySupplier.get().getPolicyStore());
+                policyProviderFactory.init(storeFactory.getPolicyStore());
                 factories.add(policyProviderFactory);
             });
 

@@ -17,21 +17,21 @@
  */
 package org.keycloak.authz.server.admin.resource;
 
+import org.jboss.resteasy.spi.HttpRequest;
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
-import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.policy.Decision;
 import org.keycloak.authz.core.policy.evaluation.DefaultEvaluationContext;
-import org.keycloak.authz.core.policy.evaluation.Evaluation;
-import org.keycloak.authz.core.policy.evaluation.EvaluationResult;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
-import org.keycloak.authz.server.services.core.DefaultExecutionContext;
+import org.keycloak.authz.server.services.common.DefaultExecutionContext;
+import org.keycloak.authz.server.services.common.policy.evaluation.DecisionCollector;
+import org.keycloak.authz.server.services.common.policy.evaluation.EvaluationResult;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
@@ -40,6 +40,8 @@ import org.keycloak.models.UserModel;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
@@ -47,12 +49,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -60,6 +64,7 @@ import java.util.stream.Collectors;
 public class PolicyEvaluateResource {
 
     private final RealmModel realm;
+    private final ThreadFactory threadFactory;
 
     @Context
     private Authorization authorization;
@@ -67,47 +72,43 @@ public class PolicyEvaluateResource {
     @Context
     private KeycloakSession keycloakSession;
 
+    @Context
+    private HttpRequest httpRequest;
+
     private final ResourceServer resourceServer;
 
-    public PolicyEvaluateResource(RealmModel realm, ResourceServer resourceServer) {
+    public PolicyEvaluateResource(RealmModel realm, ResourceServer resourceServer, ThreadFactory threadFactory) {
         this.realm = realm;
         this.resourceServer = resourceServer;
+        this.threadFactory = threadFactory;
     }
 
     @POST
     @Consumes("application/json")
     @Produces("application/json")
-    public Response evaluate(PolicyEvaluationRequest representation) {
-        List<ResourcePermission> permissions = new ArrayList<>();
-
-        representation.getResources().forEach(resource -> {
-            Set<String> givenScopes = resource.getScopes();
-
-            if (givenScopes == null) {
-                givenScopes = new HashSet();
-            }
-
-            List<Scope> scopes = givenScopes.stream().map(scopeName -> authorization.getStoreFactory().getScopeStore().findByName(scopeName))
-                    .collect(Collectors.toList());
-
-            if (resource.getId() != null) {
-                Resource resourceModel = authorization.getStoreFactory().getResourceStore().findById(resource.getId());
-                permissions.add(new ResourcePermission(resourceModel, scopes));
-            } else if (resource.getType() != null) {
-                authorization.getStoreFactory().getResourceStore().findByType(resource.getType()).forEach(resource1 -> permissions.add(new ResourcePermission(resource1, scopes)));
-            } else {
-                permissions.addAll(scopes.stream().map(new Function<Scope, ResourcePermission>() {
+    public void evaluate(PolicyEvaluationRequest representation, @Suspended AsyncResponse asyncResponse) {
+        this.authorization.evaluators().schedule(createEvaluationContext(representation), Executors.newSingleThreadExecutor(this.threadFactory))
+                .evaluate(new DecisionCollector() {
                     @Override
-                    public ResourcePermission apply(Scope scope) {
-                        return new ResourcePermission(null, Arrays.asList(scope));
+                    protected void onComplete(List<EvaluationResult> results) {
+                        KeycloakSession keycloakSession = ResteasyProviderFactory.getContextData(KeycloakSession.class);
+
+                        try {
+                            asyncResponse.resume(Response.ok(PolicyEvaluationResponse.build(realm, results, resourceServer, authorization, keycloakSession)).build());
+                        } catch (Throwable cause) {
+                            asyncResponse.resume(cause);
+                        }
                     }
-                }).collect(Collectors.toList()));
-            }
-        });
 
-        Iterator<ResourcePermission> iterator = permissions.iterator();
+                    @Override
+                    public void onError(Throwable cause) {
+                        asyncResponse.resume(cause);
+                    }
+                });
+    }
 
-        DefaultEvaluationContext context = new DefaultEvaluationContext(createIdentity(representation), this.realm, () -> iterator.hasNext() ? iterator.next() : null, new DefaultExecutionContext(this.keycloakSession, this.realm) {
+    public DefaultEvaluationContext createEvaluationContext(final PolicyEvaluationRequest representation) {
+        return new DefaultEvaluationContext(createIdentity(representation), this.realm, createPermissions(representation), new DefaultExecutionContext(this.realm) {
             @Override
             public Attributes getAttributes() {
                 Map<String, Collection<String>> attributes = new HashMap<>(super.getAttributes().toMap());
@@ -129,80 +130,27 @@ public class PolicyEvaluateResource {
                 return Attributes.from(attributes);
             }
         });
+    }
 
-        Map<ResourcePermission, EvaluationResult> results = new HashMap();
+    public List<ResourcePermission> createPermissions(PolicyEvaluationRequest representation) {
+        return representation.getResources().stream().flatMap((Function<PolicyEvaluationRequest.Resource, Stream<ResourcePermission>>) resource -> {
+            Set<String> givenScopes = resource.getScopes();
 
-        this.authorization.evaluators().from(context).evaluate(new Decision() {
-            @Override
-            public void onGrant(Evaluation evaluation) {
-                results.computeIfAbsent(evaluation.getPermission(), EvaluationResult::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
+            if (givenScopes == null) {
+                givenScopes = new HashSet();
             }
 
-            @Override
-            public void onDeny(Evaluation evaluation) {
-                results.computeIfAbsent(evaluation.getPermission(), EvaluationResult::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(EvaluationResult.PolicyResult.Status.DENIED);
+            List<Scope> scopes = givenScopes.stream().map(scopeName -> authorization.getStoreFactory().getScopeStore().findByName(scopeName)).collect(Collectors.toList());
+
+            if (resource.getId() != null) {
+                Resource resourceModel = authorization.getStoreFactory().getResourceStore().findById(resource.getId());
+                return Stream.of(new ResourcePermission(resourceModel, scopes));
+            } else if (resource.getType() != null) {
+                return authorization.getStoreFactory().getResourceStore().findByType(resource.getType()).stream().map(resource1 -> new ResourcePermission(resource1, scopes));
+            } else {
+                return scopes.stream().map(scope -> new ResourcePermission(null, Arrays.asList(scope)));
             }
-
-            @Override
-            public void onComplete() {
-                for (EvaluationResult result : results.values()) {
-                    for (EvaluationResult.PolicyResult policyResult : result.getResults()) {
-                        if (isGranted(policyResult)) {
-                            policyResult.setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
-                        } else {
-                            policyResult.setStatus(EvaluationResult.PolicyResult.Status.DENIED);
-                        }
-                    }
-
-                    if (result.getResults().stream()
-                            .filter(policyResult -> EvaluationResult.PolicyResult.Status.DENIED.equals(policyResult.getStatus())).count() > 0) {
-                        result.setStatus(EvaluationResult.PolicyResult.Status.DENIED);
-                    } else {
-                        result.setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
-                    }
-                }
-            }
-
-            @Override
-            public void onError(Throwable cause) {
-                cause.printStackTrace();
-            }
-
-            private boolean isGranted(EvaluationResult.PolicyResult policyResult) {
-                List<EvaluationResult.PolicyResult> values = policyResult.getAssociatedPolicies();
-
-                int grantCount = 0;
-                int denyCount = values.size();
-
-                for (EvaluationResult.PolicyResult decision : values) {
-                    if (decision.getStatus().equals(EvaluationResult.PolicyResult.Status.GRANTED)) {
-                        grantCount++;
-                        denyCount--;
-                    }
-                }
-
-                Policy policy = policyResult.getPolicy();
-                Policy.DecisionStrategy decisionStrategy = policy.getDecisionStrategy();
-
-                if (decisionStrategy == null) {
-                    decisionStrategy = Policy.DecisionStrategy.UNANIMOUS;
-                }
-
-                if (Policy.DecisionStrategy.AFFIRMATIVE.equals(decisionStrategy) && grantCount > 0) {
-                    return true;
-                } else if (Policy.DecisionStrategy.UNANIMOUS.equals(decisionStrategy) && denyCount == 0) {
-                    return true;
-                } else if (Policy.DecisionStrategy.CONSENSUS.equals(decisionStrategy)) {
-                    if (grantCount > denyCount) {
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-        });
-
-        return Response.ok(PolicyEvaluationResponse.build(realm, results.values().stream().collect(Collectors.toList()), resourceServer, authorization, keycloakSession)).build();
+        }).collect(Collectors.toList());
     }
 
     public Identity createIdentity(PolicyEvaluationRequest representation) {

@@ -15,11 +15,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.authz.server.services.core;
+package org.keycloak.authz.server.services.common;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.jose.jws.JWSInput;
@@ -38,7 +39,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.keycloak.authz.server.services.core.util.Tokens.getAccessToken;
+import static org.keycloak.authz.server.services.common.util.Tokens.getAccessToken;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -46,27 +47,25 @@ import static org.keycloak.authz.server.services.core.util.Tokens.getAccessToken
 public class KeycloakIdentity implements Identity {
 
     private final AccessToken accessToken;
-    private final KeycloakSession keycloakSession;
 
-    public static KeycloakIdentity create(RealmModel realm, KeycloakSession keycloakSession) {
-        AccessToken token = getAccessToken(keycloakSession, realm);
+    public static KeycloakIdentity create(RealmModel realm) {
+        AccessToken token = getAccessToken(realm);
 
         if (token == null) {
             throw new ErrorResponseException("invalid_bearer_token", "Could not obtain bearer access_token from request.", Response.Status.FORBIDDEN);
         }
 
-        return new KeycloakIdentity(token, keycloakSession);
+        return new KeycloakIdentity(token);
     }
 
-    private KeycloakIdentity(AccessToken accessToken, KeycloakSession keycloakSession) {
+    private KeycloakIdentity(AccessToken accessToken) {
         this.accessToken = accessToken;
-        this.keycloakSession = keycloakSession;
     }
 
     @Override
     public String getId() {
         if (isResourceServer()) {
-            ClientSessionModel clientSession = this.keycloakSession.sessions().getClientSession(this.accessToken.getClientSession());
+            ClientSessionModel clientSession = getKeycloakSession().sessions().getClientSession(this.accessToken.getClientSession());
             return clientSession.getClient().getId();
         }
 
@@ -77,7 +76,7 @@ public class KeycloakIdentity implements Identity {
     public Attributes getAttributes() {
         HashMap<String, Collection<String>> attributes = new HashMap<>();
         AppAuthManager authManager = new AppAuthManager();
-        String token = authManager.extractAuthorizationHeaderToken(this.keycloakSession.getContext().getRequestHeaders());
+        String token = authManager.extractAuthorizationHeaderToken(getKeycloakSession().getContext().getRequestHeaders());
 
         try {
             String claims = new JWSInput(token).readContentAsString();
@@ -131,26 +130,18 @@ public class KeycloakIdentity implements Identity {
         return Attributes.from(attributes);
     }
 
-    /**
-     * Indicates if this identity is granted with a role with the given <code>roleName</code>.
-     *
-     * @param roleName the name of the role
-     *
-     * @return true if the identity has the given role. Otherwise, it returns false.
-     */
-    public boolean hasRole(String roleName) {
-        return getAttributes().containsValue("roles", roleName);
-    }
-
-
-    public boolean isResourceServer() {
-        ClientSessionModel clientSession = this.keycloakSession.sessions().getClientSession(this.accessToken.getClientSession());
-        UserModel clientUser = this.keycloakSession.users().getUserByServiceAccountClient(clientSession.getClient());
+    private  boolean isResourceServer() {
+        ClientSessionModel clientSession = getKeycloakSession().sessions().getClientSession(this.accessToken.getClientSession());
+        UserModel clientUser = getKeycloakSession().users().getUserByServiceAccountClient(clientSession.getClient());
 
         if (clientUser == null) {
             return false;
         }
 
         return this.accessToken.getSubject().equals(clientUser.getId());
+    }
+
+    private  KeycloakSession getKeycloakSession() {
+        return ResteasyProviderFactory.getContextData(KeycloakSession.class);
     }
 }

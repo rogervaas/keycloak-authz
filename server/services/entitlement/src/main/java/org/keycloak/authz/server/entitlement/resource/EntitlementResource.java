@@ -24,12 +24,14 @@ import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
+import org.keycloak.authz.core.policy.Decision;
 import org.keycloak.authz.core.policy.evaluation.DefaultEvaluationContext;
 import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
-import org.keycloak.authz.core.policy.evaluation.EvaluationResult;
-import org.keycloak.authz.server.services.core.DefaultExecutionContext;
-import org.keycloak.authz.server.services.core.KeycloakIdentity;
-import org.keycloak.authz.server.services.core.util.Tokens;
+import org.keycloak.authz.server.services.common.DefaultExecutionContext;
+import org.keycloak.authz.server.services.common.KeycloakIdentity;
+import org.keycloak.authz.server.services.common.policy.evaluation.DecisionCollector;
+import org.keycloak.authz.server.services.common.policy.evaluation.EvaluationResult;
+import org.keycloak.authz.server.services.common.util.Tokens;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.KeycloakSession;
@@ -42,15 +44,18 @@ import javax.ws.rs.GET;
 import javax.ws.rs.OPTIONS;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.container.AsyncResponse;
+import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Spliterator;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -81,7 +86,7 @@ public class EntitlementResource {
 
     @GET
     @Produces("application/json")
-    public Response get(@QueryParam("resourceServerId") String resourceServerId) {
+    public void get(@QueryParam("resourceServerId") String resourceServerId, @Suspended AsyncResponse asyncResponse) {
         if (resourceServerId == null) {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Requires resourceServerId request parameter.", Response.Status.BAD_REQUEST);
         }
@@ -96,8 +101,15 @@ public class EntitlementResource {
             throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Identifier is not associated with any client and resource server.", Response.Status.BAD_REQUEST);
         }
 
+        EvaluationContext evaluationContext = new DefaultEvaluationContext(identity, this.realm, createPermissions(client), new DefaultExecutionContext(this.realm));
+
+        this.authorizationManager.evaluators().from(evaluationContext).evaluate(new DecisionCollector(evaluationResults -> asyncResponse.resume(Cors.add(request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, evaluationResults)))).allowedOrigins("*").build())));
+    }
+
+    public List<ResourcePermission> createPermissions(ClientModel client) {
         ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(client.getId());
-        Iterator<ResourcePermission> permissions = this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(resourceServer.getId()).stream()
+
+        return this.authorizationManager.getStoreFactory().getResourceStore().findByResourceServer(resourceServer.getId()).stream()
                 .flatMap(resource -> {
                     List<Scope> scopes = resource.getScopes();
 
@@ -106,18 +118,12 @@ public class EntitlementResource {
                     }
 
                     return scopes.stream().map(scope -> new ResourcePermission(resource, Arrays.asList(scope)));
-                }).collect(Collectors.toList()).iterator();
-
-        EvaluationContext evaluationContext = new DefaultEvaluationContext(identity, this.realm, () -> permissions.hasNext() ? permissions.next() : null, new DefaultExecutionContext(this.keycloakSession, this.realm));
-//        List<EvaluationResult> evaluate = this.authorizationManager.getPolicyManager().evaluate(evaluationContext);
-        List<EvaluationResult> evaluate = null;
-
-        return Cors.add(this.request, Response.ok().entity(new EntitlementResponse(createRequestingPartyToken(identity, evaluate)))).allowedOrigins("*").build();
+                }).collect(Collectors.toList());
     }
 
     private String createRequestingPartyToken(Identity identity, List<EvaluationResult> evaluation) {
         List<Permission> permissions = evaluation.stream()
-                .filter(evaluationResult -> evaluationResult.getStatus().equals(EvaluationResult.PolicyResult.Status.GRANTED))
+                .filter(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.PERMIT))
                 .map(evaluationResult -> {
                     ResourcePermission permission = evaluationResult.getPermission();
                     return new Permission(permission.getResource().getId(), permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList()));
@@ -142,8 +148,8 @@ public class EntitlementResource {
             });
         });
 
-        AccessToken accessToken = Tokens.getAccessToken(this.keycloakSession, this.realm);
-        String accessTokenAsString = Tokens.getAccessTokenAsString(this.keycloakSession);
+        AccessToken accessToken = Tokens.getAccessToken(this.realm);
+        String accessTokenAsString = Tokens.getAccessTokenAsString();
 
         return new JWSBuilder().jsonContent(new EntitlementToken(perms.values().stream().collect(Collectors.toList()), accessToken, accessTokenAsString))
                 .rsa256(this.realm.getPrivateKey());

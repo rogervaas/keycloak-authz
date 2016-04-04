@@ -7,7 +7,6 @@ angular.element(document).ready(function ($http) {
         Identity.loggedIn = true;
         Identity.authz = keycloakAuth;
         Identity.logout = function () {
-            console.log('*** LOGOUT');
             Identity.loggedIn = false;
             Identity.claim = {};
             Identity.authc = null;
@@ -17,7 +16,7 @@ angular.element(document).ready(function ($http) {
         Identity.claim = {};
         Identity.claim.name = Identity.authz.idTokenParsed.name;
         Identity.hasRole = function (name) {
-            if (Identity.authz.realmAccess) {
+            if (Identity.authz && Identity.authz.realmAccess) {
                 for (role of Identity.authz.realmAccess.roles) {
                     if (role == name) {
                         return true;
@@ -44,28 +43,28 @@ module.controller('GlobalCtrl', function ($scope, $http, $route, $location, Albu
     Album.query(function (albums) {
         $scope.albums = albums;
     });
-    $scope.deleteAlbum = function(album) {
+    $scope.deleteAlbum = function (album) {
         var newAlbum = new Album(album);
-        newAlbum.$delete({id : album.id}, function () {
+        newAlbum.$delete({id: album.id}, function () {
             $route.reload();
         });
     }
 
-    $scope.showRpt = function() {
+    $scope.showRpt = function () {
         document.getElementById("output").innerHTML = JSON.stringify(jwt_decode(Identity.uma.rpt.rpt), null, '  ');
     }
 
-    $scope.showAccessToken = function() {
+    $scope.showAccessToken = function () {
         document.getElementById("output").innerHTML = JSON.stringify(jwt_decode(Identity.authc.token), null, '  ');
     }
 
-    $scope.requestEntitlements = function() {
+    $scope.requestEntitlements = function () {
         var request = new XMLHttpRequest();
 
         request.open("GET", "http://localhost:8080/auth/realms/photoz/entitlement?resourceServerId=photoz-restful-api", true);
         request.setRequestHeader("Authorization", "Bearer " + Identity.authc.token);
-        request.onreadystatechange = function() {
-            if(request.readyState == 4 && request.status == 200) {
+        request.onreadystatechange = function () {
+            if (request.readyState == 4 && request.status == 200) {
                 Identity.uma.rpt = JSON.parse(request.responseText);
             }
         }
@@ -87,15 +86,14 @@ module.controller('AlbumCtrl', function ($scope, $http, $routeParams, $location,
 });
 module.controller('AdminAlbumCtrl', function ($scope, $http, $route, AdminAlbum, Album) {
     $scope.albums = {};
-    $http.get('/photoz-restful-api/admin/album').success(function(data) {
+    $http.get('/photoz-restful-api/admin/album').success(function (data) {
         $scope.albums = data;
-        console.log(data);
-    }).error(function(data, status, headers, config) {
-        console.log('An error occured, please check the console logs for full information. Status code: ' + status+':'+data);
+    }).error(function (data, status, headers, config) {
+        console.log('An error occured, please check the console logs for full information. Status code: ' + status + ':' + data);
     });
-    $scope.deleteAlbum = function(album) {
+    $scope.deleteAlbum = function (album) {
         var newAlbum = new Album(album);
-        newAlbum.$delete({id : album.id}, function () {
+        newAlbum.$delete({id: album.id}, function () {
             $route.reload();
         });
     }
@@ -106,37 +104,61 @@ module.factory('Album', ['$resource', function ($resource) {
 module.factory('AdminAlbum', ['$resource', function ($resource) {
     return $resource('http://localhost:8080/photoz-restful-api/admin/album/:id');
 }]);
-module.factory('authInterceptor', function ($q, Identity) {
+module.factory('authInterceptor', function ($q, $injector, $timeout, Identity) {
     return {
-        request: function (config) {
-            if (config.bypass) {
-                return config;
+        request: function (request) {
+            if (Identity.uma && Identity.uma.rpt && request.url.indexOf('/album') != -1) {
+                request.headers.Authorization = 'Bearer ' + Identity.uma.rpt.rpt;
+            } else {
+                request.headers.Authorization = 'Bearer ' + Identity.authc.token;
+            }
+            return request;
+        },
+        responseError: function (rejection) {
+            var deferred = $q.defer(rejection);
+
+            if (rejection.status === 403) {
+                if (rejection.config.url.indexOf('/album') != -1) {
+                    if (rejection.data.ticket) {
+                        var data = JSON.stringify({
+                            ticket: rejection.data.ticket,
+                            rpt: Identity.uma ? Identity.uma.rpt.rpt : ""
+                        });
+
+                        console.log(data);
+
+                        var $http = $injector.get("$http");
+
+                        $http.post('http://localhost:8080/auth/realms/photoz/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
+                            .then(function (authzResponse) {
+                                if (authzResponse.data) {
+                                    Identity.uma = {};
+                                    Identity.uma.rpt = authzResponse.data;
+                                    console.log("Received RPT");
+                                    console.log(Identity.uma.rpt);
+                                }
+                            });
+
+                        return $timeout(function () {
+                            return $http(rejection.config).then(function (response) {
+                                return response;
+                            }, function () {
+                                return $q.reject(rejection);
+                            });
+                        }, 2000);
+                    }
+                }
+                return $q.reject(rejection);
             }
 
-            var deferred = $q.defer();
-
-            Identity.authz.updateToken(60).success(function () {
-                config.headers = config.headers || {};
-
-                if (Identity.uma && Identity.uma.rpt && config.url.indexOf('/album') != -1) {
-                    console.log("Sending rpt");
-                    config.headers.Authorization = 'Bearer ' + Identity.uma.rpt.rpt;
-                } else {
-                    console.log("Sending at");
-                    config.headers.Authorization = 'Bearer ' + Identity.authc.token;
-                }
-
-                deferred.resolve(config);
-            }).error(function () {
-                deferred.reject('Failed to refresh token');
-            });
-
-            return deferred.promise;
+            /* If not a 401, do nothing with this error.
+             * This is necessary to make a `responseError`
+             * interceptor a no-op. */
+            return $q.reject(rejection);
         }
     };
 });
 module.config(function ($httpProvider, $routeProvider) {
-    $httpProvider.responseInterceptors.push('errorInterceptor');
     $httpProvider.interceptors.push('authInterceptor');
     $routeProvider.when('/', {
         templateUrl: 'partials/home.html',
@@ -154,63 +176,4 @@ module.config(function ($httpProvider, $routeProvider) {
     }).otherwise({
         redirectTo: '/'
     });
-});
-module.factory('errorInterceptor', function ($q, $injector) {
-    return function (promise) {
-        return promise.then(function (response) {
-            return response;
-        }, function (response) {
-            if (response.status == 401) {
-                console.log('session timeout?');
-                logout();
-            } else if (response.status == 403) {
-                console.log("Forbidden");
-                console.log(response);
-                var deferred = $q.defer();
-
-                if (response.config.url.indexOf('/album') != -1) {
-                    var authenticateHeader = response.headers("WWW-Authenticate");
-
-                    if (authenticateHeader) {
-                        var data = JSON.stringify({
-                            ticket: response.data.ticket,
-                            rpt: Identity.uma ? Identity.uma.rpt.rpt : ""
-                        });
-
-                        $injector.get("$http").post('http://localhost:8080/auth/realms/photoz/authz/authorize', data, {headers: {"Authorization": "Bearer " + Identity.authc.token}})
-                            .then(function (authzResponse) {
-                                if (authzResponse.data) {
-                                    Identity.uma = {};
-                                    Identity.uma.rpt = authzResponse.data;
-                                    console.log(authzResponse.data);
-                                    $injector.get("$http")(response.config).then(function (response) {
-                                        deferred.resolve(response);
-                                    }, function (response) {
-                                        deferred.reject();
-                                    });
-                                } else {
-                                    deferred.reject();
-                                }
-                            }, function (response) {
-                                deferred.reject();
-                                alert('Oops, you are probably missing some permission. Contact the administrator.');
-                                return;
-                            });
-                        return deferred.promise;
-                    }
-                } else {
-                    $q.resolve(response);
-                }
-            } else if (response.status == 404) {
-                alert("Not found");
-            } else if (response.status) {
-                if (response.data && response.data.message) {
-                    alert(response.data.message);
-                } else {
-                    alert("An unexpected server error has occurred");
-                }
-            }
-            return $q.reject(response);
-        });
-    };
 });

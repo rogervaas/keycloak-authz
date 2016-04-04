@@ -43,4 +43,15 @@ public interface Identity {
      * @return the attributes or claims associated with this identity
      */
     Attributes getAttributes();
+
+    /**
+     * Indicates if this identity is granted with a role with the given <code>roleName</code>.
+     *
+     * @param roleName the name of the role
+     *
+     * @return true if the identity has the given role. Otherwise, it returns false.
+     */
+    default boolean hasRole(String roleName) {
+        return getAttributes().containsValue("roles", roleName);
+    }
 }

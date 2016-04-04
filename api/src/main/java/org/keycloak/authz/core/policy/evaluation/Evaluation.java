@@ -25,10 +25,7 @@ public class Evaluation {
     private final Policy policy;
     private final Policy parentPolicy;
     private List<Advice> advices = Collections.emptyList();
-
-    public Evaluation(ResourcePermission permission, EvaluationContext evaluationContext) {
-        this(permission, evaluationContext, null, null, null);
-    }
+    private Decision.Effect effect;
 
     public Evaluation(ResourcePermission permission, EvaluationContext evaluationContext, Policy parentPolicy, Policy policy, Decision decision) {
         this.permission = permission;
@@ -60,11 +57,13 @@ public class Evaluation {
      * Grants all the requested permissions to the caller.
      */
     public void grant() {
-        this.decision.onGrant(this);
+        this.effect = Decision.Effect.PERMIT;
+        this.decision.onDecision(this, this.effect);
     }
 
     public void deny() {
-        this.decision.onDeny(this);
+        this.effect = Decision.Effect.DENY;
+        this.decision.onDecision(this, this.effect);
     }
 
     public void grantWithAdvices(List<Advice> advices) {
@@ -78,5 +77,11 @@ public class Evaluation {
 
     public Policy getParentPolicy() {
         return this.parentPolicy;
+    }
+
+    void denyIfNoEffect() {
+        if (this.effect == null) {
+            this.decision.onDecision(this, Decision.Effect.DENY);
+        }
     }
 }

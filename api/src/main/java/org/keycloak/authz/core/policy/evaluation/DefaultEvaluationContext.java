@@ -21,7 +21,8 @@ import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.models.RealmModel;
 
-import java.util.function.Supplier;
+import java.util.List;
+import java.util.function.Consumer;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -29,22 +30,24 @@ import java.util.function.Supplier;
  */
 public class DefaultEvaluationContext implements EvaluationContext {
 
-    private final Supplier<ResourcePermission> permissionSupplier;
+    private final List<ResourcePermission> permissions;
     private final RealmModel realm;
     private final ExecutionContext executionContext;
     private final Identity identity;
     private boolean granted;
 
-    public DefaultEvaluationContext(Identity identity, RealmModel realm, Supplier<ResourcePermission> permissionSupplier, ExecutionContext executionContext) {
+    public DefaultEvaluationContext(Identity identity, RealmModel realm, List<ResourcePermission> permissions, ExecutionContext executionContext) {
         this.identity = identity;
         this.realm = realm;
-        this.permissionSupplier = permissionSupplier;
+        this.permissions = permissions;
         this.executionContext = executionContext;
     }
 
     @Override
-    public Supplier<ResourcePermission> getPermissions() {
-        return this.permissionSupplier;
+    public void forEach(Consumer<ResourcePermission> consumer) {
+        for (ResourcePermission permission : this.permissions) {
+            consumer.accept(permission);
+        }
     }
 
     @Override
@@ -59,10 +62,5 @@ public class DefaultEvaluationContext implements EvaluationContext {
 
     public ExecutionContext getExecutionContext() {
         return this.executionContext;
-    }
-
-    @Override
-    public boolean isGranted() {
-        return granted;
     }
 }

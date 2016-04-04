@@ -23,7 +23,7 @@
     </modules>
 
     <properties>
-        <version.keycloak>1.9.1.Final-SNAPSHOT</version.keycloak>
+        <version.keycloak>2.0.0.CR1-SNAPSHOT</version.keycloak>
         <version.jboss-jaxrs-api>1.0.0.Final</version.jboss-jaxrs-api>
         <version.org.jboss.resteasy.resteasy-undertow>3.0.14.Final</version.org.jboss.resteasy.resteasy-undertow>
         <version.org.jboss.resteasy.resteasy-jackson.provider>3.0.14.Final</version.org.jboss.resteasy.resteasy-jackson.provider>

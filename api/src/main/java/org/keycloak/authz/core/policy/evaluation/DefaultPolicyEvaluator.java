@@ -1,5 +1,6 @@
 package org.keycloak.authz.core.policy.evaluation;
 
+import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourcePermission;
@@ -8,15 +9,16 @@ import org.keycloak.authz.core.policy.Decision;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.PolicyStore;
+import org.keycloak.authz.core.store.StoreFactory;
 
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -25,39 +27,75 @@ import java.util.stream.Collectors;
 public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
     private final EvaluationContext evaluationContex;
-    private final PolicyStore policyStore;
+    private final Authorization authorization;
     private Map<String, PolicyProviderFactory> policyProviders = new HashMap<>();
-    private Executor decideOn = Runnable::run;
-    private CompletableFuture<?> future = CompletableFuture.completedFuture(null);
+    private final Executor scheduler;
 
-    public DefaultPolicyEvaluator(EvaluationContext evaluationContext, PolicyStore policyStore, List<PolicyProviderFactory> providerFactories) {
+    public DefaultPolicyEvaluator(EvaluationContext evaluationContext, Authorization authorization, List<PolicyProviderFactory> providerFactories, Executor scheduler) {
         this.evaluationContex = evaluationContext;
-        this.policyStore = policyStore;
+        this.authorization = authorization;
 
         for (PolicyProviderFactory provider : providerFactories) {
             this.policyProviders.put(provider.getType(), provider);
         }
+
+        this.scheduler = scheduler;
     }
 
     @Override
     public void evaluate(Decision decision) {
-        this.future = CompletableFuture.allOf(this.future, CompletableFuture.runAsync(() -> {
-            for (;;) {
-                ResourcePermission permission = evaluationContex.getPermissions().get();
-
-                if (permission == null) {
-                    break;
-                }
-
-                evaluate(permission, createDecisionConsumer(permission, decision));
-            }
-        }, this.decideOn).whenCompleteAsync((BiConsumer<Object, Throwable>) (o, cause) -> {
+        createDecisionTask(decision).whenCompleteAsync((aVoid, cause) -> {
             if (cause == null) {
                 decision.onComplete();
             } else {
                 decision.onError(cause);
             }
-        }, this.decideOn));
+        }, this.scheduler);
+    }
+
+    public BiConsumer<Decision, Throwable> createOnCompleteTask() {
+        return (BiConsumer<Decision, Throwable>) (decision, cause) -> {
+            if (cause == null) {
+                decision.onComplete();
+            } else {
+                decision.onError(cause);
+            }
+        };
+    }
+
+    public CompletableFuture<Void> createDecisionTask(Decision decision) {
+        return CompletableFuture.runAsync(new Runnable() {
+            @Override
+            public void run() {
+                StoreFactory storeFactory = authorization.getStoreFactory();
+                PolicyStore policyStore = storeFactory.getPolicyStore();
+
+                evaluationContex.forEach(permission -> {
+                    Resource resource = permission.getResource();
+                    Consumer<Policy> consumer = createDecisionConsumer(permission, decision);
+
+                    if (resource != null) {
+                        List<? extends Policy> resourcePolicies = policyStore.findByResource(resource.getId());
+
+                        if (!resourcePolicies.isEmpty()) {
+                            resourcePolicies.forEach(consumer);
+                        }
+
+                        if (resource.getType() != null) {
+                            policyStore.findByResourceType(resource.getType()).forEach(consumer);
+                        }
+
+                        if (permission.getScopes().isEmpty() && !resource.getScopes().isEmpty()) {
+                            policyStore.findByScopeName(resource.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
+                        }
+                    }
+
+                    if (!permission.getScopes().isEmpty()) {
+                        policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
+                    }
+                });
+            }
+        }, this.scheduler);
     }
 
     public Consumer<Policy> createDecisionConsumer(ResourcePermission permission, Decision decision) {
@@ -70,45 +108,14 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
                         throw new RuntimeException("Unknown parentPolicy provider for type [" + associatedPolicy.getType() + "].");
                     }
 
-                    DecisionWrapper decisionWrapper = new DecisionWrapper(decision);
-                    Evaluation evaluation = new Evaluation(permission, evaluationContex, parentPolicy, associatedPolicy, decisionWrapper);
+                    Evaluation evaluation = new Evaluation(permission, evaluationContex, parentPolicy, associatedPolicy, decision);
 
-                    try {
-                        policyProvider.evaluate(evaluation);
-                    } catch (Throwable cause) {
-                        cause.printStackTrace();
-                    }
+                    policyProvider.evaluate(evaluation);
 
-                    if (decisionWrapper.hasStatus(DecisionWrapper.Status.UNKOWN)) {
-                        decisionWrapper.onDeny(evaluation);
-                    }
+                    evaluation.denyIfNoEffect();
                 }
             }
         };
-    }
-
-    private void evaluate(ResourcePermission permission, Consumer<Policy> consumer) {
-        Resource resource = permission.getResource();
-
-        if (resource != null) {
-            List<? extends Policy> resourcePolicies = this.policyStore.findByResource(resource.getId());
-
-            if (!resourcePolicies.isEmpty()) {
-                resourcePolicies.forEach(consumer);
-            }
-
-            if (resource.getType() != null) {
-                this.policyStore.findByResourceType(resource.getType()).forEach(consumer);
-            }
-
-            if (permission.getScopes().isEmpty() && !resource.getScopes().isEmpty()) {
-                this.policyStore.findByScopeName(resource.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
-            }
-        }
-
-        if (!permission.getScopes().isEmpty()) {
-            this.policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
-        }
     }
 
     private boolean hasRequestedScopes(final ResourcePermission permission, final Policy policy) {
@@ -138,38 +145,6 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
             return hasScope;
         } else {
             return true;
-        }
-    }
-
-    private static class DecisionWrapper implements Decision {
-
-        enum Status {
-            GRANTED,
-            DENIED,
-            UNKOWN
-        }
-
-        private final Decision delegate;
-        private Status status = Status.UNKOWN;
-
-        DecisionWrapper(Decision delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void onGrant(Evaluation evaluation) {
-            this.status = Status.GRANTED;
-            this.delegate.onGrant(evaluation);
-        }
-
-        @Override
-        public void onDeny(Evaluation evaluation) {
-            this.status = Status.DENIED;
-            this.delegate.onDeny(evaluation);
-        }
-
-        boolean hasStatus(Status status) {
-            return this.status.equals(status);
         }
     }
 }

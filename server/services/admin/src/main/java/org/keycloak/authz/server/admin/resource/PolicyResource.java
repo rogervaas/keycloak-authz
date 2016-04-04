@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.ThreadFactory;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -64,10 +65,12 @@ public class PolicyResource {
 
     @Context
     private KeycloakSession keycloakSession;
+    private ThreadFactory threadFactory;
 
-    public PolicyResource(RealmModel realm, ResourceServer resourceServer) {
+    public PolicyResource(RealmModel realm, ResourceServer resourceServer, ThreadFactory threadFactory) {
         this.realm = realm;
         this.resourceServer = resourceServer;
+        this.threadFactory = threadFactory;
     }
 
     @POST
@@ -195,7 +198,7 @@ public class PolicyResource {
 
     @Path("evaluate")
     public PolicyEvaluateResource getPolicyEvaluateResource() {
-        PolicyEvaluateResource resource = new PolicyEvaluateResource(this.realm, this.resourceServer);
+        PolicyEvaluateResource resource = new PolicyEvaluateResource(this.realm, this.resourceServer, this.threadFactory);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 

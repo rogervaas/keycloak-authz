@@ -21,8 +21,9 @@ import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.models.RealmModel;
 
-import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Stream;
 
 /**
  * The evaluation context provides a contract from where policy providers will base their decisions. It represents all the
@@ -38,7 +39,7 @@ public interface EvaluationContext {
      *
      * @return a list with all the permissions that must be evaluated
      */
-    Supplier<ResourcePermission> getPermissions();
+    void forEach(Consumer<ResourcePermission> consumer);
 
     /**
      * Returns the {@link Identity} that represents an entity (person or non-person) to which the permissions must be granted, or not.
@@ -61,11 +62,4 @@ public interface EvaluationContext {
      * @return the execution context from where information from the runtime environment can be obtained
      */
     ExecutionContext getExecutionContext();
-
-    /**
-     * Indicates if the requested permissions were granted or not. The permissions are only granted after calling {@link #grant()}.
-     *
-     * @return true if permissions were granted to the caller. Otherwise it returns false.
-     */
-    boolean isGranted();
 }

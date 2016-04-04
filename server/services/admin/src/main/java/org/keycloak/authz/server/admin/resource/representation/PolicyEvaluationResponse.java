@@ -2,8 +2,9 @@ package org.keycloak.authz.server.admin.resource.representation;
 
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.ResourceServer;
-import org.keycloak.authz.core.policy.evaluation.EvaluationResult;
+import org.keycloak.authz.core.policy.Decision;
 import org.keycloak.authz.server.admin.resource.util.Models;
+import org.keycloak.authz.server.services.common.policy.evaluation.EvaluationResult;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
@@ -18,15 +19,15 @@ import java.util.stream.Collectors;
 public class PolicyEvaluationResponse {
 
     private List<EvaluationResultRepresentation> results;
-    private EvaluationResult.PolicyResult.Status status;
+    private Decision.Effect status;
 
     public static PolicyEvaluationResponse build(RealmModel realm, List<EvaluationResult> results, ResourceServer resourceServer, Authorization authorizationManager, KeycloakSession keycloakSession) {
         PolicyEvaluationResponse response = new PolicyEvaluationResponse();
 
-        if (results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(EvaluationResult.PolicyResult.Status.DENIED))) {
-            response.setStatus(EvaluationResult.PolicyResult.Status.DENIED);
+        if (results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.PERMIT.DENY))) {
+            response.setStatus(Decision.Effect.DENY);
         } else {
-            response.setStatus(EvaluationResult.PolicyResult.Status.GRANTED);
+            response.setStatus(Decision.Effect.PERMIT);
         }
 
         List<EvaluationResultRepresentation> resultsRep = new ArrayList<>();
@@ -78,11 +79,11 @@ public class PolicyEvaluationResponse {
         return results;
     }
 
-    public void setStatus(final EvaluationResult.PolicyResult.Status status) {
+    public void setStatus(final Decision.Effect status) {
         this.status = status;
     }
 
-    public EvaluationResult.PolicyResult.Status getStatus() {
+    public Decision.Effect getStatus() {
         return status;
     }
 
@@ -91,7 +92,7 @@ public class PolicyEvaluationResponse {
         private ResourceRepresentation resource;
         private List<ScopeRepresentation> scopes;
         private List<PolicyResultRepresentation> policies;
-        private EvaluationResult.PolicyResult.Status status;
+        private Decision.Effect status;
 
         public void setResource(final ResourceRepresentation resource) {
             this.resource = resource;
@@ -117,11 +118,11 @@ public class PolicyEvaluationResponse {
             return policies;
         }
 
-        public void setStatus(final EvaluationResult.PolicyResult.Status status) {
+        public void setStatus(final Decision.Effect status) {
             this.status = status;
         }
 
-        public EvaluationResult.PolicyResult.Status getStatus() {
+        public Decision.Effect getStatus() {
             return status;
         }
     }
@@ -129,7 +130,7 @@ public class PolicyEvaluationResponse {
     public static class PolicyResultRepresentation {
 
         private PolicyRepresentation policy;
-        private EvaluationResult.PolicyResult.Status status;
+        private Decision.Effect status;
         private List<PolicyResultRepresentation> associatedPolicies;
 
         public PolicyRepresentation getPolicy() {
@@ -140,11 +141,11 @@ public class PolicyEvaluationResponse {
             this.policy = policy;
         }
 
-        public EvaluationResult.PolicyResult.Status getStatus() {
+        public Decision.Effect getStatus() {
             return status;
         }
 
-        public void setStatus(final EvaluationResult.PolicyResult.Status status) {
+        public void setStatus(final Decision.Effect status) {
             this.status = status;
         }
 

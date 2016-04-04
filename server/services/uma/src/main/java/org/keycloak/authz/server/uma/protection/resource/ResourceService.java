@@ -39,6 +39,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import java.util.HashSet;
 import java.util.List;
@@ -53,17 +54,19 @@ public class ResourceService {
     private final RealmModel realm;
     private final ResourceServer resourceServer;
     private final ResourceSetResource resourceManager;
-    private final Authorization authorizationManager;
-    private final KeycloakSession keycloakSession;
+
+    @Context
+    private Authorization authorizationManager;
+
+    @Context
+    private KeycloakSession keycloakSession;
     private final Identity identity;
 
-    public ResourceService(RealmModel realm, ResourceServer resourceServer, Identity identity, Authorization authorizationManager, KeycloakSession keycloakSession) {
+    public ResourceService(RealmModel realm, ResourceServer resourceServer, Identity identity, ResourceSetResource resourceManager) {
         this.realm = realm;
         this.identity = identity;
-        this.authorizationManager = authorizationManager;
-        this.keycloakSession = keycloakSession;
         this.resourceServer = resourceServer;
-        this.resourceManager = new ResourceSetResource(this.realm, this.resourceServer, this.authorizationManager, this.keycloakSession);
+        this.resourceManager = resourceManager;
     }
 
     @POST

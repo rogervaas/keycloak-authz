@@ -36,6 +36,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
+import java.util.concurrent.ThreadFactory;
+
+import static org.jboss.resteasy.spi.ResteasyProviderFactory.pushContext;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -46,16 +49,17 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
     private PersistenceProviderFactory persistenceProviderFactory;
     private List<PolicyProviderFactory> policyProviders = new ArrayList<>();
     private Authorization authorization;
+    private ThreadFactory threadFactory;
 
     @Override
     public RealmAdminResourceProvider create(RealmModel realm, KeycloakSession keycloakSession) {
         return new RealmAdminResourceProvider() {
             public Object getResource(final String pathName) {
                 if (pathName.equals("authz")) {
-                    RootResource resource = new RootResource(realm);
+                    RootResource resource = new RootResource(realm, threadFactory);
 
-                    ResteasyProviderFactory.getInstance().pushContext(StoreFactory.class, persistenceProviderFactory.create(keycloakSession));
-                    ResteasyProviderFactory.getInstance().pushContext(Authorization.class, authorization);
+                    pushContext(StoreFactory.class, persistenceProviderFactory.create(keycloakSession));
+                    pushContext(Authorization.class, authorization);
                     ResteasyProviderFactory.getInstance().injectProperties(resource);
 
                     return resource;
@@ -103,6 +107,21 @@ public class RealmAuthzAdminResourceProviderFactory implements RealmAdminResourc
             session.close();
         }
         this.persistenceProviderFactory.registerSynchronizationListeners(factory);
+        this.threadFactory = new ThreadFactory() {
+
+            @Override
+            public Thread newThread(Runnable r) {
+                Map<Class<?>, Object> contextDataMap = ResteasyProviderFactory.getContextDataMap();
+
+                return new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        ResteasyProviderFactory.pushContextDataMap(contextDataMap);
+                        r.run();
+                    }
+                });
+            }
+        };
     }
 
     @Override

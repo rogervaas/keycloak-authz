@@ -23,7 +23,8 @@ import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourceServer;
-import org.keycloak.authz.server.services.core.KeycloakIdentity;
+import org.keycloak.authz.server.admin.resource.ResourceSetResource;
+import org.keycloak.authz.server.services.common.KeycloakIdentity;
 import org.keycloak.authz.server.uma.authorization.AuthorizationService;
 import org.keycloak.authz.server.uma.config.Configuration;
 import org.keycloak.authz.server.uma.config.ConfigurationService;
@@ -37,6 +38,7 @@ import org.keycloak.services.ErrorResponseException;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -44,18 +46,23 @@ import javax.ws.rs.core.Response;
 public class RootResource {
 
     private final RealmModel realm;
-    private final Authorization authorizationManager;
-    private final KeycloakSession keycloakSession;
     private final Configuration configuration;
 
     @Context
     private HttpRequest request;
 
-    public RootResource(RealmModel realm, Authorization authorizationManager, KeycloakSession keycloakSession, Configuration configuration) {
+    @Context
+    private KeycloakSession keycloakSession;
+
+    @Context
+    private Authorization authorizationManager;
+
+    private final ThreadFactory threadFactory;
+
+    public RootResource(RealmModel realm, Configuration configuration, ThreadFactory threadFactory) {
         this.realm = realm;
-        this.authorizationManager = authorizationManager;
-        this.keycloakSession = keycloakSession;
         this.configuration = configuration;
+        this.threadFactory = threadFactory;
     }
 
     @Path("/resource_set")
@@ -66,7 +73,11 @@ public class RootResource {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_protection scope.", Response.Status.FORBIDDEN);
         }
 
-        ResourceService resource = new ResourceService(this.realm, getResourceServer(identity), identity, this.authorizationManager, this.keycloakSession);
+        ResourceSetResource resourceManager = new ResourceSetResource(this.realm, getResourceServer(identity), this.authorizationManager, this.keycloakSession);
+
+        ResteasyProviderFactory.getInstance().injectProperties(resourceManager);
+
+        ResourceService resource = new ResourceService(this.realm, getResourceServer(identity), identity, resourceManager);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -81,7 +92,7 @@ public class RootResource {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_protection scope.", Response.Status.FORBIDDEN);
         }
 
-        PermissionService resource = new PermissionService(this.realm, getResourceServer(identity), this.authorizationManager);
+        PermissionService resource = new PermissionService(this.realm, getResourceServer(identity));
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -90,7 +101,7 @@ public class RootResource {
 
     @Path("/authorize")
     public Object authorize() {
-        AuthorizationService resource = new AuthorizationService(this.realm, this.authorizationManager, this.keycloakSession);
+        AuthorizationService resource = new AuthorizationService(this.realm, this.threadFactory);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 
@@ -107,7 +118,7 @@ public class RootResource {
     }
 
     private KeycloakIdentity createIdentity() {
-        return KeycloakIdentity.create(realm, keycloakSession);
+        return KeycloakIdentity.create(realm);
     }
 
     private ResourceServer getResourceServer(Identity identity) {

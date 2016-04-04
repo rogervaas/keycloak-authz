@@ -4,24 +4,29 @@ import org.keycloak.authz.core.policy.evaluation.DefaultPolicyEvaluator;
 import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
 import org.keycloak.authz.core.policy.evaluation.PolicyEvaluator;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
-import org.keycloak.authz.core.store.StoreFactory;
 
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public final class Evaluator {
 
-    private final StoreFactory storeFactory;
+    private final Authorization authorization;
     private final List<PolicyProviderFactory> policyProviderFactories;
 
-    Evaluator(StoreFactory storeFactory, List<PolicyProviderFactory> policyProviderFactories) {
-        this.storeFactory = storeFactory;
+    Evaluator(Authorization authorization, List<PolicyProviderFactory> policyProviderFactories) {
+        this.authorization = authorization;
         this.policyProviderFactories = policyProviderFactories;
     }
 
     public PolicyEvaluator from(EvaluationContext evaluationContext) {
-        return new DefaultPolicyEvaluator(evaluationContext, this.storeFactory.getPolicyStore(), this.policyProviderFactories);
+        return new DefaultPolicyEvaluator(evaluationContext, this.authorization, this.policyProviderFactories, Executors.newSingleThreadExecutor());
+    }
+
+    public PolicyEvaluator schedule(EvaluationContext evaluationContext, Executor executor) {
+        return new DefaultPolicyEvaluator(evaluationContext, this.authorization, this.policyProviderFactories, executor);
     }
 }

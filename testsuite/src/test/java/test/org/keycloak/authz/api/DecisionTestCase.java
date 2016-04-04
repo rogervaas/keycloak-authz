@@ -15,39 +15,39 @@ import org.keycloak.authz.core.policy.Decision;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
 import org.keycloak.authz.core.policy.evaluation.EvaluationContext;
 import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
-import org.keycloak.authz.core.policy.evaluation.PolicyEvaluator;
-import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleContainerModel;
 import org.keycloak.models.RoleModel;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class DecisionTestCase {
 
-    static int NUM_PERMISSIONS = 1000 * 1000 * 20;
+    static int NUM_PERMISSIONS = 1000 * 1000 * 5;
 
     private RealmModel realmModel;
     private MapStoreFactory mapStoreFactory;
     private Authorization authorization;
-    private Supplier<ResourcePermission> permissionSupplier;
     private Identity identity;
     private ExecutionContext executionContext;
-    private Supplier<ResourcePermission> permissionSupplier2;
-    private Supplier<ResourcePermission> permissionSupplier3;
-    private Supplier<ResourcePermission> permissionSupplier4;
+    private Stream<ResourcePermission> permissionSupplier;
+    private Stream<ResourcePermission> permissionSupplier2;
+    private Stream<ResourcePermission> permissionSupplier3;
+    private Stream<ResourcePermission> permissionSupplier4;
 
     @Before
     public void onBefore() {
@@ -63,7 +63,7 @@ public class DecisionTestCase {
             public Attributes getAttributes() {
                 HashMap<String, Collection<String>> attributes = new HashMap<>();
 
-                attributes.put("roles", Arrays.asList("user"));
+                attributes.put("roles", Arrays.asList("admin"));
 
                 return Attributes.from(attributes);
             }
@@ -97,7 +97,7 @@ public class DecisionTestCase {
         config.put("mavenArtifactVersion", "1.0-SNAPSHOT");
         config.put("scannerPeriod", "1");
         config.put("scannerPeriodUnit", "Minutes");
-        config.put("sessionName", "MainOwnerSession");
+        config.put("sessionName", "MainAdminSession");
 
         droolsPolicy.setConfig(config);
 
@@ -108,23 +108,17 @@ public class DecisionTestCase {
         this.permissionSupplier3 = createPermissionSupplier(resource);
         this.permissionSupplier4 = createPermissionSupplier(resource);
 
-        this.authorization = Authorization.builder().storeFactory(new Supplier<StoreFactory>() {
-            @Override
-            public StoreFactory get() {
-                return mapStoreFactory;
-            }
-        }).build();
+        this.authorization = Authorization.builder().storeFactory(() -> mapStoreFactory).build();
     }
 
-    public Supplier<ResourcePermission> createPermissionSupplier(final Resource resource) {
-        return new Supplier<ResourcePermission>() {
-            int i = 0;
+    public Stream<ResourcePermission> createPermissionSupplier(final Resource resource) {
+        List<ResourcePermission> resourcePermissions = new ArrayList<>();
 
-            @Override
-            public ResourcePermission get() {
-                return i++ <= NUM_PERMISSIONS / 4 ? new ResourcePermission(resource, Collections.emptyList()) : null;
-            }
-        };
+        for (int i = 0; i < NUM_PERMISSIONS / 4; i++) {
+            resourcePermissions.add(new ResourcePermission(resource, Arrays.asList()));
+        }
+
+        return StreamSupport.stream(resourcePermissions.spliterator(), true);
     }
 
     @Test
@@ -133,12 +127,10 @@ public class DecisionTestCase {
         CountDownLatch latch = new CountDownLatch(4);
         System.out.println("Starting ...");
 
-        PolicyEvaluator from = this.authorization.evaluators().from(createEvaluationContext());
-
-        from.evaluate(createDecision(latch));
-        from.evaluate(createDecision(latch));
-        from.evaluate(createDecision(latch));
-        from.evaluate(createDecision(latch));
+        this.authorization.evaluators().from(createEvaluationContext(this.permissionSupplier)).evaluate(createDecision(latch));
+        this.authorization.evaluators().from(createEvaluationContext(this.permissionSupplier2)).evaluate(createDecision(latch));
+        this.authorization.evaluators().from(createEvaluationContext(this.permissionSupplier3)).evaluate(createDecision(latch));
+        this.authorization.evaluators().from(createEvaluationContext(this.permissionSupplier4)).evaluate(createDecision(latch));
 
         latch.await(200, TimeUnit.SECONDS);
 
@@ -155,13 +147,8 @@ public class DecisionTestCase {
     public Decision createDecision(final CountDownLatch latch) {
         return new Decision() {
             @Override
-            public void onGrant(Evaluation evaluation) {
-//                System.out.println("onGrant: " + evaluation.getPolicy().getName() + " / " + Thread.currentThread().getName());
-            }
-
-            @Override
-            public void onDeny(Evaluation evaluation) {
-//                System.out.println("onDeny: " + evaluation.getPolicy().getName() + " / " + Thread.currentThread().getName());
+            public void onDecision(Evaluation evaluation, Effect effect) {
+//                System.out.println(effect + ": " + evaluation.getPolicy().getName() + " / " + Thread.currentThread().getName());
             }
 
             @Override
@@ -179,10 +166,10 @@ public class DecisionTestCase {
         };
     }
 
-    public EvaluationContext createEvaluationContext() {
+    public EvaluationContext createEvaluationContext(Stream<ResourcePermission> permissionSupplier) {
         return new MockUp<EvaluationContext>() {
             @Mock
-            public Supplier<ResourcePermission> getPermissions() {
+            public Stream<ResourcePermission> getPermissions() {
                 return permissionSupplier;
             }
 

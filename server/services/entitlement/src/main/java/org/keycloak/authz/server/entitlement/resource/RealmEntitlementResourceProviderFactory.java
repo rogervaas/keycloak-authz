@@ -24,7 +24,7 @@ import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
 import org.keycloak.authz.persistence.PersistenceProviderFactory;
-import org.keycloak.authz.server.services.core.KeycloakIdentity;
+import org.keycloak.authz.server.services.common.KeycloakIdentity;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.KeycloakSessionFactory;
 import org.keycloak.models.KeycloakTransactionManager;
@@ -53,7 +53,7 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
                 if (pathName.equals("entitlement")) {
                     EntitlementResource resource = new EntitlementResource(realm, keycloakSession);
 
-                    ResteasyProviderFactory.getInstance().pushContext(Identity.class, KeycloakIdentity.create(realm, keycloakSession));
+                    ResteasyProviderFactory.getInstance().pushContext(Identity.class, KeycloakIdentity.create(realm));
                     ResteasyProviderFactory.getInstance().pushContext(StoreFactory.class, persistenceProviderFactory.create(keycloakSession));
                     ResteasyProviderFactory.getInstance().pushContext(Authorization.class, authorization);
                     ResteasyProviderFactory.getInstance().injectProperties(resource);

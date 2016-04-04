@@ -28,8 +28,8 @@ import org.keycloak.models.RealmModel;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import java.util.UUID;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -38,12 +38,13 @@ public class PermissionService {
 
     private final RealmModel realm;
     private final ResourceServer resourceServer;
-    private final Authorization authorizationManager;
 
-    public PermissionService(RealmModel realm, ResourceServer resourceServer, Authorization authorizationManager) {
+    @Context
+    private Authorization authorizationManager;
+
+    public PermissionService(RealmModel realm, ResourceServer resourceServer) {
         this.realm = realm;
         this.resourceServer = resourceServer;
-        this.authorizationManager = authorizationManager;
     }
 
     @POST

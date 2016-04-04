@@ -17,7 +17,6 @@
     <description>KeyCloak: Drools Policy Provider Parent</description>
 
     <modules>
-        <module>api</module>
         <module>provider</module>
     </modules>
 

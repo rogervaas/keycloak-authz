@@ -12,14 +12,15 @@ import java.util.concurrent.TimeUnit;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class DroolsPolicy {
+class DroolsPolicy {
+
+    private static final int SESSION_POOL_SIZE = 10;
 
     private final KieContainer kc;
     private final KieScanner kcs;
     private final String sessionName;
-    private final KieSession session;
 
-    public DroolsPolicy(KieServices ks, Policy associatedPolicy) {
+    DroolsPolicy(KieServices ks, Policy associatedPolicy) {
         String groupId = associatedPolicy.getConfig().get("mavenArtifactGroupId");
         String artifactId = associatedPolicy.getConfig().get("mavenArtifactId");
         String version = associatedPolicy.getConfig().get("mavenArtifactVersion");
@@ -37,16 +38,19 @@ public class DroolsPolicy {
             throw new RuntimeException("Could not obtain session with name [" + this.sessionName + "].");
         }
 
-        this.session = session;
+        session.dispose();
     }
 
-    public void evaluate(Evaluation evaluation) {
+    void evaluate(Evaluation evaluation) {
+        KieSession session = this.kc.newKieSession(this.sessionName);
+
         session.insert(evaluation);
         session.fireAllRules();
+
+        session.dispose();
     }
 
-    public void dispose() {
-        this.session.dispose();
+    void dispose() {
         this.kcs.stop();
     }
 

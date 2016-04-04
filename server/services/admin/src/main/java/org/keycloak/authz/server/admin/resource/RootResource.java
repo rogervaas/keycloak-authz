@@ -21,6 +21,7 @@ import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.models.RealmModel;
 
 import javax.ws.rs.Path;
+import java.util.concurrent.ThreadFactory;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -28,14 +29,16 @@ import javax.ws.rs.Path;
 public class RootResource {
 
     private final RealmModel realm;
+    private final ThreadFactory threadFactory;
 
-    RootResource(RealmModel realm) {
+    RootResource(RealmModel realm, ThreadFactory threadFactory) {
         this.realm = realm;
+        this.threadFactory = threadFactory;
     }
 
     @Path("/resource-server")
     public Object resourceServers() {
-        ResourceServerResource resource = new ResourceServerResource(this.realm);
+        ResourceServerResource resource = new ResourceServerResource(this.realm, this.threadFactory);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 

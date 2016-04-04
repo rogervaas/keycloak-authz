@@ -1,10 +1,12 @@
-package org.keycloak.authz.core.policy.evaluation;
+package org.keycloak.authz.server.services.common.policy.evaluation;
 
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.ResourcePermission;
+import org.keycloak.authz.core.policy.Decision;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Predicate;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -13,7 +15,7 @@ public class EvaluationResult {
 
     private final ResourcePermission permission;
     private List<PolicyResult> results = new ArrayList<>();
-    private PolicyResult.Status status;
+    private Decision.Effect status;
 
     public EvaluationResult(ResourcePermission permission) {
         this.permission = permission;
@@ -41,25 +43,42 @@ public class EvaluationResult {
         return policyResult;
     }
 
-    public void setStatus(final PolicyResult.Status status) {
+    public void setStatus(final Decision.Effect status) {
         this.status = status;
     }
 
-    public PolicyResult.Status getStatus() {
+    public Decision.Effect getStatus() {
         return status;
+    }
+
+    public boolean anyDenial() {
+        return anyDenial(this.results);
+    }
+
+    private boolean anyDenial(List<PolicyResult> result) {
+        return result.stream().anyMatch(new Predicate<PolicyResult>() {
+            @Override
+            public boolean test(PolicyResult policyResult) {
+                if (Decision.Effect.DENY.equals(policyResult.getStatus()) && !policyResult.getPolicy().getAssociatedPolicies().isEmpty()) {
+                    return true;
+                }
+
+                return anyDenial(policyResult.getAssociatedPolicies());
+            }
+        });
     }
 
     public static class PolicyResult {
 
         private final Policy policy;
         private List<PolicyResult> associatedPolicies = new ArrayList<>();
-        private Status status;
+        private Decision.Effect status;
 
         public PolicyResult(Policy policy) {
             this.policy = policy;
         }
 
-        public PolicyResult status(Status status) {
+        public PolicyResult status(Decision.Effect status) {
             this.status = status;
             return this;
         }
@@ -94,18 +113,12 @@ public class EvaluationResult {
             this.associatedPolicies = associatedPolicies;
         }
 
-        public Status getStatus() {
+        public Decision.Effect getStatus() {
             return status;
         }
 
-        public void setStatus(final Status status) {
+        public void setStatus(final Decision.Effect status) {
             this.status = status;
-        }
-
-        public enum Status {
-            GRANTED,
-            DENIED,
-            SKIPPED_WITH_SCOPES_MISMATCH;
         }
     }
 }

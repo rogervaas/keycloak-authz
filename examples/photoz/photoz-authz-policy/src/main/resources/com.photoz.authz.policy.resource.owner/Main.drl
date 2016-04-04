@@ -6,10 +6,9 @@ rule "Authorize Resource Owner"
     dialect "mvel"
     when
        $evaluation : Evaluation(
+           $identity: context.identity,
            $permission: permission,
-           $context: context,
-           $identity: $context.identity,
-           $permission.resource != null && $permission.resource.owner.equals($identity.id)
+           $permission.resource != null && $permission.resource.owner.equals("2")
        )
     then
         $evaluation.grant();

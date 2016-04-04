@@ -1,5 +1,6 @@
-package org.keycloak.authz.server.services.core.util;
+package org.keycloak.authz.server.services.common.util;
 
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.crypto.RSAProvider;
 import org.keycloak.models.KeycloakSession;
@@ -17,8 +18,9 @@ import java.security.PublicKey;
  */
 public class Tokens {
 
-    public static AccessToken getAccessToken(KeycloakSession keycloakSession, RealmModel realm) {
+    public static AccessToken getAccessToken(RealmModel realm) {
         AppAuthManager authManager = new AppAuthManager();
+        KeycloakSession keycloakSession = getKeycloakSession();
         AuthenticationManager.AuthResult authResult = authManager.authenticateBearerToken(keycloakSession, realm, keycloakSession.getContext().getUri(), keycloakSession.getContext().getConnection(), keycloakSession.getContext().getRequestHeaders());
 
         if (authResult != null) {
@@ -28,10 +30,14 @@ public class Tokens {
         return null;
     }
 
-    public static String getAccessTokenAsString(KeycloakSession keycloakSession) {
+    public static KeycloakSession getKeycloakSession() {
+        return ResteasyProviderFactory.getContextData(KeycloakSession.class);
+    }
+
+    public static String getAccessTokenAsString() {
         AppAuthManager authManager = new AppAuthManager();
 
-        return authManager.extractAuthorizationHeaderToken(keycloakSession.getContext().getRequestHeaders());
+        return authManager.extractAuthorizationHeaderToken(getKeycloakSession().getContext().getRequestHeaders());
     }
 
     public static boolean verifySignature(String token, PublicKey publicKey) {
