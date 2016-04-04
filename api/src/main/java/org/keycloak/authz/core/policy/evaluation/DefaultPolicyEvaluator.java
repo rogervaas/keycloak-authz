@@ -1,11 +1,12 @@
 package org.keycloak.authz.core.policy.evaluation;
 
 import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.core.Decision;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.model.ResourcePermission;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.policy.Decision;
+import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.PolicyStore;
@@ -26,15 +27,15 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
     public DefaultPolicyEvaluator(Authorization authorization) {
         this.authorization = authorization;
+
         for (PolicyProviderFactory provider : this.authorization.getProviderFactories()) {
             this.policyProviders.put(provider.getType(), provider);
         }
     }
 
     @Override
-    public void evaluate(ResourcePermission permission, ExecutionContext executionContext, Decision decision) {
+    public void evaluate(ResourcePermission permission, EvaluationContext executionContext, Decision decision) {
         PolicyStore policyStore = this.authorization.getStoreFactory().getPolicyStore();
-
         Resource resource = permission.getResource();
         Consumer<Policy> consumer = createDecisionConsumer(permission, executionContext, decision);
 
@@ -59,7 +60,7 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         }
     }
 
-    private  Consumer<Policy> createDecisionConsumer(ResourcePermission permission, ExecutionContext executionContext, Decision decision) {
+    private  Consumer<Policy> createDecisionConsumer(ResourcePermission permission, EvaluationContext executionContext, Decision decision) {
         return (parentPolicy) -> {
             if (hasRequestedScopes(permission, parentPolicy)) {
                 for (Policy associatedPolicy : parentPolicy.getAssociatedPolicies()) {

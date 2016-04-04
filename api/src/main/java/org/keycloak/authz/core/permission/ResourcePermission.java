@@ -15,7 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.authz.core.model;
+package org.keycloak.authz.core.permission;
+
+import org.keycloak.authz.core.model.Resource;
+import org.keycloak.authz.core.model.Scope;
 
 import java.util.Collections;
 import java.util.List;

@@ -1,7 +1,7 @@
 package org.keycloak.authz.core;
 
 import org.keycloak.authz.core.policy.evaluation.DefaultPolicyEvaluator;
-import org.keycloak.authz.core.policy.evaluation.Evaluator;
+import org.keycloak.authz.core.permission.evaluator.Evaluators;
 import org.keycloak.authz.core.policy.evaluation.PolicyEvaluator;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
@@ -64,13 +64,13 @@ public final class Authorization {
     }
 
     /**
-     * Returns a {@link Evaluator} instance from where {@link PolicyEvaluator} instances
+     * Returns a {@link Evaluators} instance from where {@link PolicyEvaluator} instances
      * can be obtained.
      *
-     * @return a {@link Evaluator} instance
+     * @return a {@link Evaluators} instance
      */
-    public Evaluator evaluators() {
-        return new Evaluator(this, this.policyProviderFactories, this.policyEvaluator);
+    public Evaluators evaluators() {
+        return new Evaluators(this, this.policyProviderFactories, this.policyEvaluator);
     }
 
     /**

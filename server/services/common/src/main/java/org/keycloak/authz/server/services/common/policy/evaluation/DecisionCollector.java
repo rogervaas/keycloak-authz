@@ -1,8 +1,8 @@
 package org.keycloak.authz.server.services.common.policy.evaluation;
 
 import org.keycloak.authz.core.model.Policy;
-import org.keycloak.authz.core.model.ResourcePermission;
-import org.keycloak.authz.core.policy.Decision;
+import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
 
 import java.util.HashMap;

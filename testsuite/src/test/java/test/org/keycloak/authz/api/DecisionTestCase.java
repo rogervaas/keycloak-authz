@@ -9,11 +9,11 @@ import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.model.ResourcePermission;
+import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
-import org.keycloak.authz.core.policy.Decision;
+import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
-import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleContainerModel;
@@ -203,8 +203,8 @@ public class DecisionTestCase {
         }.getMockInstance();
     }
 
-    private  ExecutionContext createExecutionContext() {
-        return new ExecutionContext() {
+    private EvaluationContext createExecutionContext() {
+        return new EvaluationContext() {
             @Override
             public Identity getIdentity() {
                 return createIdentity();

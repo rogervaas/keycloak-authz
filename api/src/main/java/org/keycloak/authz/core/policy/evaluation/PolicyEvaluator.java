@@ -1,7 +1,8 @@
 package org.keycloak.authz.core.policy.evaluation;
 
-import org.keycloak.authz.core.model.ResourcePermission;
-import org.keycloak.authz.core.policy.Decision;
+import org.keycloak.authz.core.EvaluationContext;
+import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.Decision;
 
 /**
  * <p>A {@link PolicyEvaluator} evaluates authorization policies based on a bounded or unbounded number of permissions, sending
@@ -16,5 +17,5 @@ public interface PolicyEvaluator {
      *
      * @param decision a {@link Decision} point to where notifications events will be delivered during the evaluation
      */
-    void evaluate(ResourcePermission permission, ExecutionContext executionContext, Decision decision);
+    void evaluate(ResourcePermission permission, EvaluationContext executionContext, Decision decision);
 }

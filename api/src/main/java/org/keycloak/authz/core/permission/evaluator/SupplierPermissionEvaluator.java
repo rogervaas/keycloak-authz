@@ -15,25 +15,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.authz.core.policy.evaluation;
+package org.keycloak.authz.core.permission.evaluator;
 
-import org.keycloak.authz.core.model.ResourcePermission;
-import org.keycloak.authz.core.policy.Decision;
+import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.Decision;
+import org.keycloak.authz.core.EvaluationContext;
+import org.keycloak.authz.core.policy.evaluation.PolicyEvaluator;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- * @see EvaluationContext
+ * @see PermissionEvaluator
  */
-class SupplierPermissionPublisher implements PermissionEmitter {
+class SupplierPermissionEvaluator implements PermissionEmitter {
 
     private final Supplier<ResourcePermission> permissions;
-    private final ExecutionContext executionContext;
+    private final EvaluationContext executionContext;
     private final PolicyEvaluator policyEvaluator;
 
-    SupplierPermissionPublisher(Supplier<ResourcePermission> permissions, ExecutionContext executionContext, PolicyEvaluator policyEvaluator) {
+    SupplierPermissionEvaluator(Supplier<ResourcePermission> permissions, EvaluationContext executionContext, PolicyEvaluator policyEvaluator) {
         this.permissions = permissions;
         this.executionContext = executionContext;
         this.policyEvaluator = policyEvaluator;

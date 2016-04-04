@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.authz.core.policy.evaluation;
+package org.keycloak.authz.core;
 
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
@@ -27,7 +27,7 @@ import org.keycloak.models.RealmModel;
  *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public interface ExecutionContext {
+public interface EvaluationContext {
 
     /**
      * Returns the {@link Identity} that represents an entity (person or non-person) to which the permissions must be granted, or not.

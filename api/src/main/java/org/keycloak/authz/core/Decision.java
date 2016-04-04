@@ -1,4 +1,4 @@
-package org.keycloak.authz.core.policy;
+package org.keycloak.authz.core;
 
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
 

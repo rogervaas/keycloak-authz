@@ -2,7 +2,7 @@ package org.keycloak.authz.server.admin.resource.representation;
 
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.ResourceServer;
-import org.keycloak.authz.core.policy.Decision;
+import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.server.admin.resource.util.Models;
 import org.keycloak.authz.server.services.common.policy.evaluation.EvaluationResult;
 import org.keycloak.models.KeycloakSession;

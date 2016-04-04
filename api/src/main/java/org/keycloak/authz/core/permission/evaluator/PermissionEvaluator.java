@@ -15,29 +15,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.authz.core.policy.evaluation;
+package org.keycloak.authz.core.permission.evaluator;
 
-import org.keycloak.authz.core.policy.Decision;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executor;
+import org.keycloak.authz.core.Decision;
+import org.keycloak.authz.core.permission.ResourcePermission;
+import org.keycloak.authz.core.EvaluationContext;
 
 /**
+ * An {@link PermissionEvaluator} represents a source of {@link ResourcePermission}, responsible for emitting these permissions
+ * to a consumer in order to evaluate the authorization policies based on a {@link EvaluationContext}.
+ *
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
- * @see EvaluationContext
  */
-class ScheduledPermissionPublisher implements EvaluationContext {
+public interface PermissionEvaluator {
 
-    private final EvaluationContext publisher;
-    private final Executor scheduler;
+    void evaluate(Decision decision);
 
-    ScheduledPermissionPublisher(EvaluationContext publisher, Executor scheduler) {
-        this.publisher = publisher;
-        this.scheduler = scheduler;
-    }
-
-    @Override
-    public void evaluate(Decision decision) {
-        CompletableFuture.runAsync(() -> publisher.evaluate(decision), scheduler);
-    }
 }

@@ -23,10 +23,10 @@ import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.Resource;
-import org.keycloak.authz.core.model.ResourcePermission;
+import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationRequest;
 import org.keycloak.authz.server.admin.resource.representation.PolicyEvaluationResponse;
 import org.keycloak.authz.server.services.common.DefaultExecutionContext;
@@ -107,7 +107,7 @@ public class PolicyEvaluateResource {
                 });
     }
 
-    public ExecutionContext createEvaluationContext(final PolicyEvaluationRequest representation) {
+    public EvaluationContext createEvaluationContext(final PolicyEvaluationRequest representation) {
         return new DefaultExecutionContext(createIdentity(representation), this.realm) {
             @Override
             public Attributes getAttributes() {

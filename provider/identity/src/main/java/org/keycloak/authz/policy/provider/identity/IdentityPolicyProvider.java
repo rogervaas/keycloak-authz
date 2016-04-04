@@ -19,7 +19,7 @@ package org.keycloak.authz.policy.provider.identity;
 
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
-import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 import org.keycloak.models.RoleModel;
 import org.keycloak.util.JsonSerialization;
@@ -39,7 +39,7 @@ public class IdentityPolicyProvider implements PolicyProvider {
 
     @Override
     public void evaluate(Evaluation evaluation) {
-        ExecutionContext context = evaluation.getContext();
+        EvaluationContext context = evaluation.getContext();
         String users = policy.getConfig().get("users");
         String roles = policy.getConfig().get("roles");
 

@@ -3,7 +3,7 @@ package org.keycloak.authz.server.services.common;
 import org.jboss.resteasy.spi.ResteasyProviderFactory;
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
-import org.keycloak.authz.core.policy.evaluation.ExecutionContext;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.server.services.common.util.Tokens;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-public class DefaultExecutionContext implements ExecutionContext {
+public class DefaultExecutionContext implements EvaluationContext {
 
     private final RealmModel realm;
     private final AccessToken accessToken;
