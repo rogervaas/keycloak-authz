@@ -5,25 +5,6 @@
     "clientSecret": "secret"
   },
   "enforcer": {
-    "create-resources": true,
-    "entitlements": true,
-    "paths": [
-      {
-        "name": "Protected Resource",
-        "path": "/protected/{resource}",
-        "type": "http://servlet-authz/protected/resource",
-        "scopes": [
-          "http://servlet-authz/protected/resource/access"
-        ]
-      },
-      {
-        "name": "Admin Resource",
-        "path": "/protected/admin/{resource}",
-        "type": "http://servlet-authz/protected/admin",
-        "scopes": [
-          "http://servlet-authz/protected/admin/access"
-        ]
-      }
-    ]
+    "entitlements": true
   }
 }

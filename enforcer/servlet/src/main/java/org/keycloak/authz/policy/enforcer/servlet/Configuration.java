@@ -3,6 +3,8 @@ package org.keycloak.authz.policy.enforcer.servlet;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -28,14 +30,14 @@ public class Configuration {
 
         private boolean entitlements;
 
-        private List<PathConfig> paths;
+        private List<PathConfig> paths = new ArrayList<>();
 
         public boolean isCreateResources() {
             return this.createResources;
         }
 
         public List<PathConfig> getPaths() {
-            return this.paths;
+            return Collections.unmodifiableList(this.paths);
         }
 
         public boolean isEntitlements() {
@@ -49,6 +51,7 @@ public class Configuration {
         private String type;
         private String path;
         private List<String> scopes;
+        private String id;
 
         public String getPath() {
             return this.path;
@@ -80,6 +83,14 @@ public class Configuration {
 
         public void setType(String type) {
             this.type = type;
+        }
+
+        public void setId(String id) {
+            this.id = id;
+        }
+
+        public String getId() {
+            return id;
         }
     }
 }

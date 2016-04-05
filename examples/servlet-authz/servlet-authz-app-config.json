@@ -6,7 +6,7 @@
   "resources": [
     {
       "name": "Admin Resource",
-      "uri": "/protected/admin/{resource}",
+      "uri": "/protected/admin/*",
       "type": "http://servlet-authz/protected/admin",
       "scopes": [
         {
@@ -19,11 +19,24 @@
     },
     {
       "name": "Protected Resource",
-      "uri": "/protected/{resource}",
+      "uri": "/*",
       "type": "http://servlet-authz/protected/resource",
       "scopes": [
         {
           "name": "http://servlet-authz/protected/resource/access"
+        }
+      ],
+      "owner": {
+        "name": "servlet-authz-app"
+      }
+    },
+    {
+      "name": "Premium Resource",
+      "uri": "/protected/premium/*",
+      "type": "http://servlet-authz/protected/resource",
+      "scopes": [
+        {
+          "name": "http://servlet-authz/protected/premium/access"
         }
       ],
       "owner": {
@@ -67,6 +80,24 @@
         "resources": "[\"Protected Resource\"]",
         "applyPolicies": "[\"Any Admin Policy\",\"Any User Policy\"]"
       }
+    },
+    {
+      "name": "Only Premium User",
+      "type": "user",
+      "config": {
+        "users": "[]",
+        "roles": "[\"user_premium\"]"
+      }
+    },
+    {
+      "name": "Premium Resource Policy",
+      "description": "A policy that defines access to premium resources",
+      "type": "resource",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"Premium Resource\"]",
+        "applyPolicies": "[\"Only Premium User\"]"
+      }
     }
   ],
   "scopes": [
@@ -76,6 +107,14 @@
     },
     {
       "name": "http://servlet-authz/protected/resource/access",
+      "policies": []
+    },
+    {
+      "name": "http://servlet-authz/protected/admin/access",
+      "policies": []
+    },
+    {
+      "name": "http://servlet-authz/protected/premium/access",
       "policies": []
     }
   ]

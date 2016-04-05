@@ -14,6 +14,7 @@ import org.keycloak.authz.client.representation.RequestingPartyToken;
 import org.keycloak.authz.client.representation.ResourceRepresentation;
 import org.keycloak.authz.client.representation.ScopeRepresentation;
 import org.keycloak.authz.core.Authorization;
+import org.keycloak.authz.policy.enforcer.servlet.Configuration.PathConfig;
 import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
 
@@ -30,20 +31,20 @@ import javax.ws.rs.ClientErrorException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 public class AuthorizationEnforcementFilter implements Filter {
 
-    private List<PathHolder> paths = new ArrayList<>();
+    private List<PathConfig> paths = new ArrayList<>();
     private AuthzClient authzClient;
     private Configuration configuration;
+    private PathMatcher pathMatcher;
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -53,46 +54,61 @@ public class AuthorizationEnforcementFilter implements Filter {
             throw new RuntimeException("Configuration file[keycloak-authz.json] not found in classpath.");
         }
 
+        this.authzClient = AuthzClient.create();
+
         try {
             this.configuration = new ObjectMapper().readValue(is, Configuration.class);
-            AuthzClient.ProtectionClient protection = AuthzClient.create().protection();
-            Configuration.EnforcerConfig enforcerConfig = configuration.getEnforcer();
+            AuthzClient.ProtectionClient protection = this.authzClient.protection();
+            Configuration.EnforcerConfig enforcerConfig = this.configuration.getEnforcer();
 
-            enforcerConfig.getPaths().forEach(pathConfig -> {
-                Set<String> search = protection.resource().search("uri=" + pathConfig.getPath());
+            if (enforcerConfig.getPaths().isEmpty()) {
+                Set<String> resourceIds = protection.resource().findAll();
 
-                if (search.isEmpty()) {
-                    if (enforcerConfig.isCreateResources()) {
-                        ResourceRepresentation resource = new ResourceRepresentation();
+                for (String id : resourceIds) {
+                    RegistrationResponse response = protection.resource().findById(id);
+                    ResourceRepresentation resourceDescription = response.getResourceDescription();
 
-                        resource.setName(pathConfig.getName());
-                        resource.setType(pathConfig.getType());
-                        resource.setUri(pathConfig.getPath());
-
-                        HashSet<ScopeRepresentation> scopes = new HashSet<>();
-
-                        pathConfig.getScopes().forEach(scopeName -> {
-                            ScopeRepresentation scope = new ScopeRepresentation();
-
-                            scope.setName(scopeName);
-
-                            scopes.add(scope);
-                        });
-
-                        resource.setScopes(scopes);
-
-                        RegistrationResponse registrationResponse = protection.resource().create(resource);
-
-                        paths.add(new PathHolder(registrationResponse.getId(), pathConfig));
-                    } else {
-                        throw new RuntimeException("Could not find resource on server with uri [" + pathConfig.getPath() + "].");
+                    if (resourceDescription != null) {
+                        this.paths.add(createPathConfig(resourceDescription));
                     }
-                } else {
-                    paths.add(new PathHolder(search.iterator().next(), pathConfig));
                 }
-            });
+            } else {
+                enforcerConfig.getPaths().forEach(pathConfig -> {
+                    Set<String> search = protection.resource().search("uri=" + pathConfig.getPath());
 
-            this.authzClient = AuthzClient.create();
+                    if (search.isEmpty()) {
+                        if (enforcerConfig.isCreateResources()) {
+                            ResourceRepresentation resource = new ResourceRepresentation();
+
+                            resource.setName(pathConfig.getName());
+                            resource.setType(pathConfig.getType());
+                            resource.setUri(pathConfig.getPath());
+
+                            HashSet<ScopeRepresentation> scopes = new HashSet<>();
+
+                            pathConfig.getScopes().forEach(scopeName -> {
+                                ScopeRepresentation scope = new ScopeRepresentation();
+
+                                scope.setName(scopeName);
+
+                                scopes.add(scope);
+                            });
+
+                            resource.setScopes(scopes);
+
+                            RegistrationResponse registrationResponse = protection.resource().create(resource);
+
+                            pathConfig.setId(registrationResponse.getId());
+                        } else {
+                            throw new RuntimeException("Could not find resource on server with uri [" + pathConfig.getPath() + "].");
+                        }
+                    } else {
+                        pathConfig.setId(search.iterator().next());
+                    }
+                });
+            }
+
+            this.pathMatcher = new PathMatcher();
         } catch (IOException e) {
             throw new RuntimeException("Failed to load configuration.", e);
         }
@@ -100,83 +116,55 @@ public class AuthorizationEnforcementFilter implements Filter {
 
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException {
-        KeycloakSecurityContext keycloakSecurityContext = (KeycloakSecurityContext) request.getAttribute(KeycloakSecurityContext.class.getName());
-
-        if (keycloakSecurityContext == null) {
-            throw new RuntimeException("Could not obtain " + KeycloakSecurityContext.class.getName() + ". Check if your configuration.");
-        }
-
         HttpServletRequest httpRequest = (HttpServletRequest) request;
         HttpServletResponse httpResponse = (HttpServletResponse) response;
         String requestURI = httpRequest.getRequestURI();
+        String path = requestURI.substring(httpRequest.getContextPath().length());
+        PathConfig pathConfig = this.pathMatcher.matches(path, this.paths);
 
-        for (PathHolder pathHolder : this.paths) {
-            Map<String, String> pathParams = new HashMap<>();
-            String path = requestURI.substring(httpRequest.getContextPath().length());
+        if (pathConfig != null) {
+            KeycloakSecurityContext keycloakSecurityContext = getKeycloakSecurityContext(request);
+            String rpt = getAuthorizationToken(keycloakSecurityContext, httpRequest, pathConfig);
 
-            if (pathHolder.getTemplate().matches(path, pathParams)) {
-                String rpt = getAuthorizationToken(keycloakSecurityContext, httpRequest, pathHolder);
+            if (rpt != null) {
+                RequestingPartyToken authzToken;
 
-                if (rpt != null) {
-                    RequestingPartyToken authzToken;
+                try {
+                    authzToken = extractRequestingPartyToken(rpt);
+                } catch (JWSInputException e) {
+                    throw new RuntimeException("Could not parse authorization token.", e);
+                }
 
-                    try {
-                        authzToken = extractRequestingPartyToken(rpt);
-                    } catch (JWSInputException e) {
-                        throw new RuntimeException("Could not parse authorization token.", e);
-                    }
-
-                    if (authzToken.isValid()) {
-                        Configuration.PathConfig pathConfig = pathHolder.getConfig();
-
-                        for (Permission permission : authzToken.getPermissions()) {
-                            if (permission.getResourceSetId().equals(pathHolder.getId())
-                                    && permission.getScopes().containsAll(pathConfig.getScopes())) {
-                                try {
-                                    propagateAuthorizationContext(httpRequest, rpt, authzToken);
-                                    chain.doFilter(request, response);
-                                    return;
-                                } catch (Exception e) {
-                                    throw new RuntimeException("Error processing path [" + requestURI + "].", e);
-                                }
+                if (authzToken.isValid()) {
+                    for (Permission permission : authzToken.getPermissions()) {
+                        if (permission.getResourceSetId().equals(pathConfig.getId())
+                                && permission.getScopes().containsAll(pathConfig.getScopes())) {
+                            try {
+                                propagateAuthorizationContext(httpRequest, rpt, authzToken);
+                                chain.doFilter(request, response);
+                                return;
+                            } catch (Exception e) {
+                                throw new RuntimeException("Error processing path [" + requestURI + "].", e);
                             }
                         }
                     }
-
-                    httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid authorization token.");
-                    return;
                 }
+
+                httpResponse.sendError(HttpServletResponse.SC_FORBIDDEN, "Invalid authorization token.");
+                return;
             }
         }
 
         httpResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
     }
 
-    public void propagateAuthorizationContext(HttpServletRequest httpRequest, String rpt, RequestingPartyToken authzToken) {
-        AuthorizationContext newAuthorizationContext = new AuthorizationContext(authzToken, rpt, this.paths);
-        HttpSession session = httpRequest.getSession(false);
+    public KeycloakSecurityContext getKeycloakSecurityContext(ServletRequest request) {
+        KeycloakSecurityContext keycloakSecurityContext = (KeycloakSecurityContext) request.getAttribute(KeycloakSecurityContext.class.getName());
 
-        if (session != null) {
-            session.setAttribute(AuthorizationContext.class.getName(), newAuthorizationContext);
+        if (keycloakSecurityContext == null) {
+            throw new RuntimeException("Could not obtain " + KeycloakSecurityContext.class.getName() + ". Check if your configuration.");
         }
-
-        httpRequest.setAttribute(Authorization.class.getName(), newAuthorizationContext);
-    }
-
-    public String getAuthorizationToken(KeycloakSecurityContext keycloakSecurityContext, HttpServletRequest httpRequest, PathHolder pathHolder) {
-        AuthorizationContext authzContext = getAuthorizationContext(httpRequest);
-
-        if (authzContext != null) {
-            RequestingPartyToken authzToken = authzContext.getAuthzToken();
-
-            if (authzToken.isValid()) {
-                return authzContext.getAuthzTokenString();
-            } else {
-                return requestAuthorizationToken(httpRequest, keycloakSecurityContext, pathHolder);
-            }
-        } else {
-            return requestAuthorizationToken(httpRequest, keycloakSecurityContext, pathHolder);
-        }
+        return keycloakSecurityContext;
     }
 
     @Override
@@ -184,9 +172,8 @@ public class AuthorizationEnforcementFilter implements Filter {
 
     }
 
-    private String requestAuthorizationToken(HttpServletRequest httpRequest, KeycloakSecurityContext keycloakSecurityContext, PathHolder pathHolder) {
-        Configuration.PathConfig pathConfig = pathHolder.getConfig();
-        PermissionRequest permissionRequest = new PermissionRequest(pathHolder.getId(), pathConfig.getScopes().toArray(new String[pathConfig.getScopes().size()]));
+    private String requestAuthorizationToken(HttpServletRequest httpRequest, KeycloakSecurityContext keycloakSecurityContext, PathConfig pathConfig) {
+        PermissionRequest permissionRequest = new PermissionRequest(pathConfig.getId(), pathConfig.getScopes().toArray(new String[pathConfig.getScopes().size()]));
         PermissionResponse permissionResponse = this.authzClient.protection().permission().forResource(permissionRequest);
 
         try {
@@ -224,5 +211,44 @@ public class AuthorizationEnforcementFilter implements Filter {
 
     private RequestingPartyToken extractRequestingPartyToken(String token) throws JWSInputException {
         return new JWSInput(token).readJsonContent(RequestingPartyToken.class);
+    }
+
+    private  PathConfig createPathConfig(ResourceRepresentation resourceDescription) {
+        PathConfig pathConfig = new PathConfig();
+
+        pathConfig.setId(resourceDescription.getId());
+        pathConfig.setName(resourceDescription.getName());
+        pathConfig.setPath(resourceDescription.getUri());
+        pathConfig.setScopes(resourceDescription.getScopes().stream().map(ScopeRepresentation::getName).collect(Collectors.toList()));
+        pathConfig.setType(resourceDescription.getType());
+
+        return pathConfig;
+    }
+
+    private void propagateAuthorizationContext(HttpServletRequest httpRequest, String rpt, RequestingPartyToken authzToken) {
+        AuthorizationContext newAuthorizationContext = new AuthorizationContext(authzToken, rpt, this.paths);
+        HttpSession session = httpRequest.getSession(false);
+
+        if (session != null) {
+            session.setAttribute(AuthorizationContext.class.getName(), newAuthorizationContext);
+        }
+
+        httpRequest.setAttribute(Authorization.class.getName(), newAuthorizationContext);
+    }
+
+    private String getAuthorizationToken(KeycloakSecurityContext keycloakSecurityContext, HttpServletRequest httpRequest, PathConfig pathConfig) {
+        AuthorizationContext authzContext = getAuthorizationContext(httpRequest);
+
+        if (authzContext != null) {
+            RequestingPartyToken authzToken = authzContext.getAuthzToken();
+
+            if (authzToken.isValid()) {
+                return authzContext.getAuthzTokenString();
+            } else {
+                return requestAuthorizationToken(httpRequest, keycloakSecurityContext, pathConfig);
+            }
+        } else {
+            return requestAuthorizationToken(httpRequest, keycloakSecurityContext, pathConfig);
+        }
     }
 }
