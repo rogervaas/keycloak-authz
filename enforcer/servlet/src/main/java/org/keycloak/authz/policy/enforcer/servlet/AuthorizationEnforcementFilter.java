@@ -105,6 +105,8 @@ public class AuthorizationEnforcementFilter implements Filter {
                     } else {
                         pathConfig.setId(search.iterator().next());
                     }
+
+                    this.paths.add(pathConfig);
                 });
             }
 
