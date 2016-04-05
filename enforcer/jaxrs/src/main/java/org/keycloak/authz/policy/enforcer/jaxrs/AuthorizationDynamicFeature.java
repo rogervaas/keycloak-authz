@@ -10,12 +10,13 @@ import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static java.util.Arrays.asList;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -23,7 +24,7 @@ import java.util.stream.Collectors;
 @Provider
 public class AuthorizationDynamicFeature implements DynamicFeature {
 
-    private final Map<Class<?>, Set<ResourceHolder>> protectedResources = new HashMap<>();
+    private final Map<Class<?>, Set<ResourceRepresentation>> protectedResources = new HashMap<>();
     private final AuthzClient.ProtectionClient protectionClient;
     private final AuthorizationEnforcementFilter authorizationEnforcer;
 
@@ -39,21 +40,21 @@ public class AuthorizationDynamicFeature implements DynamicFeature {
 
         if (protectedResource != null) {
             try {
-                Set<ResourceHolder> holders = this.protectedResources.get(resourceClass);
+                Set<ResourceRepresentation> holders = this.protectedResources.get(resourceClass);
 
                 if (holders == null) {
                     holders = new LinkedHashSet<>();
                     this.protectedResources.put(resourceClass, holders);
                 }
 
-                for (ResourceHolder holder : holders) {
-                    if (holder.getResource().getName().equals(protectedResource.name())) {
+                for (ResourceRepresentation resource : holders) {
+                    if (resource.getName().equals(protectedResource.name())) {
                         context.register(this.authorizationEnforcer);
                         return;
                     }
                 }
 
-                holders.add(new ResourceHolder(resolveResourceId(protectedResource)));
+                holders.add(resolveResource(protectedResource));
             } catch (WebApplicationException cre) {
                 throw new RuntimeException("Could not register protected resource. Server returned: [" + cre.getResponse().readEntity(String.class), cre);
             } catch (Exception e) {
@@ -62,19 +63,27 @@ public class AuthorizationDynamicFeature implements DynamicFeature {
         }
     }
 
-    private ResourceRepresentation resolveResourceId(ProtectedResource protectedResource) {
+    private ResourceRepresentation resolveResource(ProtectedResource protectedResource) {
         Set<String> search = this.protectionClient.resource().search("name=" + protectedResource.name());
 
         if (search.isEmpty()) {
             if (!protectedResource.create()) {
-                throw new RuntimeException("Resource [" + protectedResource.name() + "] does not exist in the server. Resource is not configured for remote registration.");
+                throw new RuntimeException("Resource [" + protectedResource.name() + "] is not registered on the server. Resource is not configured for automatic registration.");
             }
 
-            Set<ScopeRepresentation> scopes = Arrays.asList(protectedResource.scopes()).stream()
+            Set<ScopeRepresentation> scopes = asList(protectedResource.scopes()).stream()
                     .map(protectedScope -> new ScopeRepresentation(protectedScope.name(), protectedScope.uri()))
                     .collect(Collectors.toSet());
 
-            return new ResourceRepresentation(protectedResource.name(), scopes, protectedResource.uri(), protectedResource.type());
+            ResourceRepresentation representation = new ResourceRepresentation(protectedResource.name(), scopes, protectedResource.uri(), protectedResource.type());
+
+            try {
+                this.protectionClient.resource().create(representation);
+            } catch (Exception cause) {
+                throw new RuntimeException("Could not create resource [" + protectedResource.name() + "] on the server.", cause);
+            }
+
+            return representation;
         }
 
         return this.protectionClient.resource().findById(search.iterator().next()).getResourceDescription();

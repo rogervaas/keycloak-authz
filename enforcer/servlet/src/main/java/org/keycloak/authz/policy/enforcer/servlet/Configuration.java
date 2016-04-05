@@ -1,6 +1,7 @@
 package org.keycloak.authz.policy.enforcer.servlet;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -22,23 +23,23 @@ public class Configuration {
 
     public static class EnforcerConfig {
 
+        @JsonProperty("create-resources")
         private boolean createResources;
+
+        private boolean entitlements;
+
         private List<PathConfig> paths;
 
         public boolean isCreateResources() {
             return this.createResources;
         }
 
-        public void setCreateResources(boolean createResources) {
-            this.createResources = createResources;
-        }
-
         public List<PathConfig> getPaths() {
             return this.paths;
         }
 
-        public void setPaths(List<PathConfig> paths) {
-            this.paths = paths;
+        public boolean isEntitlements() {
+            return this.entitlements;
         }
     }
 

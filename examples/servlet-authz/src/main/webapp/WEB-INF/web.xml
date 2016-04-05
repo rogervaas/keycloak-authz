@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <web-app xmlns="http://java.sun.com/xml/ns/javaee"
-      xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-      xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
-      version="3.0">
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		 xsi:schemaLocation="http://java.sun.com/xml/ns/javaee http://java.sun.com/xml/ns/javaee/web-app_3_0.xsd"
+		 version="3.0">
 
-	<module-name>servlet-authz</module-name>
+	<module-name>servlet-authz-app</module-name>
 
 	<filter>
 		<filter-name>Keycloak Authorization Enforcer</filter-name>
@@ -48,5 +48,10 @@
 	<security-role>
 		<role-name>user</role-name>
 	</security-role>
+
+	<error-page>
+		<error-code>403</error-code>
+		<location>/accessDenied.jsp</location>
+	</error-page>
 
 </web-app>

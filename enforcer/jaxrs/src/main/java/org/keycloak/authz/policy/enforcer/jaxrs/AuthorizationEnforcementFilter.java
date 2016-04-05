@@ -28,6 +28,7 @@ import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.SecurityContext;
+import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.security.Principal;
@@ -41,13 +42,13 @@ import java.util.Set;
  */
 public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
 
-    private final Map<Class<?>, Set<ResourceHolder>> protectedResources;
+    private final Map<Class<?>, Set<ResourceRepresentation>> protectedResources;
     private final AuthzClient authzClient;
 
     @Context
     private ResourceInfo resourceInfo;
 
-    public AuthorizationEnforcementFilter(Map<Class<?>, Set<ResourceHolder>> protectedResources) {
+    public AuthorizationEnforcementFilter(Map<Class<?>, Set<ResourceRepresentation>> protectedResources) {
         this.protectedResources = protectedResources;
         this.authzClient = AuthzClient.create();
     }
@@ -71,65 +72,61 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
         Class<?> resourceClass = resourceInfo.getResourceClass();
         Method resourceMethod = resourceInfo.getResourceMethod();
         Enforce enforce = resourceMethod.getAnnotation(Enforce.class);
-        String uri = buildUri(requestContext, enforce);
         Set<String> requiredScopes = new HashSet<>();
 
         if (enforce != null) {
             requiredScopes.addAll(Arrays.asList(enforce.scopes()));
         }
 
-        ResourceHolder targetResource = getResourceWithUri(resourceClass, uri);
+        ResourceRepresentation protectedResource = getResourceWithUri(resourceClass, enforce, requestContext.getUriInfo());
+        RequestingPartyToken rpt = extractRequestingPartyToken(requestContext);
 
-        if (targetResource == null) {
-            targetResource = this.protectedResources.get(resourceClass).iterator().next();
-        }
-
-        ResourceRepresentation protectedResource = targetResource.getResource();
-        RequestingPartyToken currentRpt = extractRequestingPartyToken(requestContext);
-
-        if (currentRpt != null && isAuthorized(protectedResource, requiredScopes, currentRpt)) {
-            requestContext.setSecurityContext(createSecurityContext(currentRpt));
-            targetResource.getPermissions().add(currentRpt);
+        if (isAuthorized(protectedResource, requiredScopes, rpt)) {
+            requestContext.setSecurityContext(createSecurityContext(rpt));
         } else {
             requestContext.abortWith(obtainPermissionTicket(protectedResource.getId(), requiredScopes.toArray(new String[requiredScopes.size()])));
         }
     }
 
-    private ResourceHolder getResourceWithUri(Class<?> resourceClass, String uri) {
-        ResourceHolder targetResource = null;
+    private ResourceRepresentation getResourceWithUri(Class<?> resourceClass, Enforce enforce, UriInfo uriInfo) {
+        String uri = buildUri(uriInfo, enforce);
 
         if (uri != null) {
-            for (ResourceHolder permission : this.protectedResources.get(resourceClass)) {
-                ResourceRepresentation resource = permission.getResource();
-
+            for (ResourceRepresentation resource : this.protectedResources.get(resourceClass)) {
                 if (resource.getUri() != null && resource.getUri().equals(uri)) {
-                    targetResource = permission;
-                    break;
+                    return resource;
                 }
             }
 
-            if (targetResource == null) {
-                Set<String> search = this.authzClient.protection().resource().search("uri=" + uri);
+            Set<String> search = this.authzClient.protection().resource().search("uri=" + uri);
 
-                if (!search.isEmpty()) {
-                    // resource does exist on the server, cache it
-                    targetResource = new ResourceHolder(this.authzClient.protection().resource().findById(search.iterator().next()).getResourceDescription());
-                    this.protectedResources.get(resourceClass).add(targetResource);
-                }
+            if (!search.isEmpty()) {
+                // resource does exist on the server, cache it
+                ResourceRepresentation targetResource = this.authzClient.protection().resource().findById(search.iterator().next()).getResourceDescription();
+
+                this.protectedResources.get(resourceClass).add(targetResource);
+
+                return targetResource;
             }
+        }
+
+        ResourceRepresentation targetResource = this.protectedResources.get(resourceClass).iterator().next();
+
+        if (targetResource == null) {
+            throw new RuntimeException("Could not find any security metadata for resource [" + resourceClass + "].");
         }
 
         return targetResource;
     }
 
-    private String buildUri(ContainerRequestContext requestContext, Enforce enforce) {
+    private String buildUri(UriInfo uriInfo, Enforce enforce) {
         String uri = null;
 
         if (enforce != null) {
             String uriPattern = enforce.uri();
 
             if (uriPattern != null && !"".equals(uriPattern)) {
-                MultivaluedMap<String, String> pathParameters = requestContext.getUriInfo().getPathParameters();
+                MultivaluedMap<String, String> pathParameters = uriInfo.getPathParameters();
 
                 for (String pathParam: pathParameters.keySet()) {
                     uri = uriPattern.replaceAll("\\{" + pathParam + "\\}", pathParameters.getFirst(pathParam));
@@ -141,7 +138,7 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
     }
 
     private boolean isAuthorized(ResourceRepresentation protectedResource, Set<String> requiredScopes, RequestingPartyToken rpt) {
-        if (rpt.isValid()) {
+        if (rpt != null && rpt.isValid()) {
             for (Permission permission : rpt.getPermissions()) {
                 String resourceId = protectedResource.getId();
                 if (permission.getResourceSetId().equals(resourceId)) {
@@ -240,9 +237,9 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
                 // ignore
             }
 
-            throw new RuntimeException("Could not request server for permission. Server returned: [" + serverResponse, cre);
+            throw new RuntimeException("Could not obtain permission ticket from the server. Server returned: [" + serverResponse + "].", cre);
         } catch (Exception e) {
-            throw new RuntimeException("Unexpected error when asking for permission.", e);
+            throw new RuntimeException("Unexpected error when asking permission ticket.", e);
         }
     }
 }

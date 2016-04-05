@@ -1,12 +1,11 @@
 <jboss-deployment-structure>
     <deployment>
         <dependencies>
-            <module name="org.keycloak.keycloak-authz-servlet" export="true" services="import"/>
-            <module name="org.keycloak.keycloak-authz-client" export="true"/>
-            <module name="org.jboss.resteasy.resteasy-jackson-provider" services="import"/>
+            <module name="org.keycloak.keycloak-authz-servlet" services="import"/>
+            <module name="org.jboss.resteasy.resteasy-jackson2-provider" services="import"/>
         </dependencies>
         <exclusions>
-            <module name="org.jboss.resteasy.resteasy-jackson2-provider"/>
+            <module name="org.jboss.resteasy.resteasy-jackson-provider"/>
         </exclusions>
     </deployment>
 </jboss-deployment-structure>

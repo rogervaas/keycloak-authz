@@ -1,0 +1,82 @@
+{
+  "clientId": "servlet-authz-app",
+  "allowRemoteResourceManagement": true,
+  "allowRemotePolicyManagement": true,
+  "policyEnforcementMode": "ENFORCING",
+  "resources": [
+    {
+      "name": "Admin Resource",
+      "uri": "/protected/admin/{resource}",
+      "type": "http://servlet-authz/protected/admin",
+      "scopes": [
+        {
+          "name": "http://servlet-authz/protected/admin/access"
+        }
+      ],
+      "owner": {
+        "name": "servlet-authz-app"
+      }
+    },
+    {
+      "name": "Protected Resource",
+      "uri": "/protected/{resource}",
+      "type": "http://servlet-authz/protected/resource",
+      "scopes": [
+        {
+          "name": "http://servlet-authz/protected/resource/access"
+        }
+      ],
+      "owner": {
+        "name": "servlet-authz-app"
+      }
+    }
+  ],
+  "policies": [
+    {
+      "name": "Any Admin Policy",
+      "description": "Any administrator user",
+      "type": "user",
+      "config": {
+        "users": "[]",
+        "roles": "[\"admin\"]"
+      }
+    },
+    {
+      "name": "Administrative Resource Policy",
+      "type": "resource",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "resources": "[\"Admin Resource\"]",
+        "applyPolicies": "[\"Any Admin Policy\"]"
+      }
+    },
+    {
+      "name": "Any User Policy",
+      "description": "Any authenticated user",
+      "type": "user",
+      "config": {
+        "users": "[]",
+        "roles": "[\"user\"]"
+      }
+    },
+    {
+      "name": "Protected Resource Policy",
+      "type": "resource",
+      "decisionStrategy": "AFFIRMATIVE",
+      "config": {
+        "resources": "[\"Protected Resource\"]",
+        "applyPolicies": "[\"Any Admin Policy\",\"Any User Policy\"]"
+      }
+    }
+  ],
+  "scopes": [
+    {
+      "name": "http://servlet-authz/admin/scopes/access",
+      "policies": []
+    },
+    {
+      "name": "http://servlet-authz/protected/resource/access",
+      "policies": []
+    }
+  ]
+}

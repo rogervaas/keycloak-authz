@@ -98,7 +98,9 @@
       "type": "resource",
       "decisionStrategy": "UNANIMOUS",
       "config": {
-        "resources": "[\"Admin Resources\"]",
+        "defaultResourceType": "http://photoz.com/dev/resource/admin/album",
+        "resources": "[]",
+        "default": "true",
         "applyPolicies": "[\"Any Admin Policy\"]"
       }
     },

@@ -97,7 +97,7 @@ public class AuthorizationService {
             @Override
             public void onComplete(List<Result> results) {
                 if (anyDenial(results)) {
-                    asyncResponse.resume(new ErrorResponseException("not_authorized", "Authorization  denied for resource [" + ticket.getResourceSetId() + "].", Response.Status.FORBIDDEN));
+                    asyncResponse.resume(new ErrorResponseException("not_authorized", "Authorization denied for resource [" + ticket.getResourceSetId() + "].", Response.Status.FORBIDDEN));
                 } else {
                     asyncResponse.resume(Cors.add(httpRequest, Response.status(Response.Status.CREATED).entity(new AuthorizationResponse(createRequestingPartyToken(results)))).allowedOrigins("*").build());
                 }
@@ -109,7 +109,7 @@ public class AuthorizationService {
             }
 
             private boolean anyDenial(List<Result> results) {
-                return results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.DENY));
+                return results.isEmpty() || results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.DENY));
             }
         });
     }

@@ -1,26 +1,27 @@
 {
   "client": {
-    "configurationUrl": "http://localhost:8080/auth/realms/photoz/authz/uma_configuration",
-    "clientId": "servlet-authz",
-    "clientSecret": "bc940819-8d08-4c43-9176-f51185c113ba"
+    "configurationUrl": "http://localhost:8080/auth/realms/servlet-authz/authz/uma_configuration",
+    "clientId": "servlet-authz-app",
+    "clientSecret": "secret"
   },
   "enforcer": {
-    "createResources": true,
+    "create-resources": true,
+    "entitlements": true,
     "paths": [
       {
-        "name": "Admin Resources",
-        "path": "/protected/admin/{resource}",
-        "type": "http://servlet-authz/resources/admin",
+        "name": "Protected Resource",
+        "path": "/protected/{resource}",
+        "type": "http://servlet-authz/protected/resource",
         "scopes": [
-          "http://servlet-authz/admin/scopes/access"
+          "http://servlet-authz/protected/resource/access"
         ]
       },
       {
-        "name": "Admin 2 Resources",
-        "path": "/protected/admin/{resource}/anotherPath",
-        "type": "http://servlet-authz/resources/admin",
+        "name": "Admin Resource",
+        "path": "/protected/admin/{resource}",
+        "type": "http://servlet-authz/protected/admin",
         "scopes": [
-          "http://servlet-authz/admin/scopes/access"
+          "http://servlet-authz/protected/admin/access"
         ]
       }
     ]

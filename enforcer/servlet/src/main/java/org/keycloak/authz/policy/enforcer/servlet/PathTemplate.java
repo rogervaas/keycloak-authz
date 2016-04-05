@@ -159,6 +159,7 @@ public class PathTemplate implements Comparable<PathTemplate> {
         if (!path.startsWith(base)) {
             return false;
         }
+
         int baseLength = base.length();
         if (!template) {
             return path.length() == baseLength;

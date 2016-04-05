@@ -35,6 +35,7 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.time.temporal.TemporalAmount;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -105,6 +106,7 @@ public class AuthzClient {
         URI resourceSetRegistrationEndpoint = serverConfiguration.getIssuer();
         return client.target(resourceSetRegistrationEndpoint)
                 .register(new BearerAuthFilter(accesstoken))
+                .register(new ErrorResponseFilter())
                 .proxy(AuthorizationResource.class);
     }
 
@@ -113,13 +115,23 @@ public class AuthzClient {
         URI resourceSetRegistrationEndpoint = serverConfiguration.getIssuer();
         return client.target(resourceSetRegistrationEndpoint)
                 .register(new BearerAuthFilter(obtainAccessToken(userName, password, clientId, null).getAccessToken()))
+                .register(new ErrorResponseFilter())
                 .proxy(AuthorizationResource.class);
+    }
+
+    public EntitlementResource entitlement(String accessToken) {
+        ResteasyClient client = new ResteasyClientBuilder().build();
+        return client.target(serverConfiguration.getServerUrl() + "/realms/" + serverConfiguration.getRealm())
+                .register(new BearerAuthFilter(accessToken))
+                .register(new ErrorResponseFilter())
+                .proxy(EntitlementResource.class);
     }
 
     public EntitlementResource entitlement(String userName, String password, String clientId, String clientSecret) {
         ResteasyClient client = new ResteasyClientBuilder().build();
         return client.target(serverConfiguration.getServerUrl() + "/realms/" + serverConfiguration.getRealm())
                 .register(new BearerAuthFilter(obtainAccessToken(userName, password, clientId, clientSecret).getAccessToken()))
+                .register(new ErrorResponseFilter())
                 .proxy(EntitlementResource.class);
     }
 
@@ -127,8 +139,10 @@ public class AuthzClient {
         ResteasyClient client = new ResteasyClientBuilder().build();
         ResteasyWebTarget target = client.target(this.serverConfiguration.getTokenEndpoint());
         Form form = new Form();
+
         form.param("grant_type", "client_credentials");
-        target.register(new BasicAuthFilter(clientId, clientSecret));
+
+        target.register(new BasicAuthFilter(clientId, clientSecret)).register(new ErrorResponseFilter());
 
         return target.request().post(Entity.form(form)).readEntity(AccessTokenResponse.class);
     }
@@ -141,13 +155,18 @@ public class AuthzClient {
         form.param("grant_type", "password")
                 .param("username", userName)
                 .param("password", password);
-        target.register(new BasicAuthFilter(clientId, clientSecret));
+
+        target.register(new BasicAuthFilter(clientId, clientSecret)).register(new ErrorResponseFilter());
 
         return target.request().post(Entity.form(form)).readEntity(AccessTokenResponse.class);
     }
 
     public Configuration getServerConfiguration() {
         return this.serverConfiguration;
+    }
+
+    public ClientConfiguration getClientConfiguration() {
+        return this.clientConfiguration;
     }
 
     public AdminClient admin(String userName, String password, String clientId) {
@@ -175,6 +194,7 @@ public class AuthzClient {
             URI resourceSetRegistrationEndpoint = serverConfiguration.getIssuer();
             return client.target(resourceSetRegistrationEndpoint)
                     .register(new BearerAuthFilter(this.pat))
+                    .register(new ErrorResponseFilter())
                     .proxy(ProtectedResource.class);
         }
 
@@ -183,6 +203,7 @@ public class AuthzClient {
             URI resourceSetRegistrationEndpoint = serverConfiguration.getIssuer();
             return client.target(resourceSetRegistrationEndpoint)
                     .register(new BearerAuthFilter(this.pat))
+                    .register(new ErrorResponseFilter())
                     .proxy(PermissionResource.class);
         }
     }
