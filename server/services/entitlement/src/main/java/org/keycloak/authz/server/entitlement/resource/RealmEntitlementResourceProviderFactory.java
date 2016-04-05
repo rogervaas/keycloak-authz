@@ -124,7 +124,6 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
 
             return new Thread(() -> {
                 ResteasyProviderFactory.pushContextDataMap(contextDataMap);
-                ResteasyProviderFactory.pushContext(StoreFactory.class, persistenceProviderFactory.create(ResteasyProviderFactory.getContextData(KeycloakSession.class)));
                 r.run();
             });
         };

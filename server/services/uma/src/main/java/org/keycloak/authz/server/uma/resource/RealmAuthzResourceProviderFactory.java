@@ -39,7 +39,6 @@ import java.util.ServiceLoader;
 import java.util.concurrent.ThreadFactory;
 import java.util.function.Supplier;
 
-import static org.jboss.resteasy.spi.ResteasyProviderFactory.getContextDataMap;
 import static org.jboss.resteasy.spi.ResteasyProviderFactory.pushContext;
 
 /**
@@ -123,7 +122,6 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
 
             return new Thread(() -> {
                 ResteasyProviderFactory.pushContextDataMap(contextDataMap);
-                ResteasyProviderFactory.pushContext(StoreFactory.class, persistenceProviderFactory.create(ResteasyProviderFactory.getContextData(KeycloakSession.class)));
                 r.run();
             });
         };
