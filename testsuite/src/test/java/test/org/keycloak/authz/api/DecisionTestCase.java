@@ -85,44 +85,15 @@ public class DecisionTestCase {
         this.authorization = Authorization.builder().storeFactory(() -> mapStoreFactory).build();
     }
 
-    public Policy createStaticDecisionPolicy(ResourceServer resourceServer, Decision.Effect effect) {
-        Policy staticDecisionPolicy = this.mapStoreFactory.getPolicyStore().create("Static Decision Policy", "tests-static-decision", resourceServer);
-
-        Map<String, String> config = new HashMap<>();
-
-        config.put("EFFECT", effect.toString());
-
-        staticDecisionPolicy.setConfig(config);
-        return staticDecisionPolicy;
-    }
-
-    public Policy createDroolsPolicy(ResourceServer resourceServer) {
-        Policy droolsPolicy = this.mapStoreFactory.getPolicyStore().create("Drools Policy", "drools", resourceServer);
-
-        this.mapStoreFactory.getPolicyStore().save(droolsPolicy);
-
-        Map<String, String> config = new HashMap<>();
-
-        config.put("mavenArtifactGroupId", "org.keycloak");
-        config.put("mavenArtifactId", "photoz-authz-policy");
-        config.put("mavenArtifactVersion", "1.0-SNAPSHOT");
-        config.put("scannerPeriod", "1");
-        config.put("scannerPeriodUnit", "Minutes");
-        config.put("sessionName", "MainOwnerSession");
-
-        droolsPolicy.setConfig(config);
-
-        return droolsPolicy;
-    }
-
     @Test
     public void test() throws Exception {
         final long start = System.nanoTime();
         CountDownLatch latch = new CountDownLatch(5);
-        System.out.println("Starting ...");
-
         EvaluationContext evaluationContext = createEvaluationContext();
         ExecutorService scheduler = Executors.newWorkStealingPool();
+
+        System.out.println("Starting ...");
+
         this.authorization.evaluators()
                 .schedule(this.permissionSupplier, evaluationContext, scheduler)
                 .evaluate(createDecision(latch));
@@ -301,5 +272,35 @@ public class DecisionTestCase {
                 return new ResourcePermission(resource, Arrays.asList());
             }
         };
+    }
+
+    private  Policy createStaticDecisionPolicy(ResourceServer resourceServer, Decision.Effect effect) {
+        Policy staticDecisionPolicy = this.mapStoreFactory.getPolicyStore().create("Static Decision Policy", "tests-static-decision", resourceServer);
+
+        Map<String, String> config = new HashMap<>();
+
+        config.put("EFFECT", effect.toString());
+
+        staticDecisionPolicy.setConfig(config);
+        return staticDecisionPolicy;
+    }
+
+    private Policy createDroolsPolicy(ResourceServer resourceServer) {
+        Policy droolsPolicy = this.mapStoreFactory.getPolicyStore().create("Drools Policy", "drools", resourceServer);
+
+        this.mapStoreFactory.getPolicyStore().save(droolsPolicy);
+
+        Map<String, String> config = new HashMap<>();
+
+        config.put("mavenArtifactGroupId", "org.keycloak");
+        config.put("mavenArtifactId", "photoz-authz-policy");
+        config.put("mavenArtifactVersion", "1.0-SNAPSHOT");
+        config.put("scannerPeriod", "1");
+        config.put("scannerPeriodUnit", "Minutes");
+        config.put("sessionName", "MainOwnerSession");
+
+        droolsPolicy.setConfig(config);
+
+        return droolsPolicy;
     }
 }
