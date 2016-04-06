@@ -168,12 +168,7 @@ public class AuthorizationService {
     }
 
     private String createRequestingPartyToken(List<Result> evaluation) {
-        List<Permission> permissions = evaluation.stream().filter(new Predicate<Result>() {
-            @Override
-            public boolean test(Result evaluationResult) {
-                return !evaluationResult.anyDenial();
-            }
-        }).map(evaluationResult -> {
+        List<Permission> permissions = evaluation.stream().filter(evaluationResult -> !evaluationResult.anyDenial()).map(evaluationResult -> {
             ResourcePermission permission = evaluationResult.getPermission();
             Set<String> scopes = permission.getScopes().stream().map(Scope::getName).collect(Collectors.toSet());
             return new Permission(permission.getResource().getId(), scopes);

@@ -103,8 +103,7 @@ public class ScopeResource {
         }
 
         Scope model = this.authorizationManager.getStoreFactory().getScopeStore().findById(id);
-
-        List<Policy> policies = this.authorizationManager.getStoreFactory().getPolicyStore().findByScopeName(Arrays.asList(model.getName()));
+        List<Policy> policies = this.authorizationManager.getStoreFactory().getPolicyStore().findByScopeName(Arrays.asList(model.getName()), resourceServer.getId());
 
         for (Policy policyModel : policies) {
             if (policyModel.getScopes().size() == 1) {

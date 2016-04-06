@@ -1,16 +1,15 @@
 package org.keycloak.authz.server.admin.resource.representation;
 
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.Decision;
-import org.keycloak.authz.server.admin.resource.util.Models;
+import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.policy.evaluation.Result;
+import org.keycloak.authz.server.admin.resource.util.Models;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -21,66 +20,65 @@ public class PolicyEvaluationResponse {
     private List<EvaluationResultRepresentation> results;
     private Decision.Effect status;
 
+    private PolicyEvaluationResponse() {
+
+    }
+
     public static PolicyEvaluationResponse build(RealmModel realm, List<Result> results, ResourceServer resourceServer, Authorization authorizationManager, KeycloakSession keycloakSession) {
         PolicyEvaluationResponse response = new PolicyEvaluationResponse();
 
-        if (results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.PERMIT.DENY))) {
-            response.setStatus(Decision.Effect.DENY);
+        if (results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.DENY))) {
+            response.status = Decision.Effect.DENY;
         } else {
-            response.setStatus(Decision.Effect.PERMIT);
+            response.status = Decision.Effect.PERMIT;
         }
 
         List<EvaluationResultRepresentation> resultsRep = new ArrayList<>();
 
         for (Result result : results) {
             EvaluationResultRepresentation rep = new EvaluationResultRepresentation();
+
             rep.setStatus(result.getStatus());
             resultsRep.add(rep);
+
             if (result.getPermission().getResource() != null) {
                 rep.setResource(Models.toRepresentation(result.getPermission().getResource(), resourceServer, authorizationManager, realm, keycloakSession));
             } else {
                 ResourceRepresentation resource = new ResourceRepresentation();
 
-                resource.setName("Any Resource with Scopes");
+                resource.setName("Any Resource with Scopes " + result.getPermission().getScopes());
 
                 rep.setResource(resource);
             }
+
             rep.setScopes(result.getPermission().getScopes().stream().map(Models::toRepresentation).collect(Collectors.toList()));
+
             List<PolicyResultRepresentation> policies = new ArrayList<>();
+
             for (Result.PolicyResult policy : result.getResults()) {
-                policies.add(toRepresentation(authorizationManager, policy));
+                policies.add(toRepresentation(policy, authorizationManager));
             }
+
             rep.setPolicies(policies);
         }
-        response.setResults(resultsRep);
+
+        response.results = resultsRep;
+
         return response;
     }
 
-    public static PolicyResultRepresentation toRepresentation(final Authorization authorizationManager, final Result.PolicyResult policy) {
+    private static PolicyResultRepresentation toRepresentation(Result.PolicyResult policy, Authorization authorizationManager) {
         PolicyResultRepresentation policyResultRep = new PolicyResultRepresentation();
 
         policyResultRep.setPolicy(Models.toRepresentation(policy.getPolicy(), authorizationManager));
         policyResultRep.setStatus(policy.getStatus());
-        policyResultRep.setAssociatedPolicies(policy.getAssociatedPolicies().stream().map(new Function<Result.PolicyResult, PolicyResultRepresentation>() {
-            @Override
-            public PolicyResultRepresentation apply(final Result.PolicyResult result) {
-                return toRepresentation(authorizationManager, result);
-            }
-        }).collect(Collectors.toList()));
+        policyResultRep.setAssociatedPolicies(policy.getAssociatedPolicies().stream().map(result -> toRepresentation(result, authorizationManager)).collect(Collectors.toList()));
 
         return policyResultRep;
     }
 
-    public void setResults(final List<EvaluationResultRepresentation> results) {
-        this.results = results;
-    }
-
     public List<EvaluationResultRepresentation> getResults() {
         return results;
-    }
-
-    public void setStatus(final Decision.Effect status) {
-        this.status = status;
     }
 
     public Decision.Effect getStatus() {

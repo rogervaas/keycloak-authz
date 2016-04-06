@@ -32,7 +32,6 @@ import javax.persistence.OneToMany;
 public class ResourceServerEntity implements ResourceServer {
 
     @Id
-    @Column (unique = true)
     private String id;
 
     @Column (unique = true)

@@ -45,7 +45,6 @@ import java.util.stream.Collectors;
 public class ResourceEntity implements Resource {
 
     @Id
-    @Column(unique = true)
     private String id;
 
     @Column(name = "name")

@@ -904,6 +904,10 @@ module.controller('PolicyEvaluateCtrl', function($scope, $http, $route, $locatio
     $scope.newResource = {};
     $scope.resultUrl = resourceUrl + '/partials/policy/resource-server-policy-evaluate-result.html';
 
+    ResourceServerScope.query({realm : realm.realm, rsid : $route.current.params.rsid}, function (data) {
+        $scope.scopes = data;
+    });
+
     $scope.addContextAttribute = function() {
         if (!$scope.newContextAttribute.value || $scope.newContextAttribute.value == '') {
             Notifications.error("You must provide a value to a context attribute.");
@@ -1049,11 +1053,19 @@ module.controller('PolicyEvaluateCtrl', function($scope, $http, $route, $locatio
             }, function (data) {
                 $scope.scopes = data.scopes;
             });
+        } else {
+            ResourceServerScope.query({realm : realm.realm, rsid : $route.current.params.rsid}, function (data) {
+                $scope.scopes = data;
+            });
         }
     }
 
     $scope.save = function() {
+        $scope.authzRequest.entitlements = false;
         if ($scope.applyResourceType) {
+            if (!$scope.newResource) {
+                $scope.newResource = {};
+            }
             $scope.authzRequest.resources[0].scopes = $scope.newResource.scopes;
         }
 

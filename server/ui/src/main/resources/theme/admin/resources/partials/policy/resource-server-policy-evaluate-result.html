@@ -1,6 +1,6 @@
 <fieldset>
     <form class="form-horizontal" name="clientForm" novalidate>
-        <span data-ng-show="evaluationResult.results.length == 0"><strong>Could not obtain any result for the given authorization request. Check if the provided resource(s) or scope(s) are valid.</strong></span>
+        <span data-ng-show="evaluationResult.results.length == 0"><strong>Could not obtain any result for the given authorization request. Check if the provided resource(s) or scope(s) are associated with any policy.</strong></span>
         <fieldset class="border-top" data-ng-repeat="result in evaluationResult.results">
             <legend collapsed><span class="text">{{result.resource.name}}</span>
                 <kc-tooltip>Provides information about how policies were evaluated for this resource.</kc-tooltip>
@@ -32,7 +32,7 @@
                         </ul>
                     </div>
                 </div>
-                <kc-tooltip>The scopes requested along a permission request.</kc-tooltip>
+                <kc-tooltip>The requested scopes.</kc-tooltip>
             </div>
             <div class="form-group">
                 <label class="col-md-2 control-label">Policies</label>

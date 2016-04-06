@@ -198,11 +198,11 @@
                             type.
                         </kc-tooltip>
                     </div>
-                    <div class="form-group clearfix" data-ng-show="!applyResourceType">
+                    <div class="form-group clearfix" data-ng-show="applyResourceType || newResource._id == null">
                         <label class="col-md-2 control-label" for="newResource.scopes">Scopes</label>
 
                         <div class="col-md-6">
-                            <select ui-select2
+                            <select ui-select2="{ minimumInputLength: 1}"
                                     id="newResource.scopes"
                                     multiple
                                     data-ng-model="newResource.scopes"
@@ -212,7 +212,7 @@
 
                         <kc-tooltip>Specifies that this policy must be applied to one or more scopes.</kc-tooltip>
                     </div>
-                    <div class="form-group clearfix" data-ng-show="applyResourceType">
+                    <div class="form-group clearfix" data-ng-show="newResource._id != null">
                         <label class="col-md-2 control-label" for="newResource.scopes">Scopes</label>
 
                         <div class="col-md-6">
@@ -246,7 +246,7 @@
                                         </td>
                                     </tr>
                                     <tr ng-repeat="resource in authzRequest.resources">
-                                        <td>{{resource.name}}</td>
+                                        <td>{{resource.name ? resource.name : 'Any resource with scope(s)'}}</td>
                                         <td>
                                             <span data-ng-show="!resource.scopes.length">Any scope.</span>
                                         <span data-ng-show="resource.scopes.length > 0">

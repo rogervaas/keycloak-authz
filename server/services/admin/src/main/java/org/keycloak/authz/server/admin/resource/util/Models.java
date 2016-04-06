@@ -195,8 +195,8 @@ public final class Models {
         Set<Policy> policies = new HashSet<>();
 
         policies.addAll(model.getPolicies());
-        policies.addAll(authorizationManager.getStoreFactory().getPolicyStore().findByResourceType(resource.getType()));
-        policies.addAll(authorizationManager.getStoreFactory().getPolicyStore().findByScopeName(resource.getScopes().stream().map(scope -> scope.getName()).collect(Collectors.toList())));
+        policies.addAll(authorizationManager.getStoreFactory().getPolicyStore().findByResourceType(resource.getType(), resourceServer.getId()));
+        policies.addAll(authorizationManager.getStoreFactory().getPolicyStore().findByScopeName(resource.getScopes().stream().map(scope -> scope.getName()).collect(Collectors.toList()), resourceServer.getId()));
 
         for (Policy policyModel : policies) {
             PolicyRepresentation policy = new PolicyRepresentation();

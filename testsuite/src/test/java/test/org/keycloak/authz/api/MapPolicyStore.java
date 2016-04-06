@@ -45,8 +45,8 @@ public class MapPolicyStore implements PolicyStore {
     }
 
     @Override
-    public Policy findByName(String name) {
-        return this.policies.values().stream().filter(policy -> policy.getName().equals(name)).findFirst().get();
+    public Policy findByName(String name, String resourceServerId) {
+        return this.policies.values().stream().filter(policy -> policy.getResourceServer().getId().equals(resourceServerId) && policy.getName().equals(name)).findFirst().get();
     }
 
     @Override
@@ -56,42 +56,24 @@ public class MapPolicyStore implements PolicyStore {
 
     @Override
     public List<Policy> findByResource(String resourceId) {
-        return this.policies.values().stream().filter(new Predicate<Policy>() {
-            @Override
-            public boolean test(Policy policy) {
-                return policy.getResources().stream().filter(new Predicate<Resource>() {
-                    @Override
-                    public boolean test(Resource resource) {
-                        return resource.getId().equals(resourceId);
-                    }
-                }).findFirst().isPresent();
-            }
-        }).collect(Collectors.toList());
+        return this.policies.values().stream().filter(policy -> policy.getResources().stream().filter(resource -> resource.getId().equals(resourceId)).findFirst().isPresent()).collect(Collectors.toList());
     }
 
     @Override
-    public List<Policy> findByResourceType(String resourceType) {
-        return this.policies.values().stream().filter(policy -> policy.getConfig().getOrDefault("defaultResourceType", "").equals(resourceType)).collect(Collectors.toList());
+    public List<Policy> findByResourceType(String resourceType, String resourceServerId) {
+        return this.policies.values().stream().filter(policy -> policy.getResourceServer().getId().equals(resourceServerId) && policy.getConfig().getOrDefault("defaultResourceType", "").equals(resourceType)).collect(Collectors.toList());
     }
 
     @Override
-    public List<Policy> findByScopeName(List<String> scopeNames) {
-        return this.policies.values().stream().filter(new Predicate<Policy>() {
-            @Override
-            public boolean test(Policy policy) {
-                return policy.getScopes().stream().filter(new Predicate<Scope>() {
-                    @Override
-                    public boolean test(Scope scope) {
-                        return scopeNames.stream().filter(new Predicate<String>() {
-                            @Override
-                            public boolean test(String s) {
-                                return scope.getName().equals(s);
-                            }
-                        }).findFirst().isPresent();
-                    }
-                }).findFirst().isPresent();
-            }
-        }).collect(Collectors.toList());
+    public List<Policy> findByScopeName(List<String> scopeNames, String resourceServerId) {
+        return this.policies.values().stream()
+                .filter(policy -> policy.getResourceServer().getId().equals(resourceServerId) && policy.getScopes().stream().filter(scope -> scopeNames.stream()
+                        .filter(s -> scope.getName().equals(s))
+                        .findFirst()
+                        .isPresent())
+                    .findFirst()
+                    .isPresent())
+                    .collect(Collectors.toList());
     }
 
     @Override
@@ -101,16 +83,10 @@ public class MapPolicyStore implements PolicyStore {
 
     @Override
     public List<Policy> findDependentPolicies(String id) {
-        return this.policies.values().stream().filter(new Predicate<Policy>() {
-            @Override
-            public boolean test(Policy policy) {
-                return policy.getAssociatedPolicies().stream().filter(new Predicate<Policy>() {
-                    @Override
-                    public boolean test(Policy policy) {
-                        return policy.getId().equals(id);
-                    }
-                }).findFirst().isPresent();
-            }
-        }).collect(Collectors.toList());
+        return this.policies.values().stream().filter(policy -> policy.getAssociatedPolicies().stream()
+                .filter(policy1 -> policy1.getId().equals(id))
+                .findFirst()
+                .isPresent())
+                .collect(Collectors.toList());
     }
 }

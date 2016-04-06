@@ -10,7 +10,7 @@
       "type": "http://servlet-authz/protected/admin",
       "scopes": [
         {
-          "name": "http://servlet-authz/protected/admin/access"
+          "name": "urn:servlet-authz:protected:admin:access"
         }
       ],
       "owner": {
@@ -23,7 +23,7 @@
       "type": "http://servlet-authz/protected/resource",
       "scopes": [
         {
-          "name": "http://servlet-authz/protected/resource/access"
+          "name": "urn:servlet-authz:protected:resource:access"
         }
       ],
       "owner": {
@@ -33,10 +33,10 @@
     {
       "name": "Premium Resource",
       "uri": "/protected/premium/*",
-      "type": "http://servlet-authz/protected/resource",
+      "type": "urn:servlet-authz:protected:resource",
       "scopes": [
         {
-          "name": "http://servlet-authz/protected/premium/access"
+          "name": "urn:servlet-authz:protected:premium:access"
         }
       ],
       "owner": {
@@ -102,19 +102,19 @@
   ],
   "scopes": [
     {
-      "name": "http://servlet-authz/admin/scopes/access",
+      "name": "urn:servlet-authz:admin:scopes:access",
       "policies": []
     },
     {
-      "name": "http://servlet-authz/protected/resource/access",
+      "name": "urn:servlet-authz:protected:resource:access",
       "policies": []
     },
     {
-      "name": "http://servlet-authz/protected/admin/access",
+      "name": "urn:servlet-authz:protected:admin:access",
       "policies": []
     },
     {
-      "name": "http://servlet-authz/protected/premium/access",
+      "name": "urn:servlet-authz:protected:premium:access",
       "policies": []
     }
   ]

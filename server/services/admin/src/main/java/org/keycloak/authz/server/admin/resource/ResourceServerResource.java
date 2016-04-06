@@ -509,7 +509,7 @@ public class ResourceServerResource {
 
                                 pId = pId.replace("\"", "");
 
-                                policyNames = policyNames + "\"" + authorizationManager.getStoreFactory().getPolicyStore().findByName(pId).getId() + "\"";
+                                policyNames = policyNames + "\"" + authorizationManager.getStoreFactory().getPolicyStore().findByName(pId, resourceServer.getId()).getId() + "\"";
                             }
 
                             config.put("applyPolicies", "[" + policyNames + "]");

@@ -5,6 +5,7 @@ import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
+import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
@@ -37,6 +38,7 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
     public void evaluate(ResourcePermission permission, EvaluationContext executionContext, Decision decision) {
         PolicyStore policyStore = this.authorization.getStoreFactory().getPolicyStore();
         Resource resource = permission.getResource();
+        ResourceServer resourceServer = resource.getResourceServer();
         Consumer<Policy> consumer = createDecisionConsumer(permission, executionContext, decision);
 
         if (resource != null) {
@@ -46,17 +48,18 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
                 resourcePolicies.forEach(consumer);
             }
 
+
             if (resource.getType() != null) {
-                policyStore.findByResourceType(resource.getType()).forEach(consumer);
+                policyStore.findByResourceType(resource.getType(), resourceServer.getId()).forEach(consumer);
             }
 
             if (permission.getScopes().isEmpty() && !resource.getScopes().isEmpty()) {
-                policyStore.findByScopeName(resource.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
+                policyStore.findByScopeName(resource.getScopes().stream().map(Scope::getName).collect(Collectors.toList()), resourceServer.getId()).forEach(consumer);
             }
         }
 
         if (!permission.getScopes().isEmpty()) {
-            policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList())).forEach(consumer);
+            policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList()), resourceServer.getId()).forEach(consumer);
         }
     }
 

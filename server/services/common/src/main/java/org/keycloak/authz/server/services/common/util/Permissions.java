@@ -41,7 +41,7 @@ public final class Permissions {
 
         List<String> scopeNames = authorization.getStoreFactory().getScopeStore().findByResourceServer(resourceServer.getId()).stream().map(Scope::getName).collect(Collectors.toList());
 
-        authorization.getStoreFactory().getPolicyStore().findByScopeName(scopeNames).stream().forEach(policy -> permissions.add(new ResourcePermission(null, policy.getScopes().stream().collect(Collectors.toList()))));
+        authorization.getStoreFactory().getPolicyStore().findByScopeName(scopeNames, resourceServer.getId()).stream().forEach(policy -> permissions.add(new ResourcePermission(null, policy.getScopes().stream().collect(Collectors.toList()))));
 
         return permissions;
     }

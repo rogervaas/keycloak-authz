@@ -32,21 +32,26 @@ import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.MapKeyColumn;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @Entity
+@Table(uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"name", "resourceServerId"})
+})
 public class PolicyEntity implements Policy {
 
     @Id
-    @Column(unique = true)
     private String id;
 
-    @Column(unique = true)
+    @Column(name = "name")
     private String name;
 
     @Column
@@ -64,7 +69,8 @@ public class PolicyEntity implements Policy {
     @CollectionTable
     private Map<String, String> config = new HashMap();
 
-    @ManyToOne
+    @ManyToOne(optional = false)
+    @JoinColumn(name = "resourceServerId")
     private ResourceServerEntity resourceServer;
 
     @ManyToMany(fetch = FetchType.EAGER, cascade = {})

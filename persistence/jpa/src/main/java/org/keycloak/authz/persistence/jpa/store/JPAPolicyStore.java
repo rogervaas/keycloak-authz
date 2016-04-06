@@ -85,11 +85,12 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public Policy findByName(String name) {
+    public Policy findByName(String name, String resourceServerId) {
         try {
-            Query query = getEntityManager().createQuery("from PolicyEntity where name = :name");
+            Query query = getEntityManager().createQuery("from PolicyEntity where name = :name and resourceServer.id = :serverId");
 
             query.setParameter("name", name);
+            query.setParameter("serverId", resourceServerId);
 
             return (Policy) query.getSingleResult();
         } catch (NoResultException nre) {
@@ -116,9 +117,12 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public List<Policy> findByResourceType(final String resourceType) {
+    public List<Policy> findByResourceType(final String resourceType, String resourceServerId) {
         List<Policy> policies = new ArrayList<>();
-        Query query = getEntityManager().createQuery("from PolicyEntity");
+        Query query = getEntityManager().createQuery("from PolicyEntity where resourceServer.id = :serverId");
+
+        query.setParameter("serverId", resourceServerId);
+
         List<Policy> models = query.getResultList();
 
         for (Policy policy : models) {
@@ -133,9 +137,10 @@ public class JPAPolicyStore implements PolicyStore {
     }
 
     @Override
-    public List<Policy> findByScopeName(List<String> scopeNames) {
-        Query query = getEntityManager().createQuery("select p from PolicyEntity p inner join p.scopes s where s.name in (:scopeNames) and p.resources is empty group by p.id order by p.name");
+    public List<Policy> findByScopeName(List<String> scopeNames, String resourceServerId) {
+        Query query = getEntityManager().createQuery("select p from PolicyEntity p inner join p.scopes s where p.resourceServer.id = :serverId and s.name in (:scopeNames) and p.resources is empty group by p.id order by p.name");
 
+        query.setParameter("serverId", resourceServerId);
         query.setParameter("scopeNames", scopeNames);
 
         return query.getResultList();
