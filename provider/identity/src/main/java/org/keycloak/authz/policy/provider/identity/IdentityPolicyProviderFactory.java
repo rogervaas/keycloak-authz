@@ -19,7 +19,7 @@ public class IdentityPolicyProviderFactory implements PolicyProviderFactory {
 
     @Override
     public String getGroup() {
-        return "Permission";
+        return "Identity Based";
     }
 
     @Override

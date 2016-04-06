@@ -20,13 +20,11 @@ package org.keycloak.authz.server.entitlement.resource;
 import org.jboss.resteasy.spi.HttpRequest;
 import org.keycloak.OAuthErrorException;
 import org.keycloak.authz.core.Authorization;
-import org.keycloak.authz.core.Decision;
 import org.keycloak.authz.core.identity.Identity;
 import org.keycloak.authz.core.model.ResourceServer;
-import org.keycloak.authz.core.model.Scope;
-import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.evaluation.DecisionResultCollector;
 import org.keycloak.authz.core.policy.evaluation.Result;
+import org.keycloak.authz.server.entitlement.resource.representation.EntitlementResponse;
 import org.keycloak.authz.server.services.common.KeycloakExecutionContext;
 import org.keycloak.authz.server.services.common.util.Permissions;
 import org.keycloak.authz.server.services.common.util.Tokens;
@@ -45,12 +43,11 @@ import javax.ws.rs.container.AsyncResponse;
 import javax.ws.rs.container.Suspended;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.stream.Collectors;
+
+import static org.keycloak.authz.server.services.common.util.Permissions.entitlements;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -112,37 +109,11 @@ public class EntitlementResource {
         });
     }
 
-    private String createRequestingPartyToken(List<Result> evaluation) {
-        List<Permission> permissions = evaluation.stream()
-                .filter(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.PERMIT))
-                .map(evaluationResult -> {
-                    ResourcePermission permission = evaluationResult.getPermission();
-                    return new Permission(permission.getResource().getId(), permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList()));
-                }).collect(Collectors.toList());
-
-        Map<String, Permission> perms = new HashMap<>();
-
-        permissions.forEach(permission -> {
-            Permission evalPermission = perms.get(permission.getResourceSetId());
-
-            if (evalPermission == null) {
-                evalPermission = permission;
-                perms.put(permission.getResourceSetId(), evalPermission);
-            }
-
-            List<String> scopes = evalPermission.getScopes();
-
-            permission.getScopes().forEach(s -> {
-                if (!scopes.contains(s)) {
-                    scopes.add(s);
-                }
-            });
-        });
-
+    private String createRequestingPartyToken(List<Result> results) {
         AccessToken accessToken = Tokens.getAccessToken(this.realm);
         String accessTokenAsString = Tokens.getAccessTokenAsString();
 
-        return new JWSBuilder().jsonContent(new EntitlementToken(perms.values().stream().collect(Collectors.toList()), accessToken, accessTokenAsString))
+        return new JWSBuilder().jsonContent(new EntitlementToken(entitlements(results), accessToken, accessTokenAsString))
                 .rsa256(this.realm.getPrivateKey());
     }
 }

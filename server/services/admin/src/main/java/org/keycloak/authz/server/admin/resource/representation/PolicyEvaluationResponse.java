@@ -2,9 +2,12 @@ package org.keycloak.authz.server.admin.resource.representation;
 
 import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.Decision;
+import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.policy.evaluation.Result;
 import org.keycloak.authz.server.admin.resource.util.Models;
+import org.keycloak.authz.server.services.common.representation.Permission;
+import org.keycloak.authz.server.services.common.util.Permissions;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 
@@ -18,48 +21,70 @@ import java.util.stream.Collectors;
 public class PolicyEvaluationResponse {
 
     private List<EvaluationResultRepresentation> results;
+    private boolean entitlements;
     private Decision.Effect status;
 
     private PolicyEvaluationResponse() {
 
     }
 
-    public static PolicyEvaluationResponse build(RealmModel realm, List<Result> results, ResourceServer resourceServer, Authorization authorizationManager, KeycloakSession keycloakSession) {
+    public static PolicyEvaluationResponse build(PolicyEvaluationRequest evaluationRequest, RealmModel realm, List<Result> results, ResourceServer resourceServer, Authorization authorizationManager, KeycloakSession keycloakSession) {
         PolicyEvaluationResponse response = new PolicyEvaluationResponse();
-
-        if (results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.DENY))) {
-            response.status = Decision.Effect.DENY;
-        } else {
-            response.status = Decision.Effect.PERMIT;
-        }
-
         List<EvaluationResultRepresentation> resultsRep = new ArrayList<>();
 
-        for (Result result : results) {
-            EvaluationResultRepresentation rep = new EvaluationResultRepresentation();
+        response.entitlements = evaluationRequest.isEntitlements();
 
-            rep.setStatus(result.getStatus());
-            resultsRep.add(rep);
+        if (response.entitlements) {
+            List<Permission> entitlements = Permissions.entitlements(results);
 
-            if (result.getPermission().getResource() != null) {
-                rep.setResource(Models.toRepresentation(result.getPermission().getResource(), resourceServer, authorizationManager, realm, keycloakSession));
+            if (entitlements.isEmpty()) {
+                response.status = Decision.Effect.DENY;
             } else {
-                ResourceRepresentation resource = new ResourceRepresentation();
+                for (Permission permission : entitlements) {
+                    EvaluationResultRepresentation rep = new EvaluationResultRepresentation();
 
-                resource.setName("Any Resource with Scopes " + result.getPermission().getScopes());
+                    rep.setStatus(Decision.Effect.PERMIT);
+                    resultsRep.add(rep);
 
-                rep.setResource(resource);
+                    Resource resource = authorizationManager.getStoreFactory().getResourceStore().findById(permission.getResourceSetId());
+
+                    rep.setResource(Models.toRepresentation(resource, resourceServer, authorizationManager, realm, keycloakSession));
+                    rep.setScopes(permission.getScopes().stream().map(ScopeRepresentation::new).collect(Collectors.toList()));
+                }
+            }
+        } else {
+            if (results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.DENY))) {
+                response.status = Decision.Effect.DENY;
+            } else {
+                response.status = Decision.Effect.PERMIT;
             }
 
-            rep.setScopes(result.getPermission().getScopes().stream().map(Models::toRepresentation).collect(Collectors.toList()));
+            for (Result result : results) {
+                EvaluationResultRepresentation rep = new EvaluationResultRepresentation();
 
-            List<PolicyResultRepresentation> policies = new ArrayList<>();
+                rep.setStatus(result.getStatus());
+                resultsRep.add(rep);
 
-            for (Result.PolicyResult policy : result.getResults()) {
-                policies.add(toRepresentation(policy, authorizationManager));
+                if (result.getPermission().getResource() != null) {
+                    rep.setResource(Models.toRepresentation(result.getPermission().getResource(), resourceServer, authorizationManager, realm, keycloakSession));
+                } else {
+                    ResourceRepresentation resource = new ResourceRepresentation();
+
+                    resource.setName("Any Resource with Scopes " + result.getPermission().getScopes());
+
+                    rep.setResource(resource);
+                }
+
+                rep.setScopes(result.getPermission().getScopes().stream().map(Models::toRepresentation).collect(Collectors.toList()));
+
+                List<PolicyResultRepresentation> policies = new ArrayList<>();
+
+                for (Result.PolicyResult policy : result.getResults()) {
+                    policies.add(toRepresentation(policy, authorizationManager));
+                }
+
+                rep.setPolicies(policies);
             }
-
-            rep.setPolicies(policies);
         }
 
         response.results = resultsRep;
@@ -83,6 +108,10 @@ public class PolicyEvaluationResponse {
 
     public Decision.Effect getStatus() {
         return status;
+    }
+
+    public boolean isEntitlements() {
+        return entitlements;
     }
 
     public static class EvaluationResultRepresentation {

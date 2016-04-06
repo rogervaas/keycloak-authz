@@ -269,7 +269,7 @@ public class DecisionTestCase {
                     return null;
                 }
 
-                return new ResourcePermission(resource, Arrays.asList());
+                return new ResourcePermission(resource, Arrays.asList(), resource.getResourceServer());
             }
         };
     }

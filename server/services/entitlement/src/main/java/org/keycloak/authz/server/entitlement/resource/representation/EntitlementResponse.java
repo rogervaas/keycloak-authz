@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.authz.server.entitlement.resource;
+package org.keycloak.authz.server.entitlement.resource.representation;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>

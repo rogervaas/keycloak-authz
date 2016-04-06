@@ -342,19 +342,24 @@ public class ResourceServerResource {
     public Response importSettings(@Context final UriInfo uriInfo, MultipartFormDataInput input) throws IOException {
         Map<String, List<InputPart>> uploadForm = input.getFormDataMap();
         List<InputPart> inputParts = uploadForm.get("file");
-        ResourceServerRepresentation rep = null;
-        Response response = null;
 
         for (InputPart inputPart : inputParts) {
-            // inputPart.getBody doesn't work as content-type is wrong, and inputPart.setMediaType is not supported on AS7 (RestEasy 2.3.2.Final)
-            rep = JsonSerialization.readValue(inputPart.getBodyAsString(), ResourceServerRepresentation.class);
-
+            ResourceServerRepresentation rep = JsonSerialization.readValue(inputPart.getBodyAsString(), ResourceServerRepresentation.class);
             ClientModel client = this.realm.getClientByClientId(rep.getClientId());
+
+            if (client == null) {
+                return ErrorResponse.error("Client with id [" + rep.getClientId() + "] does not exists in realm [" + this.realm.getName() + "].", Response.Status.BAD_REQUEST);
+            }
+
             String clientId = client.getId();
 
             rep.setClientId(clientId);
 
-            response = create(rep);
+            Response response = create(rep);
+
+            if (response.getStatus() != Response.Status.CREATED.getStatusCode()) {
+                return response;
+            }
 
             ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(clientId);
 
@@ -362,162 +367,151 @@ public class ResourceServerResource {
 
             ResteasyProviderFactory.getInstance().injectProperties(scopeResource);
 
-            rep.getScopes().forEach(new Consumer<ScopeRepresentation>() {
-                @Override
-                public void accept(ScopeRepresentation scopeRepresentation) {
-                    scopeResource.create(scopeRepresentation);
-                }
-            });
+            rep.getScopes().forEach(scopeResource::create);
 
             ResourceSetResource resourceSetResource = new ResourceSetResource(this.realm, resourceServer, this.authorizationManager, this.keycloakSession);
 
-            rep.getResources().forEach(new Consumer<ResourceRepresentation>() {
-                @Override
-                public void accept(ResourceRepresentation resourceRepresentation) {
-                    ResourceOwnerRepresentation owner = resourceRepresentation.getOwner();
+            rep.getResources().forEach(resourceRepresentation -> {
+                ResourceOwnerRepresentation owner = resourceRepresentation.getOwner();
 
-                    owner.setId(resourceServer.getClientId());
+                owner.setId(resourceServer.getClientId());
 
-                    UserModel user = keycloakSession.users().getUserByUsername(owner.getName(), realm);
+                UserModel user = keycloakSession.users().getUserByUsername(owner.getName(), realm);
 
-                    if (user != null) {
-                        owner.setId(user.getId());
-                    }
-
-                    resourceSetResource.create(resourceRepresentation);
+                if (user != null) {
+                    owner.setId(user.getId());
                 }
+
+                resourceSetResource.create(resourceRepresentation);
             });
 
             PolicyResource policyResource = new PolicyResource(this.realm, resourceServer, this.threadFactory);
 
             ResteasyProviderFactory.getInstance().injectProperties(policyResource);
 
-            rep.getPolicies().forEach(new Consumer<PolicyRepresentation>() {
-                @Override
-                public void accept(PolicyRepresentation policyRepresentation) {
-                    Map<String, String> config = policyRepresentation.getConfig();
+            rep.getPolicies().forEach(policyRepresentation -> {
+                Map<String, String> config = policyRepresentation.getConfig();
 
-                    String roles = config.get("roles");
+                String roles = config.get("roles");
 
-                    if (roles != null && !roles.isEmpty()) {
-                        roles = roles.replace("[", "");
-                        roles = roles.replace("]", "");
+                if (roles != null && !roles.isEmpty()) {
+                    roles = roles.replace("[", "");
+                    roles = roles.replace("]", "");
 
-                        if (!roles.isEmpty()) {
-                            String roleNames = "";
+                    if (!roles.isEmpty()) {
+                        String roleNames = "";
 
-                            for (String role : roles.split(",")) {
-                                if (!roleNames.isEmpty()) {
-                                    roleNames = roleNames + ",";
-                                }
-
-                                role = role.replace("\"", "");
-
-                                roleNames = roleNames + "\"" + realm.getRole(role).getId() + "\"";
+                        for (String role : roles.split(",")) {
+                            if (!roleNames.isEmpty()) {
+                                roleNames = roleNames + ",";
                             }
 
-                            config.put("roles", "[" + roleNames + "]");
+                            role = role.replace("\"", "");
+
+                            roleNames = roleNames + "\"" + realm.getRole(role).getId() + "\"";
                         }
+
+                        config.put("roles", "[" + roleNames + "]");
                     }
-
-                    String users = config.get("users");
-
-                    if (users != null) {
-                        users = users.replace("[", "");
-                        users = users.replace("]", "");
-
-                        if (!users.isEmpty()) {
-                            String userNames = "";
-
-                            for (String user : users.split(",")) {
-                                if (!userNames.isEmpty()) {
-                                    userNames =  userNames + ",";
-                                }
-
-                                user = user.replace("\"", "");
-
-                                userNames = userNames + "\"" + keycloakSession.users().getUserByUsername(user, realm).getId() + "\"";
-                            }
-
-                            config.put("users", "[" + userNames + "]");
-                        }
-                    }
-
-                    String scopes = config.get("scopes");
-
-                    if (scopes != null && !scopes.isEmpty()) {
-                        scopes = scopes.replace("[", "");
-                        scopes = scopes.replace("]", "");
-
-                        if (!scopes.isEmpty()) {
-                            String scopeNames = "";
-
-                            for (String scope : scopes.split(",")) {
-                                if (!scopeNames.isEmpty()) {
-                                    scopeNames =  scopeNames + ",";
-                                }
-
-                                scope = scope.replace("\"", "");
-
-                                scopeNames = scopeNames + "\"" + authorizationManager.getStoreFactory().getScopeStore().findByName(scope).getId() + "\"";
-                            }
-
-                            config.put("scopes", "[" + scopeNames + "]");
-                        }
-                    }
-
-                    String policyResources = config.get("resources");
-
-                    if (policyResources != null && !policyResources.isEmpty()) {
-                        policyResources = policyResources.replace("[", "");
-                        policyResources = policyResources.replace("]", "");
-
-                        if (!policyResources.isEmpty()) {
-                            String resourceNames = "";
-
-                            for (String resource : policyResources.split(",")) {
-                                if (!resourceNames.isEmpty()) {
-                                    resourceNames =  resourceNames + ",";
-                                }
-
-                                resource = resource.replace("\"", "");
-
-                                if ("".equals(resource)) {
-                                    continue;
-                                }
-
-                                resourceNames = resourceNames + "\"" + authorizationManager.getStoreFactory().getResourceStore().findByName(resource).getId() + "\"";
-                            }
-
-                            config.put("resources", "[" + resourceNames + "]");
-                        }
-                    }
-
-                    String applyPolicies = config.get("applyPolicies");
-
-                    if (applyPolicies != null && !applyPolicies.isEmpty()) {
-                        applyPolicies = applyPolicies.replace("[", "");
-                        applyPolicies = applyPolicies.replace("]", "");
-
-                        if (!applyPolicies.isEmpty()) {
-                            String policyNames = "";
-
-                            for (String pId : applyPolicies.split(",")) {
-                                if (!policyNames.isEmpty()) {
-                                    policyNames = policyNames + ",";
-                                }
-
-                                pId = pId.replace("\"", "");
-
-                                policyNames = policyNames + "\"" + authorizationManager.getStoreFactory().getPolicyStore().findByName(pId, resourceServer.getId()).getId() + "\"";
-                            }
-
-                            config.put("applyPolicies", "[" + policyNames + "]");
-                        }
-                    }
-
-                    policyResource.create(policyRepresentation);
                 }
+
+                String users = config.get("users");
+
+                if (users != null) {
+                    users = users.replace("[", "");
+                    users = users.replace("]", "");
+
+                    if (!users.isEmpty()) {
+                        String userNames = "";
+
+                        for (String user : users.split(",")) {
+                            if (!userNames.isEmpty()) {
+                                userNames =  userNames + ",";
+                            }
+
+                            user = user.replace("\"", "");
+
+                            userNames = userNames + "\"" + keycloakSession.users().getUserByUsername(user, realm).getId() + "\"";
+                        }
+
+                        config.put("users", "[" + userNames + "]");
+                    }
+                }
+
+                String scopes = config.get("scopes");
+
+                if (scopes != null && !scopes.isEmpty()) {
+                    scopes = scopes.replace("[", "");
+                    scopes = scopes.replace("]", "");
+
+                    if (!scopes.isEmpty()) {
+                        String scopeNames = "";
+
+                        for (String scope : scopes.split(",")) {
+                            if (!scopeNames.isEmpty()) {
+                                scopeNames =  scopeNames + ",";
+                            }
+
+                            scope = scope.replace("\"", "");
+
+                            scopeNames = scopeNames + "\"" + authorizationManager.getStoreFactory().getScopeStore().findByName(scope).getId() + "\"";
+                        }
+
+                        config.put("scopes", "[" + scopeNames + "]");
+                    }
+                }
+
+                String policyResources = config.get("resources");
+
+                if (policyResources != null && !policyResources.isEmpty()) {
+                    policyResources = policyResources.replace("[", "");
+                    policyResources = policyResources.replace("]", "");
+
+                    if (!policyResources.isEmpty()) {
+                        String resourceNames = "";
+
+                        for (String resource : policyResources.split(",")) {
+                            if (!resourceNames.isEmpty()) {
+                                resourceNames =  resourceNames + ",";
+                            }
+
+                            resource = resource.replace("\"", "");
+
+                            if ("".equals(resource)) {
+                                continue;
+                            }
+
+                            resourceNames = resourceNames + "\"" + authorizationManager.getStoreFactory().getResourceStore().findByName(resource).getId() + "\"";
+                        }
+
+                        config.put("resources", "[" + resourceNames + "]");
+                    }
+                }
+
+                String applyPolicies = config.get("applyPolicies");
+
+                if (applyPolicies != null && !applyPolicies.isEmpty()) {
+                    applyPolicies = applyPolicies.replace("[", "");
+                    applyPolicies = applyPolicies.replace("]", "");
+
+                    if (!applyPolicies.isEmpty()) {
+                        String policyNames = "";
+
+                        for (String pId : applyPolicies.split(",")) {
+                            if (!policyNames.isEmpty()) {
+                                policyNames = policyNames + ",";
+                            }
+
+                            pId = pId.replace("\"", "");
+
+                            policyNames = policyNames + "\"" + authorizationManager.getStoreFactory().getPolicyStore().findByName(pId, resourceServer.getId()).getId() + "\"";
+                        }
+
+                        config.put("applyPolicies", "[" + policyNames + "]");
+                    }
+                }
+
+                policyResource.create(policyRepresentation);
             });
         }
 

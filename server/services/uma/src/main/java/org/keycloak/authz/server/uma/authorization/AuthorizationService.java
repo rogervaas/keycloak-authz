@@ -160,7 +160,7 @@ public class AuthorizationService {
                         .map(scopeName -> authorizationManager.getStoreFactory().getScopeStore().findByName(scopeName))
                         .filter(scope -> scope != null).collect(Collectors.toList());
 
-                return new ResourcePermission(resource, scopes);
+                return new ResourcePermission(resource, scopes, resource.getResourceServer());
             }
 
             return null;

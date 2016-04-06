@@ -94,18 +94,18 @@ public class PolicyEvaluateResource {
     @POST
     @Consumes("application/json")
     @Produces("application/json")
-    public void evaluate(PolicyEvaluationRequest representation, @Suspended AsyncResponse asyncResponse) {
-        createPermissionEvaluator(representation, createEvaluationContext(representation)).evaluate(createDecisionCollector(asyncResponse));
+    public void evaluate(PolicyEvaluationRequest evaluationRequest, @Suspended AsyncResponse asyncResponse) {
+        createPermissionEvaluator(evaluationRequest, createEvaluationContext(evaluationRequest)).evaluate(createDecisionCollector(evaluationRequest, asyncResponse));
     }
 
-    private DecisionResultCollector createDecisionCollector(AsyncResponse asyncResponse) {
+    private DecisionResultCollector createDecisionCollector(PolicyEvaluationRequest evaluationRequest, AsyncResponse asyncResponse) {
         return new DecisionResultCollector() {
             @Override
             protected void onComplete(List<Result> results) {
                 KeycloakSession keycloakSession = ResteasyProviderFactory.getContextData(KeycloakSession.class);
 
                 try {
-                    asyncResponse.resume(Response.ok(PolicyEvaluationResponse.build(realm, results, resourceServer, authorization, keycloakSession)).build());
+                    asyncResponse.resume(Response.ok(PolicyEvaluationResponse.build(evaluationRequest, realm, results, resourceServer, authorization, keycloakSession)).build());
                 } catch (Throwable cause) {
                     asyncResponse.resume(cause);
                 }
@@ -164,11 +164,11 @@ public class PolicyEvaluateResource {
 
             if (resource.getId() != null) {
                 Resource resourceModel = authorization.getStoreFactory().getResourceStore().findById(resource.getId());
-                return Stream.of(new ResourcePermission(resourceModel, scopes));
+                return Stream.of(new ResourcePermission(resourceModel, scopes, resourceServer));
             } else if (resource.getType() != null) {
-                return authorization.getStoreFactory().getResourceStore().findByType(resource.getType()).stream().map(resource1 -> new ResourcePermission(resource1, scopes));
+                return authorization.getStoreFactory().getResourceStore().findByType(resource.getType()).stream().map(resource1 -> new ResourcePermission(resource1, scopes, resourceServer));
             } else {
-                return scopes.stream().map(scope -> new ResourcePermission(null, asList(scope)));
+                return scopes.stream().map(scope -> new ResourcePermission(null, asList(scope), resourceServer));
             }
         }).collect(Collectors.toList());
     }

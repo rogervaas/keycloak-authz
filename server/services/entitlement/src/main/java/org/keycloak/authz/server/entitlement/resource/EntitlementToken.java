@@ -18,6 +18,7 @@
 package org.keycloak.authz.server.entitlement.resource;
 
 import org.keycloak.authz.core.model.util.Identifiers;
+import org.keycloak.authz.server.services.common.representation.Permission;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.JsonWebToken;
 

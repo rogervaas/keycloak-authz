@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.authz.server.entitlement.resource;
+package org.keycloak.authz.server.services.common.representation;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -30,6 +30,9 @@ public class Permission {
     @JsonProperty("resource_set_id")
     private String resourceSetId;
 
+    @JsonProperty("resource_set_name")
+    private String resourceName;
+
     private List<String> scopes;
 
     public Permission() {
@@ -43,6 +46,10 @@ public class Permission {
 
     public String getResourceSetId() {
         return this.resourceSetId;
+    }
+
+    private String getResourceName() {
+        return this.resourceName;
     }
 
     public List<String> getScopes() {

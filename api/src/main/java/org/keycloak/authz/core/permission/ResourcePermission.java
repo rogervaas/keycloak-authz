@@ -18,6 +18,7 @@
 package org.keycloak.authz.core.permission;
 
 import org.keycloak.authz.core.model.Resource;
+import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
 
 import java.util.Collections;
@@ -32,10 +33,12 @@ public class ResourcePermission {
 
     private final Resource resource;
     private final List<Scope> scopes;
+    private ResourceServer resourceServer;
 
-    public ResourcePermission(Resource resource, List<Scope> scopes) {
+    public ResourcePermission(Resource resource, List<Scope> scopes, ResourceServer resourceServer) {
         this.resource = resource;
         this.scopes = scopes;
+        this.resourceServer = resourceServer;
     }
 
     /**
@@ -54,5 +57,14 @@ public class ResourcePermission {
      */
     public List<Scope> getScopes() {
         return Collections.unmodifiableList(this.scopes);
+    }
+
+    /**
+     * Returns the resource server associated with this permission.
+     *
+     * @return the resource server
+     */
+    public ResourceServer getResourceServer() {
+        return this.resourceServer;
     }
 }

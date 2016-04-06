@@ -37,9 +37,9 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
     @Override
     public void evaluate(ResourcePermission permission, EvaluationContext executionContext, Decision decision) {
         PolicyStore policyStore = this.authorization.getStoreFactory().getPolicyStore();
-        Resource resource = permission.getResource();
-        ResourceServer resourceServer = resource.getResourceServer();
         Consumer<Policy> consumer = createDecisionConsumer(permission, executionContext, decision);
+        Resource resource = permission.getResource();
+        ResourceServer resourceServer = permission.getResourceServer();
 
         if (resource != null) {
             List<? extends Policy> resourcePolicies = policyStore.findByResource(resource.getId());
