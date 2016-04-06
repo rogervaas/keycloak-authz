@@ -111,6 +111,7 @@ public class PolicyResource {
         policy.setDescription(representation.getDescription());
         policy.setConfig(representation.getConfig());
         policy.setDecisionStrategy(representation.getDecisionStrategy());
+        policy.setLogic(representation.getLogic());
 
         updateResources(policy);
         updateAssociatedPolicies(policy);

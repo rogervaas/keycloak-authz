@@ -5,11 +5,7 @@ import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.permission.evaluator.PermissionEvaluator;
-import org.keycloak.authz.core.policy.Advice;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
-
-import java.util.Collections;
-import java.util.List;
 
 /**
  * <p>An {@link Evaluation} is mainly used by {@link PolicyProvider} in order to evaluate a single
@@ -26,7 +22,6 @@ public class Evaluation {
     private final Decision decision;
     private final Policy policy;
     private final Policy parentPolicy;
-    private List<Advice> advices = Collections.emptyList();
     private Decision.Effect effect;
 
     public Evaluation(ResourcePermission permission, EvaluationContext executionContext, Policy parentPolicy, Policy policy, Decision decision) {
@@ -59,18 +54,23 @@ public class Evaluation {
      * Grants all the requested permissions to the caller.
      */
     public void grant() {
-        this.effect = Decision.Effect.PERMIT;
+        if (Policy.Logic.NEGATIVE.equals(policy.getLogic())) {
+            this.effect = Decision.Effect.DENY;
+        } else {
+            this.effect = Decision.Effect.PERMIT;
+        }
+
         this.decision.onDecision(this);
     }
 
     public void deny() {
-        this.effect = Decision.Effect.DENY;
-        this.decision.onDecision(this);
-    }
+        if (Policy.Logic.NEGATIVE.equals(policy.getLogic())) {
+            this.effect = Decision.Effect.PERMIT;
+        } else {
+            this.effect = Decision.Effect.DENY;
+        }
 
-    public void grantWithAdvices(List<Advice> advices) {
-        this.advices = advices;
-        grant();
+        this.decision.onDecision(this);
     }
 
     public Policy getPolicy() {

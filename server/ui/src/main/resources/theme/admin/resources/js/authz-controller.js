@@ -837,6 +837,7 @@ module.service("PolicyController", function($http, $route, $location, ResourceSe
         $scope.realm = realm;
 
         $scope.decisionStrategies = ['AFFIRMATIVE', 'UNANIMOUS', 'CONSENSUS'];
+        $scope.logics = ['POSITIVE', 'NEGATIVE'];
 
         delegate.onInit();
 
@@ -856,6 +857,7 @@ module.service("PolicyController", function($http, $route, $location, ResourceSe
 
                 policy.type = delegate.getPolicyType();
                 policy.config = {};
+                policy.logic = 'POSITIVE';
 
                 if (delegate.onInitCreate) {
                     delegate.onInitCreate(policy);

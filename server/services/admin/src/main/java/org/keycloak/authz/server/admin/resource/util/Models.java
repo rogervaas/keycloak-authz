@@ -122,6 +122,7 @@ public final class Models {
         representation.setDescription(model.getDescription());
         representation.setType(model.getType());
         representation.setDecisionStrategy(model.getDecisionStrategy());
+        representation.setLogic(model.getLogic());
         representation.setConfig(new HashMap<>(model.getConfig()));
 
         List<Policy> policies = authorizationManager.getStoreFactory().getPolicyStore().findDependentPolicies(model.getId());
@@ -146,6 +147,7 @@ public final class Models {
 
         model.setDescription(policy.getDescription());
         model.setDecisionStrategy(policy.getDecisionStrategy());
+        model.setLogic(policy.getLogic());
         model.setConfig(policy.getConfig());
 
         return model;

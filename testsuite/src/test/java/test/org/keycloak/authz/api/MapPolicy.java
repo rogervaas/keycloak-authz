@@ -56,6 +56,7 @@ public class MapPolicy implements Policy {
     @Getter
     @Setter
     private Set<Scope> scopes = new HashSet<>();
+    private Logic logic;
 
     public MapPolicy(String name, String type, ResourceServer resourceServer) {
         this.name = name;
@@ -71,6 +72,16 @@ public class MapPolicy implements Policy {
     @Override
     public void removeAssociatedPolicy(Policy policy) {
         this.associatedPolicies.remove(policy);
+    }
+
+    @Override
+    public Logic getLogic() {
+        return this.logic;
+    }
+
+    @Override
+    public void setLogic(Logic logic) {
+        this.logic = logic;
     }
 
     @Override

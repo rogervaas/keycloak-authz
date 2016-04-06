@@ -17,6 +17,7 @@ public class PolicyRepresentation {
     private String description;
     private String type;
     private Policy.DecisionStrategy decisionStrategy;
+    private Policy.Logic logic;
     private Map<String, String> config = new HashMap();
     private List<PolicyRepresentation> dependentPolicies;
 
@@ -42,6 +43,14 @@ public class PolicyRepresentation {
 
     public void setDecisionStrategy(Policy.DecisionStrategy decisionStrategy) {
         this.decisionStrategy = decisionStrategy;
+    }
+
+    public Policy.Logic getLogic() {
+        return logic;
+    }
+
+    public void setLogic(Policy.Logic logic) {
+        this.logic = logic;
     }
 
     public Map<String, String> getConfig() {

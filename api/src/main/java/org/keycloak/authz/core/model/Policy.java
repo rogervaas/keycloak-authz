@@ -39,6 +39,20 @@ public interface Policy {
     void setDecisionStrategy(DecisionStrategy decisionStrategy);
 
     /**
+     * Returns the {@link Logic} for this policy.
+     *
+     * @return the decision strategy defined for this policy
+     */
+    Logic getLogic();
+
+    /**
+     * Sets the {Logic} for this policy.
+     *
+     * @return the decision strategy for this policy
+     */
+    void setLogic(Logic logic);
+
+    /**
      * Returns a {@link Map} holding string-based key/value pairs representing any additional configuration for this policy.
      *
      * @return a map with any additional configuration defined for this policy.
@@ -171,5 +185,21 @@ public interface Policy {
          * the final decision will be negative.
          */
         CONSENSUS
+    }
+
+    /**
+     * The decision strategy dictates how the policies associated with a given policy are evaluated and how a final decision
+     * is obtained.
+     */
+    enum Logic {
+        /**
+         * Defines that this policy follows a positive logic. In other words, the final decision is the policy outcome.
+         */
+        POSITIVE,
+
+        /**
+         * Defines that this policy uses a logical negation. In other words, the final decision would be a negative of the policy outcome.
+         */
+        NEGATIVE,
     }
 }

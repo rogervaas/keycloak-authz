@@ -17,11 +17,6 @@
  */
 package org.keycloak.authz.persistence.jpa.entity;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-import java.util.stream.Collectors;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.Scope;
@@ -38,6 +33,11 @@ import javax.persistence.ManyToOne;
 import javax.persistence.MapKeyColumn;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -61,7 +61,10 @@ public class PolicyEntity implements Policy {
     private String type;
 
     @Column
-    private DecisionStrategy decisionStrategy;
+    private DecisionStrategy decisionStrategy = DecisionStrategy.UNANIMOUS;
+
+    @Column
+    private Logic logic = Logic.POSITIVE;
 
     @ElementCollection(fetch = FetchType.EAGER)
     @MapKeyColumn(name="NAME")
@@ -108,6 +111,16 @@ public class PolicyEntity implements Policy {
     @Override
     public void setDecisionStrategy(DecisionStrategy decisionStrategy) {
         this.decisionStrategy = decisionStrategy;
+    }
+
+    @Override
+    public Logic getLogic() {
+        return this.logic;
+    }
+
+    @Override
+    public void setLogic(Logic logic) {
+        this.logic = logic;
     }
 
     @Override
