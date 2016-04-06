@@ -70,7 +70,6 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
     }
 
     private void enforceAuthorization(ContainerRequestContext requestContext, ResourceInfo resourceInfo) {
-        System.out.println(resourceInfo.getResourceMethod());
         Class<?> resourceClass = resourceInfo.getResourceClass();
         Method resourceMethod = resourceInfo.getResourceMethod();
         Enforce enforce = resourceMethod.getAnnotation(Enforce.class);
