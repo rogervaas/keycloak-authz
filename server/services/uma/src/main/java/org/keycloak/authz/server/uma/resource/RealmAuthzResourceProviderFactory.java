@@ -109,6 +109,7 @@ public class RealmAuthzResourceProviderFactory implements RealmResourceProviderF
             transaction.commit();
         } catch (Exception e) {
             transaction.rollback();
+            throw new RuntimeException("Failed to initialize authorization admin api provider.", e);
         } finally {
             session.close();
         }

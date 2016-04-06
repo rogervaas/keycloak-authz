@@ -62,7 +62,7 @@ public final class Permissions {
 
     public static List<Permission> entitlements(List<Result> evaluation) {
         List<Permission> permissions = evaluation.stream()
-                .filter(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.PERMIT))
+                .filter(evaluationResult -> evaluationResult.getEffect().equals(Decision.Effect.PERMIT))
                 .map(evaluationResult -> {
                     ResourcePermission permission = evaluationResult.getPermission();
                     return new Permission(permission.getResource().getId(), permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList()));

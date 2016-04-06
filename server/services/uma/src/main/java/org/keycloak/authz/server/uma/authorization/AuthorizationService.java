@@ -53,7 +53,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 /**
@@ -109,7 +108,7 @@ public class AuthorizationService {
             }
 
             private boolean anyDenial(List<Result> results) {
-                return results.isEmpty() || results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.DENY));
+                return results.isEmpty() || results.stream().anyMatch(evaluationResult -> evaluationResult.getEffect().equals(Decision.Effect.DENY));
             }
         });
     }

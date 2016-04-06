@@ -23,6 +23,7 @@
         <module>scope</module>
         <module>javascript</module>
         <module>time</module>
+        <module>aggregate</module>
     </modules>
 
 </project>

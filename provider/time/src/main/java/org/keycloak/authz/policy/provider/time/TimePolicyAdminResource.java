@@ -27,7 +27,7 @@ public class TimePolicyAdminResource implements PolicyProviderAdminResource {
         validateConfig(policy);
     }
 
-    public void validateConfig(Policy policy) {
+    private void validateConfig(Policy policy) {
         String nbf = policy.getConfig().get("nbf");
         String noa = policy.getConfig().get("noa");
 
@@ -39,7 +39,7 @@ public class TimePolicyAdminResource implements PolicyProviderAdminResource {
         validateFormat(noa);
     }
 
-    public void validateFormat(String date) {
+    private void validateFormat(String date) {
         try {
             new SimpleDateFormat(TimePolicyProvider.DEFAULT_DATE_PATTERN).parse(TimePolicyProvider.format(date));
         } catch (Exception e) {

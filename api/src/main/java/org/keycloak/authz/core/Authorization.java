@@ -7,7 +7,6 @@ import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 import org.keycloak.authz.core.store.StoreFactory;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
@@ -58,9 +57,9 @@ public final class Authorization {
     private final Supplier<StoreFactory> storeFactory;
     private final List<PolicyProviderFactory> policyProviderFactories;
 
-    private Authorization(Supplier<StoreFactory> storeFactorySupplier, List<PolicyProviderFactory> policyProviderFactories) {
+    private Authorization(Supplier<StoreFactory> storeFactorySupplier) {
         this.storeFactory = storeFactorySupplier;
-        this.policyProviderFactories = Collections.unmodifiableList(policyProviderFactories);
+        this.policyProviderFactories = configurePolicyProviderFactories();
         this.policyEvaluator = new DefaultPolicyEvaluator(this);
     }
 
@@ -103,6 +102,17 @@ public final class Authorization {
         return (F) getProviderFactories().stream().filter(policyProviderFactory -> policyProviderFactory.getType().equals(type)).findFirst().orElse(null);
     }
 
+    private List<PolicyProviderFactory> configurePolicyProviderFactories() {
+        List<PolicyProviderFactory> factories = new ArrayList<>();
+
+        ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach((policyProviderFactory) -> {
+            policyProviderFactory.init(this);
+            factories.add(policyProviderFactory);
+        });
+
+        return factories;
+    }
+
     /**
      * A builder that provides a fluent API to configure and create {@link Authorization} instances.
      */
@@ -136,19 +146,7 @@ public final class Authorization {
                 this.storeFactorySupplier = () -> storeFactory;
             }
 
-            return new Authorization(this.storeFactorySupplier, configurePolicyProviderFactories(this.storeFactorySupplier));
-        }
-
-        private List<PolicyProviderFactory> configurePolicyProviderFactories(Supplier<StoreFactory> storeFactorySupplier) {
-            List<PolicyProviderFactory> factories = new ArrayList<>();
-            StoreFactory storeFactory = storeFactorySupplier.get();
-
-            ServiceLoader.load(PolicyProviderFactory.class, getClass().getClassLoader()).forEach((policyProviderFactory) -> {
-                policyProviderFactory.init(storeFactory.getPolicyStore());
-                factories.add(policyProviderFactory);
-            });
-
-            return factories;
+            return new Authorization(this.storeFactorySupplier);
         }
 
         private StoreFactory configureStoreFactory() {

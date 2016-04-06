@@ -10,30 +10,33 @@ import org.kohsuke.MetaInfServices;
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
 @MetaInfServices(PolicyProviderFactory.class)
-public class TimePolicyProviderFactory implements PolicyProviderFactory {
+public class AggregatePolicyProviderFactory implements PolicyProviderFactory {
+
+    private Authorization authorization;
 
     @Override
     public String getName() {
-        return "Time Based";
+        return "Aggregate";
     }
 
     @Override
     public String getGroup() {
-        return "Time Based";
+        return "Others";
     }
 
     @Override
     public String getType() {
-        return "time";
+        return "aggregate";
     }
 
     @Override
     public void init(Authorization authorization) {
+        this.authorization = authorization;
     }
 
     @Override
     public PolicyProvider create(Policy policy) {
-        return new TimePolicyProvider(policy);
+        return new AggregatePolicyProvider(policy, this.authorization);
     }
 
     @Override

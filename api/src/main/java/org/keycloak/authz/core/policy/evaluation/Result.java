@@ -47,7 +47,7 @@ public class Result {
         this.status = status;
     }
 
-    public Decision.Effect getStatus() {
+    public Decision.Effect getEffect() {
         return status;
     }
 

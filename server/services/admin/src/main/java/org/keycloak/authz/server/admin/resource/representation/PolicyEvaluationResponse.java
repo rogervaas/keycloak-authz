@@ -53,7 +53,7 @@ public class PolicyEvaluationResponse {
                 }
             }
         } else {
-            if (results.stream().anyMatch(evaluationResult -> evaluationResult.getStatus().equals(Decision.Effect.DENY))) {
+            if (results.stream().anyMatch(evaluationResult -> evaluationResult.getEffect().equals(Decision.Effect.DENY))) {
                 response.status = Decision.Effect.DENY;
             } else {
                 response.status = Decision.Effect.PERMIT;
@@ -62,7 +62,7 @@ public class PolicyEvaluationResponse {
             for (Result result : results) {
                 EvaluationResultRepresentation rep = new EvaluationResultRepresentation();
 
-                rep.setStatus(result.getStatus());
+                rep.setStatus(result.getEffect());
                 resultsRep.add(rep);
 
                 if (result.getPermission().getResource() != null) {

@@ -49,7 +49,7 @@ public abstract class DecisionResultCollector implements Decision {
         List<Result.PolicyResult> values = policyResult.getAssociatedPolicies();
 
         int grantCount = 0;
-        int denyCount = values.size();
+        int denyCount = policyResult.getPolicy().getAssociatedPolicies().size();
 
         for (Result.PolicyResult decision : values) {
             if (decision.getStatus().equals(Effect.PERMIT)) {

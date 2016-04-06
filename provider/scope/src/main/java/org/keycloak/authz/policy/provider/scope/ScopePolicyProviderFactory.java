@@ -1,9 +1,9 @@
 package org.keycloak.authz.policy.provider.scope;
 
+import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
-import org.keycloak.authz.core.store.PolicyStore;
 import org.kohsuke.MetaInfServices;
 
 /**
@@ -28,7 +28,7 @@ public class ScopePolicyProviderFactory implements PolicyProviderFactory {
     }
 
     @Override
-    public void init(PolicyStore policyStore) {
+    public void init(Authorization authorization) {
     }
 
     @Override

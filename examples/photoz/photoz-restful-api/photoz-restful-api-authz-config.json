@@ -34,13 +34,33 @@
       "owner": {
         "name": "photoz-restful-api"
       }
+    },
+    {
+      "name": "test",
+      "uri": "/album/5",
+      "type": "http://photoz.com/dev/resource/album",
+      "scopes": [
+        {
+          "name": "urn:photoz.com:scopes:album:view"
+        },
+        {
+          "name": "urn:photoz.com:scopes:album:create"
+        },
+        {
+          "name": "urn:photoz.com:scopes:album:delete"
+        }
+      ],
+      "owner": {
+        "name": "alice"
+      }
     }
   ],
   "policies": [
     {
-      "name": "Only Owner Album Policy",
-      "description": "A policy that tells what only the owner can do.",
+      "name": "Only Owner Policy",
+      "description": "Defines that only the resource owner is allowed to do something",
       "type": "drools",
+      "logic": "POSITIVE",
       "config": {
         "mavenArtifactVersion": "1.0-SNAPSHOT",
         "mavenArtifactId": "photoz-authz-policy",
@@ -52,20 +72,19 @@
       }
     },
     {
-      "name": "Delete Album Policy",
-      "description": "A policy that only allows the owner to delete his albums.",
-      "type": "scope",
-      "decisionStrategy": "UNANIMOUS",
+      "name": "Only From a Specific Client Address",
+      "description": "Defines that only clients from a specific address can do something",
+      "type": "js",
+      "logic": "POSITIVE",
       "config": {
-        "resources": "[]",
-        "scopes": "[\"urn:photoz.com:scopes:album:delete\"]",
-        "applyPolicies": "[\"Only Owner Album Policy\"]"
+        "code": "var contextAttributes = $evaluation.getContext().getAttributes();\n\nif (contextAttributes.containsValue('kc.authz.context.client.network.ip_address', '127.0.0.1')) {\n    $evaluation.grant();\n}"
       }
     },
     {
       "name": "Any Admin Policy",
-      "description": "A policy that tells what any user in the 'admin' role can do.",
+      "description": "Defines that adminsitrators can do something",
       "type": "user",
+      "logic": "POSITIVE",
       "config": {
         "users": "[]",
         "roles": "[\"admin\"]"
@@ -73,11 +92,32 @@
     },
     {
       "name": "Any User Policy",
-      "description": "A policy that tells what any user in the 'user' role can do",
+      "description": "Defines that any user can do something",
       "type": "user",
+      "logic": "POSITIVE",
       "config": {
         "users": "[]",
         "roles": "[\"user\"]"
+      }
+    },
+    {
+      "name": "Only Owner And Admin User Policy",
+      "description": "Defines that only the resource owner and administrators can do something",
+      "type": "aggregate",
+      "logic": "POSITIVE",
+      "decisionStrategy": "AFFIRMATIVE",
+      "config": {
+        "applyPolicies": "[\"Only Owner Policy\",\"Any Admin Policy\"]"
+      }
+    },
+    {
+      "name": "Delete Album Policy",
+      "description": "A policy that only allows the owner to delete his albums.",
+      "type": "scope",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "applyPolicies": "[\"Only Owner And Admin User Policy\"]",
+        "scopes": "[\"urn:photoz.com:scopes:album:delete\"]"
       }
     },
     {
@@ -102,14 +142,6 @@
         "resources": "[]",
         "default": "true",
         "applyPolicies": "[\"Any Admin Policy\"]"
-      }
-    },
-    {
-      "name": "Only From a Specific Client Address",
-      "description": "A policy that validates the client address",
-      "type": "js",
-      "config": {
-        "code": "var contextAttributes = $evaluation.getContext().getAttributes();\n\nif (contextAttributes.containsValue('kc.authz.context.client.network.ip_address', '127.0.0.1')) {\n    $evaluation.grant();\n}"
       }
     },
     {

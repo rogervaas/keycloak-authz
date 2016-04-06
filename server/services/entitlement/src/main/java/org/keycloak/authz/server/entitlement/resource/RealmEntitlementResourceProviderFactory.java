@@ -111,6 +111,7 @@ public class RealmEntitlementResourceProviderFactory implements RealmResourcePro
             transaction.commit();
         } catch (Exception e) {
             transaction.rollback();
+            throw new RuntimeException("Failed to initialize authorization admin api provider.", e);
         } finally {
             session.close();
         }

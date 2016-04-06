@@ -217,6 +217,22 @@ module.config(['$routeProvider', function ($routeProvider) {
             }
         },
         controller: 'ResourceServerPolicyTimeDetailCtrl'
+    }).when('/realms/:realm/authz/resource-server/:rsid/policy/aggregate/create', {
+        templateUrl: resourceUrl + '/partials/policy/provider/resource-server-policy-aggregate-detail.html',
+        resolve: {
+            realm: function (RealmLoader) {
+                return RealmLoader();
+            }
+        },
+        controller: 'ResourceServerPolicyAggregateDetailCtrl'
+    }).when('/realms/:realm/authz/resource-server/:rsid/policy/aggregate/:id', {
+        templateUrl: resourceUrl + '/partials/policy/provider/resource-server-policy-aggregate-detail.html',
+        resolve: {
+            realm: function (RealmLoader) {
+                return RealmLoader();
+            }
+        },
+        controller: 'ResourceServerPolicyAggregateDetailCtrl'
     });
 }]);
 

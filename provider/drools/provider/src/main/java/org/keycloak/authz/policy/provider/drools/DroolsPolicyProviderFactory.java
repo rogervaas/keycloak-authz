@@ -1,14 +1,15 @@
 package org.keycloak.authz.policy.provider.drools;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
-import org.keycloak.authz.core.store.PolicyStore;
 import org.kie.api.KieServices;
 import org.kie.api.runtime.KieContainer;
 import org.kohsuke.MetaInfServices;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -35,9 +36,9 @@ public class DroolsPolicyProviderFactory implements PolicyProviderFactory {
     }
 
     @Override
-    public void init(PolicyStore policyStore) {
+    public void init(Authorization authorization) {
         this.ks = KieServices.Factory.get();
-        policyStore.findByType(getType()).forEach(this::update);
+        authorization.getStoreFactory().getPolicyStore().findByType(getType()).forEach(this::update);
     }
 
     @Override
