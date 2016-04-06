@@ -38,11 +38,6 @@ public class KeycloakExecutionContext implements EvaluationContext {
     }
 
     @Override
-    public RealmModel getRealm() {
-        return this.realm;
-    }
-
-    @Override
     public Attributes getAttributes() {
         HashMap<String, Collection<String>> attributes = new HashMap<>();
         KeycloakSession keycloakSession = getKeycloakSession();

@@ -49,6 +49,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
@@ -143,11 +144,17 @@ public class ResourceServerResource {
     @GET
     @Produces("application/json")
     public Response findAll() {
-        return Response.ok(
-                this.authorizationManager.getStoreFactory().getResourceServerStore().findByRealm(this.realm.getId()).stream()
-                        .map(resourceServer -> Models.toRepresentation(resourceServer, this.realm))
-                        .collect(Collectors.toList()))
-                .build();
+        List<ResourceServerRepresentation> resourceServers = new ArrayList<>();
+
+        this.realm.getClients().forEach(clientModel -> {
+            ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(clientModel.getId());
+
+            if (resourceServer != null) {
+                resourceServers.add(Models.toRepresentation(resourceServer, this.realm));
+            }
+        });
+
+        return Response.ok(resourceServers).build();
     }
 
     @Path("{id}/settings")

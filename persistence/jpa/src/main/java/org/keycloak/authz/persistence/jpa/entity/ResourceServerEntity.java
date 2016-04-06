@@ -17,13 +17,13 @@
  */
 package org.keycloak.authz.persistence.jpa.entity;
 
-import java.util.List;
 import org.keycloak.authz.core.model.ResourceServer;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
+import java.util.List;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -36,9 +36,6 @@ public class ResourceServerEntity implements ResourceServer {
 
     @Column (unique = true)
     private String clientId;
-
-    @Column
-    private String realmId;
 
     @Column
     private boolean allowRemoteResourceManagement;
@@ -71,14 +68,6 @@ public class ResourceServerEntity implements ResourceServer {
 
     public void setClientId(String clientId) {
         this.clientId = clientId;
-    }
-
-    public String getRealmId() {
-        return this.realmId;
-    }
-
-    public void setRealmId(final String realmId) {
-        this.realmId = realmId;
     }
 
     @Override

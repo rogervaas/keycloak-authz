@@ -3,13 +3,9 @@ package test.org.keycloak.authz.api;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.util.Identifiers;
 import org.keycloak.authz.core.store.ResourceServerStore;
-import org.keycloak.models.ClientModel;
 
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -19,8 +15,8 @@ public class MapResourceServerStore implements ResourceServerStore {
     private Map<String, ResourceServer> resourceServers = new HashMap<>();
 
     @Override
-    public ResourceServer create(ClientModel clientModel) {
-        return new MapResourceServer(clientModel.getId());
+    public ResourceServer create(String clientId) {
+        return new MapResourceServer(clientId);
     }
 
     @Override
@@ -40,11 +36,6 @@ public class MapResourceServerStore implements ResourceServerStore {
     @Override
     public ResourceServer findById(String id) {
         return this.resourceServers.get(id);
-    }
-
-    @Override
-    public List<ResourceServer> findByRealm(String realmId) {
-        return Collections.emptyList();
     }
 
     @Override

@@ -17,10 +17,13 @@
  */
 package org.keycloak.authz.policy.provider.identity;
 
+import org.jboss.resteasy.spi.ResteasyProviderFactory;
+import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
-import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
+import org.keycloak.models.KeycloakSession;
+import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleModel;
 import org.keycloak.util.JsonSerialization;
 
@@ -73,7 +76,7 @@ public class IdentityPolicyProvider implements PolicyProvider {
                     roleGranted = true;
                 } else {
                     for (String roleId : roleIds) {
-                        RoleModel role = context.getRealm().getRoleById(roleId);
+                        RoleModel role = getCurrentRealm().getRoleById(roleId);
 
                         if (role != null && context.getIdentity().hasRole(role.getName())) {
                             roleGranted = true;
@@ -89,5 +92,10 @@ public class IdentityPolicyProvider implements PolicyProvider {
         if (userGranted && roleGranted) {
             evaluation.grant();
         }
+    }
+
+    private RealmModel getCurrentRealm() {
+        KeycloakSession keycloakSession = ResteasyProviderFactory.getContextData(KeycloakSession.class);
+        return keycloakSession.getContext().getRealm();
     }
 }

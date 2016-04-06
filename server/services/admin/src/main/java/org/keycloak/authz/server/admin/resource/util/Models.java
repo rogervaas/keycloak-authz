@@ -105,7 +105,7 @@ public final class Models {
             server.setName(client.getName());
         }
 
-        ResourceServer model = authorizationManager.getStoreFactory().getResourceServerStore().create(client);
+        ResourceServer model = authorizationManager.getStoreFactory().getResourceServerStore().create(client.getId());
 
         model.setAllowRemotePolicyManagement(server.isAllowRemotePolicyManagement());
         model.setAllowRemoteResourceManagement(server.isAllowRemoteResourceManagement());

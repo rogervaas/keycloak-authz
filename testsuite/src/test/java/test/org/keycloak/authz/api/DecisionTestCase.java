@@ -13,18 +13,15 @@ import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.permission.ResourcePermission;
-import org.keycloak.authz.core.permission.evaluator.PermissionEvaluator;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
 import org.keycloak.models.ClientModel;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.RoleContainerModel;
 import org.keycloak.models.RoleModel;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -52,9 +49,7 @@ public class DecisionTestCase {
     public void onBefore() {
         this.mapStoreFactory = new MapStoreFactory();
 
-        ResourceServer resourceServer = this.mapStoreFactory.getResourceServerStore().create(new MockUp<ClientModel>() {
-
-        }.getMockInstance());
+        ResourceServer resourceServer = this.mapStoreFactory.getResourceServerStore().create("test-resource-server");
 
         this.mapStoreFactory.getResourceServerStore().save(resourceServer);
 
@@ -227,11 +222,6 @@ public class DecisionTestCase {
             @Override
             public Identity getIdentity() {
                 return createIdentity();
-            }
-
-            @Override
-            public RealmModel getRealm() {
-                return createRealmModel();
             }
 
             @Override

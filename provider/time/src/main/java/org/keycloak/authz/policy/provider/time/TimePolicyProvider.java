@@ -18,13 +18,11 @@
 package org.keycloak.authz.policy.provider.time;
 
 import org.keycloak.authz.core.model.Policy;
-import org.keycloak.authz.core.policy.Advice;
 import org.keycloak.authz.core.policy.evaluation.Evaluation;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
-import org.keycloak.common.util.Time;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -32,47 +30,48 @@ import java.util.List;
 public class TimePolicyProvider implements PolicyProvider {
 
     private final Policy policy;
+    private final SimpleDateFormat dateFormat;
 
     public TimePolicyProvider(Policy policy) {
         this.policy = policy;
+        this.dateFormat = new SimpleDateFormat("yyyy-MM-dd hh:mm:ss");
     }
 
     @Override
     public void evaluate(Evaluation evaluation) {
-        boolean isGranted = true;
-        List<Advice> advices = new ArrayList<>();
-        String expires = this.policy.getConfig().get("exp");
+        try {
+            String notBefore = this.policy.getConfig().get("nbf");
 
-        if (expires != null) {
-            if (Time.currentTime() < Integer.parseInt(expires)) {
-                isGranted = false;
-            } else {
-                advices.add(Advice.withCategory("time").addProperty("exp", expires).build());
+            if (notBefore != null) {
+
+                if (new Date().before(this.dateFormat.parse(format(notBefore)))) {
+                    evaluation.deny();
+                    return;
+                }
             }
-        }
 
-        String notBefore = this.policy.getConfig().get("nbf");
+            String notOnOrAfter = this.policy.getConfig().get("noa");
 
-        if (notBefore != null) {
-            if (Time.currentTime() < Integer.parseInt(notBefore)) {
-                isGranted = false;
-            } else {
-                advices.add(Advice.withCategory("time").addProperty("nbf", notBefore).build());
+            if (notOnOrAfter != null) {
+                if (new Date().after(this.dateFormat.parse(format(notOnOrAfter)))) {
+                    evaluation.deny();
+                    return;
+                }
             }
+
+            evaluation.grant();
+        } catch (Exception e) {
+            throw new RuntimeException("Could not evaluate time-based policy [" + this.policy.getName() + "].", e);
+        }
+    }
+
+    public String format(String notBefore) {
+        String trimmed = notBefore.trim();
+
+        if (trimmed.length() == 10) {
+            notBefore = trimmed + " 00:00:00";
         }
 
-        String notOnOrAfter = this.policy.getConfig().get("noa");
-
-        if (notOnOrAfter != null) {
-            if (Time.currentTime() > Integer.parseInt(notOnOrAfter)) {
-                isGranted = false;
-            } else {
-                advices.add(Advice.withCategory("time").addProperty("noa", expires).build());
-            }
-        }
-
-        if (isGranted) {
-            evaluation.grantWithAdvices(advices);
-        }
+        return notBefore;
     }
 }

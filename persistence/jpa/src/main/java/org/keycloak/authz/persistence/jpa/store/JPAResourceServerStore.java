@@ -17,15 +17,14 @@
  */
 package org.keycloak.authz.persistence.jpa.store;
 
-import java.util.List;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.util.Identifiers;
 import org.keycloak.authz.core.store.ResourceServerStore;
 import org.keycloak.authz.persistence.jpa.entity.ResourceServerEntity;
-import org.keycloak.models.ClientModel;
 
 import javax.persistence.EntityManager;
 import javax.persistence.Query;
+import java.util.List;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -39,11 +38,10 @@ public class JPAResourceServerStore implements ResourceServerStore {
     }
 
     @Override
-    public ResourceServer create(ClientModel clientModel) {
+    public ResourceServer create(String clientId) {
         ResourceServerEntity entity = new ResourceServerEntity();
 
-        entity.setClientId(clientModel.getId());
-        entity.setRealmId(clientModel.getRealm().getId());
+        entity.setClientId(clientId);
 
         return entity;
     }
@@ -67,15 +65,6 @@ public class JPAResourceServerStore implements ResourceServerStore {
     @Override
     public void delete(String id) {
         this.entityManager.remove(findById(id));
-    }
-
-    @Override
-    public List<ResourceServer> findByRealm(String realmId) {
-        Query query = entityManager.createQuery("from ResourceServerEntity where realmId = :realmId");
-
-        query.setParameter("realmId", realmId);
-
-        return query.getResultList();
     }
 
     @Override

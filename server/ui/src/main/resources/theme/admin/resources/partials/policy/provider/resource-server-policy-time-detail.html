@@ -30,6 +30,24 @@
                 </div>
                 <kc-tooltip>A description for this policy.</kc-tooltip>
             </div>
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="policy.config.nbf">Not Before</label>
+
+                <div class="col-md-6 time-selector">
+                    <input class="form-control" type="text" id="policy.config.nbf" name="notBefore" data-ng-model="policy.config.nbf" placeholder="yyyy-MM-dd hh:mm:ss">
+                </div>
+                <kc-tooltip>Identifies the time before which the permission MUST NOT be granted. Permission will be granted if the current date/time is after or equal to
+                    this value.</kc-tooltip>
+            </div>
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="policy.config.noa">Not On or After</label>
+
+                <div class="col-md-6 time-selector">
+                    <input class="form-control" type="text" id="policy.config.noa" name="policy.config.noa" data-ng-model="policy.config.noa" placeholder="yyyy-MM-dd hh:mm:ss">
+                </div>
+                <kc-tooltip>Identifies the time after which the permission MUST NOT be granted. Permission will be granted if the current date/time is before or equal to
+                    this value.</kc-tooltip>
+            </div>
             <input type="hidden" data-ng-model="policy.type"/>
         </fieldset>
 

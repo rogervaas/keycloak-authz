@@ -19,7 +19,6 @@ package org.keycloak.authz.core;
 
 import org.keycloak.authz.core.attribute.Attributes;
 import org.keycloak.authz.core.identity.Identity;
-import org.keycloak.models.RealmModel;
 
 /**
  * This interface serves as a bridge between the policy evaluation runtime and the environment in which it is running. When evaluating
@@ -35,13 +34,6 @@ public interface EvaluationContext {
      * @return the identity to which the permissions must be granted, or not
      */
     Identity getIdentity();
-
-    /**
-     * Returns the {@link RealmModel} representing the security domain in which the evaluation must be done.
-     *
-     * @return the realm representing the security domain in which the evaluation must be done
-     */
-    RealmModel getRealm();
 
     /**
      * Returns all attributes within the current execution and runtime environment.

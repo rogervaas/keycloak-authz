@@ -813,7 +813,8 @@ module.controller('ResourceServerPolicyTimeDetailCtrl', function($scope, $route,
         },
 
         onInitCreate : function(newPolicy) {
-            newPolicy.config = {};
+            newPolicy.config.expirationTime = 1;
+            newPolicy.config.expirationUnit = 'Minutes';
         },
 
         onCreate : function() {

@@ -17,11 +17,4 @@
     <name>KeyCloak Authz: API</name>
     <description>KeyCloak: API</description>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-server-spi</artifactId>
-        </dependency>
-    </dependencies>
-
 </project>
