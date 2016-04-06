@@ -26,7 +26,6 @@ import org.keycloak.authz.core.policy.provider.PolicyProvider;
 import org.keycloak.authz.core.policy.provider.PolicyProviderFactory;
 
 import java.util.List;
-import java.util.function.Consumer;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -43,6 +42,7 @@ public class AggregatePolicyProvider implements PolicyProvider {
 
     @Override
     public void evaluate(Evaluation evaluation) {
+        //TODO: need to detect deep recursions
         DecisionResultCollector decision = new DecisionResultCollector() {
             @Override
             protected void onComplete(List<Result> results) {
@@ -59,13 +59,8 @@ public class AggregatePolicyProvider implements PolicyProvider {
         };
 
         this.policy.getAssociatedPolicies().forEach(associatedPolicy -> {
-            if (associatedPolicy.getType().equals("aggregate")) {
-                return;
-            }
-
             PolicyProviderFactory providerFactory = authorization.getProviderFactory(associatedPolicy.getType());
             PolicyProvider policyProvider = providerFactory.create(associatedPolicy);
-
             policyProvider.evaluate(new Evaluation(evaluation.getPermission(), evaluation.getContext(), policy, associatedPolicy, decision));
         });
 

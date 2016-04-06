@@ -35,7 +35,7 @@
     %>
 
     <%
-        if (authzContext.hasPermission("Admin Resource", "http://servlet-authz/protected/admin/access")) {
+        if (authzContext.hasPermission("Admin Resource", "urn:servlet-authz:protected:admin:access")) {
     %>
     <li>
         Do administration thing
