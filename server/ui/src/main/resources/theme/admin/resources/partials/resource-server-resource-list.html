@@ -47,7 +47,7 @@
                 <th>Uri</th>
                 <th>Owner</th>
                 <th>Scopes</th>
-                <th>Policies</th>
+                <th>Permissions</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -69,7 +69,7 @@
                     </span>
                 </td>
                 <td>
-                    <span data-ng-show="!resource.policies.length">No policy assigned.</span>
+                    <span data-ng-show="!resource.policies.length">No permission assigned.</span>
                     <span data-ng-show="resource.policies.length > 0">
                         <span ng-repeat="policy in resource.policies">
                             <a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}/policy/{{policy.type}}/{{policy.id}}">{{policy.name}}</a>{{$last ? '' : ', '}}
@@ -77,7 +77,7 @@
                     </span>
                 </td>
                 <td class="kc-action-cell">
-                    <button class="btn btn-default btn-block btn-sm" ng-click="createPolicy(resource);">Create Policy</button>
+                    <button class="btn btn-default btn-block btn-sm" ng-click="createPolicy(resource);">Create Permission</button>
                 </td>
             </tr>
             <tr data-ng-show="(resources | filter:search).length == 0">

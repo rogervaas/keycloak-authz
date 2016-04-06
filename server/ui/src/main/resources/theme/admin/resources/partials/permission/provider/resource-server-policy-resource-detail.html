@@ -3,12 +3,12 @@
     <ol class="breadcrumb">
         <li><a href="#/realms/{{realm.realm}}/authz/">Resource Servers</a></li>
         <li><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}">{{server.name}}</a></li>
-        <li><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}/policy">Policy</a></li>
-        <li data-ng-show="create">Add Scope Policy</li>
+        <li><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}/permission">Permissions</a></li>
+        <li data-ng-show="create">Add Resource Policy</li>
         <li data-ng-hide="create">{{policy.name}}</li>
     </ol>
 
-    <h1 data-ng-show="create">Add Scope Policy</h1>
+    <h1 data-ng-show="create">Add Resource Policy</h1>
     <h1 data-ng-hide="create">{{policy.name|capitalize}}<i class="pficon pficon-delete clickable" data-ng-click="remove()"></i></h1>
 
     <form class="form-horizontal" name="clientForm" novalidate>
@@ -27,55 +27,43 @@
                 </div>
                 <kc-tooltip>A description for this policy.</kc-tooltip>
             </div>
-            <div class="form-group clearfix">
-                <label class="col-md-2 control-label" for="reqActions">Resources</label>
+            <div class="form-group">
+                <label class="col-md-2 control-label" for="policy.config.default">Apply to Resource Type</label>
+                <div class="col-md-6">
+                    <input ng-model="policy.config.default" id="policy.config.default" onoffswitch data-ng-click="applyToResourceType()"/>
+                </div>
+                <kc-tooltip>Specifies if this policy must be applied to all resources with a given type. In this case, this policy will be evaluated for all instances
+                of a given resource type.</kc-tooltip>
+            </div>
+            <div class="form-group clearfix" data-ng-hide="policy.config.default">
+                <label class="col-md-2 control-label" for="reqActions">Resources <span class="required">*</span></label>
 
                 <div class="col-md-6">
-                    <select class="form-control" id="reqActions"
-                            ng-model="policy.config.resources"
-                            ng-change="resolveScopes(policy)"
-                            data-ng-options="resource._id as resource.name for resource in resources">
-                        <option value="">Any resource...</option>
+                    <select ui-select2="{ minimumInputLength: 1}" id="reqActions" data-ng-model="policy.config.resources" data-placeholder="Select a resource..." multiple data-ng-required="!policy.config.default">
+                        <option ng-repeat="resource in resources" value="{{resource._id}}" ng-selected="true">{{resource.name}}</option>
                     </select>
                 </div>
-                <kc-tooltip>Limits the scopes to those associated with the selected resource. If not selected all scopes will be available.</kc-tooltip>
+                <kc-tooltip>Specifies that this policy must be applied to a specific resource instance.</kc-tooltip>
             </div>
-            <div class="form-group clearfix" data-ng-show="policy.config.resources">
-                <label class="col-md-2 control-label" for="reqActions">Scopes <span class="required">*</span></label>
+            <div class="form-group clearfix" data-ng-show="policy.config.default">
+                <label class="col-md-2 control-label" for="policy.config.defaultResourceType">Resource Type <span class="required">*</span></label>
 
                 <div class="col-md-6">
-                    <select ui-select2 id="reqActions"
-                            data-ng-model="policy.config.scopes"
-                            data-placeholder="Any scope..." multiple
-                            data-ng-required="policy.config.resources != ''"
-                            data-ng-options="scope.id as scope.name for scope in scopes track by scope.id"/>
+                    <input class="form-control" type="text" id="policy.config.defaultResourceType" name="policy.config.defaultResourceType" data-ng-model="policy.config.defaultResourceType" data-ng-required="policy.config.default">
                 </div>
 
-                <kc-tooltip>Specifies that this policy must be applied to one or more scopes.</kc-tooltip>
-            </div>
-            <div class="form-group clearfix" data-ng-show="!policy.config.resources">
-                <label class="col-md-2 control-label" for="reqActions">Scopes <span class="required">*</span></label>
-
-                <div class="col-md-6">
-                    <select ui-select2="{ minimumInputLength: 1}" id="reqActions"
-                            data-ng-model="policy.config.scopes"
-                            data-placeholder="Any scope..." multiple
-                            data-ng-required="policy.config.resources == ''"
-                            data-ng-options="scope.id as scope.name for scope in scopes track by scope.id"/>
-                    </select>
-                </div>
-                <kc-tooltip>Specifies that this policy must be applied to one or more scopes.</kc-tooltip>
+                <kc-tooltip>Specifies that this policy must be applied to all resources instances of a given type.</kc-tooltip>
             </div>
             <div class="form-group clearfix">
                 <label class="col-md-2 control-label" for="reqActions">Apply Policy <span class="required">*</span></label>
 
                 <div class="col-md-6">
-                    <select ui-select2 id="reqActions" data-ng-model="policy.config.applyPolicies" data-placeholder="Select a policy..." multiple required>
+                    <select ui-select2="{ minimumInputLength: 1}" id="reqActions" data-ng-model="policy.config.applyPolicies" data-placeholder="Select a policy..." multiple required>
                         <option ng-repeat="policy in policies" value="{{policy.id}}" ng-selected="true">{{policy.name}}</option>
                     </select>
                 </div>
 
-                <kc-tooltip>Specifies all the policies that must be applied to the scopes defined by this policy.</kc-tooltip>
+                <kc-tooltip>Specifies all the policies that must be applied to the resource type or instances defined by this policy.</kc-tooltip>
             </div>
             <div class="form-group clearfix">
                 <label class="col-md-2 control-label" for="policy.decisionStrategy">Decision Strategy</label>
@@ -84,7 +72,7 @@
                     <select class="form-control" id="policy.decisionStrategy"
                             data-ng-model="policy.decisionStrategy"
                             ng-change="selectDecisionStrategy()">
-                        <option ng-repeat="strategy in decisionStrategies" value="{{strategy}}">{{strategy}}</option>
+                        <option ng-repeat="strategy in decisionStrategies" value="{{strategy}}">{{strategy | toCamelCase}}</option>
                     </select>
                 </div>
 
@@ -101,7 +89,7 @@
                 <button kc-save data-ng-disabled="!changed">Save</button>
                 <button kc-cancel data-ng-click="cancel()">Cancel</button>
             </div>
-            <div class="col-md-10 col-md-offset-2" data-ng-show="!create && access.manageClients">
+            <div class="col-md-10 col-md-offset-2" data-ng-show="!create">
                 <button kc-save  data-ng-disabled="!changed">Save</button>
                 <button kc-reset data-ng-disabled="!changed">Cancel</button>
             </div>

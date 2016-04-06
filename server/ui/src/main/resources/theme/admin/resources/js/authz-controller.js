@@ -164,7 +164,7 @@ module.controller('ResourceServerResourceCtrl', function($scope, $http, $route, 
         $scope.server = data;
 
         $scope.createPolicy = function(resource) {
-            $location.path('/realms/' + $route.current.params.realm + '/authz/resource-server/' + $scope.server.id + '/policy/resource/create').search({rsrid: resource._id});
+            $location.path('/realms/' + $route.current.params.realm + '/authz/resource-server/' + $scope.server.id + '/permission/resource/create').search({rsrid: resource._id});
         }
 
         ResourceServerResource.query({realm : realm.realm, rsid : $route.current.params.rsid}, function (data) {
@@ -376,7 +376,9 @@ module.controller('ResourceServerPolicyCtrl', function($scope, $http, $route, $l
         rsid : $route.current.params.rsid
     }, function (data) {
         for (i = 0; i < data.length; i++) {
-            $scope.policyProviders.push(data[i]);
+            if (data[i].type != 'resource' && data[i].type != 'scope') {
+                $scope.policyProviders.push(data[i]);
+            }
         }
     });
 
@@ -387,12 +389,55 @@ module.controller('ResourceServerPolicyCtrl', function($scope, $http, $route, $l
         $scope.server = data;
 
         ResourceServerPolicy.query({realm : realm.realm, rsid : $route.current.params.rsid}, function (data) {
-            $scope.policies = data;
+            $scope.policies = [];
+
+            for (i = 0; i < data.length; i++) {
+                if (data[i].type != 'resource' && data[i].type != 'scope') {
+                    $scope.policies.push(data[i]);
+                }
+            }
         });
     });
 
     $scope.addPolicy = function(policyType) {
         $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/policy/" + policyType.type + "/create");
+    }
+});
+
+module.controller('ResourceServerPermissionCtrl', function($scope, $http, $route, $location, realm, ResourceServer, ResourceServerPolicy, PolicyProvider, Dialog, Notifications) {
+    $scope.realm = realm;
+    $scope.policyProviders = [];
+
+    PolicyProvider.query({
+        realm : $route.current.params.realm,
+        rsid : $route.current.params.rsid
+    }, function (data) {
+        for (i = 0; i < data.length; i++) {
+            if (data[i].type == 'resource' || data[i].type == 'scope') {
+                $scope.policyProviders.push(data[i]);
+            }
+        }
+    });
+
+    ResourceServer.get({
+        realm : $route.current.params.realm,
+        rsid : $route.current.params.rsid
+    }, function(data) {
+        $scope.server = data;
+
+        ResourceServerPolicy.query({realm : realm.realm, rsid : $route.current.params.rsid}, function (data) {
+            $scope.policies = [];
+
+            for (i = 0; i < data.length; i++) {
+                if (data[i].type == 'resource' || data[i].type == 'scope') {
+                    $scope.policies.push(data[i]);
+                }
+            }
+        });
+    });
+
+    $scope.addPolicy = function(policyType) {
+        $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/permission/" + policyType.type + "/create");
     }
 });
 
@@ -446,6 +491,10 @@ module.controller('ResourceServerPolicyResourceDetailCtrl', function($scope, $ro
     PolicyController.onInit({
         getPolicyType : function() {
             return "resource";
+        },
+
+        isPermission : function() {
+            return true;
         },
 
         onInit : function() {
@@ -506,6 +555,10 @@ module.controller('ResourceServerPolicyScopeDetailCtrl', function($scope, $route
     PolicyController.onInit({
         getPolicyType : function() {
             return "scope";
+        },
+
+        isPermission : function() {
+            return true;
         },
 
         onInit : function() {
@@ -774,6 +827,12 @@ module.service("PolicyController", function($http, $route, $location, ResourceSe
     var PolicyController = {};
 
     PolicyController.onInit = function(delegate, realm, $scope) {
+        if (!delegate.isPermission) {
+            delegate.isPermission = function () {
+                return false;
+            }
+        }
+
         $scope.realm = realm;
 
         $scope.decisionStrategies = ['AFFIRMATIVE', 'UNANIMOUS', 'CONSENSUS'];
@@ -814,13 +873,22 @@ module.service("PolicyController", function($http, $route, $location, ResourceSe
                         delegate.onCreate();
                     }
                     ResourceServerPolicy.save({realm : realm.realm, rsid : $scope.server.id}, $scope.policy, function(data) {
-                        $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/policy/" + $scope.policy.type + "/" + data.id);
-                        Notifications.success("The policy has been created.");
+                        if (delegate.isPermission()) {
+                            $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/permission/" + $scope.policy.type + "/" + data.id);
+                            Notifications.success("The permission has been created.");
+                        } else {
+                            $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/policy/" + $scope.policy.type + "/" + data.id);
+                            Notifications.success("The policy has been created.");
+                        }
                     });
                 }
 
                 $scope.cancel = function() {
-                    $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/policy/");
+                    if (delegate.isPermission()) {
+                        $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/permission/");
+                    } else {
+                        $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/policy/");
+                    }
                 }
             } else {
                 ResourceServerPolicy.get({
@@ -849,7 +917,11 @@ module.service("PolicyController", function($http, $route, $location, ResourceSe
                         }
                         ResourceServerPolicy.update({realm : realm.realm, rsid : $scope.server.id, id : $scope.policy.id}, $scope.policy, function() {
                             $route.reload();
-                            Notifications.success("The policy has been updated.");
+                            if (delegate.isPermission()) {
+                                Notifications.success("The permission has been updated.");
+                            } else {
+                                Notifications.success("The policy has been updated.");
+                            }
                         });
                     }
 
@@ -880,8 +952,13 @@ module.service("PolicyController", function($http, $route, $location, ResourceSe
 
                     AuthzDialog.confirmDeleteWithMsg($scope.policy.name, "Policy", msg, function() {
                         ResourceServerPolicy.delete({realm : $scope.realm.realm, rsid : $scope.server.id, id : $scope.policy.id}, null, function() {
-                            $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/policy");
-                            Notifications.success("The policy has been deleted.");
+                            if (delegate.isPermission()) {
+                                $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/permission");
+                                Notifications.success("The permission has been deleted.");
+                            } else {
+                                $location.url("/realms/" + realm.realm + "/authz/resource-server/" + $scope.server.id + "/policy");
+                                Notifications.success("The policy has been deleted.");
+                            }
                         });
                     });
                 }

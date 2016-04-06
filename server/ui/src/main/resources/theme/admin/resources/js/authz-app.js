@@ -105,6 +105,14 @@ module.config(['$routeProvider', function ($routeProvider) {
             }
         },
         controller: 'ResourceServerScopeDetailCtrl'
+    }).when('/realms/:realm/authz/resource-server/:rsid/permission', {
+        templateUrl: resourceUrl + '/partials/permission/resource-server-permission-list.html',
+        resolve: {
+            realm: function (RealmLoader) {
+                return RealmLoader();
+            }
+        },
+        controller: 'ResourceServerPermissionCtrl'
     }).when('/realms/:realm/authz/resource-server/:rsid/policy', {
         templateUrl: resourceUrl + '/partials/policy/resource-server-policy-list.html',
         resolve: {
@@ -129,32 +137,32 @@ module.config(['$routeProvider', function ($routeProvider) {
             }
         },
         controller: 'ResourceServerPolicyDroolsDetailCtrl'
-    }).when('/realms/:realm/authz/resource-server/:rsid/policy/resource/create', {
-        templateUrl: resourceUrl + '/partials/policy/provider/resource-server-policy-resource-detail.html',
+    }).when('/realms/:realm/authz/resource-server/:rsid/permission/resource/create', {
+        templateUrl: resourceUrl + '/partials/permission/provider/resource-server-policy-resource-detail.html',
         resolve: {
             realm: function (RealmLoader) {
                 return RealmLoader();
             }
         },
         controller: 'ResourceServerPolicyResourceDetailCtrl'
-    }).when('/realms/:realm/authz/resource-server/:rsid/policy/resource/:id', {
-        templateUrl: resourceUrl + '/partials/policy/provider/resource-server-policy-resource-detail.html',
+    }).when('/realms/:realm/authz/resource-server/:rsid/permission/resource/:id', {
+        templateUrl: resourceUrl + '/partials/permission/provider/resource-server-policy-resource-detail.html',
         resolve: {
             realm: function (RealmLoader) {
                 return RealmLoader();
             }
         },
         controller: 'ResourceServerPolicyResourceDetailCtrl'
-    }).when('/realms/:realm/authz/resource-server/:rsid/policy/scope/create', {
-        templateUrl: resourceUrl + '/partials/policy/provider/resource-server-policy-scope-detail.html',
+    }).when('/realms/:realm/authz/resource-server/:rsid/permission/scope/create', {
+        templateUrl: resourceUrl + '/partials/permission/provider/resource-server-policy-scope-detail.html',
         resolve: {
             realm: function (RealmLoader) {
                 return RealmLoader();
             }
         },
         controller: 'ResourceServerPolicyScopeDetailCtrl'
-    }).when('/realms/:realm/authz/resource-server/:rsid/policy/scope/:id', {
-        templateUrl: resourceUrl + '/partials/policy/provider/resource-server-policy-scope-detail.html',
+    }).when('/realms/:realm/authz/resource-server/:rsid/permission/scope/:id', {
+        templateUrl: resourceUrl + '/partials/permission/provider/resource-server-policy-scope-detail.html',
         resolve: {
             realm: function (RealmLoader) {
                 return RealmLoader();
