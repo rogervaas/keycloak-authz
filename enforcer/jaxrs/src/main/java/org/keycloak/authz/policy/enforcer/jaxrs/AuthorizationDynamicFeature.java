@@ -10,8 +10,10 @@ import javax.ws.rs.container.DynamicFeature;
 import javax.ws.rs.container.ResourceInfo;
 import javax.ws.rs.core.FeatureContext;
 import javax.ws.rs.ext.Provider;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -47,14 +49,9 @@ public class AuthorizationDynamicFeature implements DynamicFeature {
                     this.protectedResources.put(resourceClass, holders);
                 }
 
-                for (ResourceRepresentation resource : holders) {
-                    if (resource.getName().equals(protectedResource.name())) {
-                        context.register(this.authorizationEnforcer);
-                        return;
-                    }
-                }
-
                 holders.add(resolveResource(protectedResource));
+
+                context.register(this.authorizationEnforcer);
             } catch (WebApplicationException cre) {
                 throw new RuntimeException("Could not register protected resource. Server returned: [" + cre.getResponse().readEntity(String.class), cre);
             } catch (Exception e) {

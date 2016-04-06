@@ -42,14 +42,14 @@ public interface ResourceServer {
      *
      * @return {@code true} if the resource server is allowed to managed them remotely
      */
-    boolean isAllowRemotePolicyManagement();
+    boolean isAllowEntitlements();
 
     /**
      * Indicates if the resource server is allowed to manage its own authorization policies remotely using the Protection API.
      *
      * @param allowRemotePolicyManagement {@code true} if the resource server is allowed to managed them remotely
      */
-    void setAllowRemotePolicyManagement(boolean allowRemotePolicyManagement);
+    void setAllowEntitlements(boolean allowRemotePolicyManagement);
 
     /**
      * Returns the {@code PolicyEnforcementMode} configured for this instance.

@@ -92,7 +92,7 @@ public class RootResource {
             throw new ErrorResponseException(OAuthErrorException.INVALID_SCOPE, "Requires uma_protection scope.", Response.Status.FORBIDDEN);
         }
 
-        PermissionService resource = new PermissionService(this.realm, getResourceServer(identity));
+        PermissionService resource = new PermissionService(this.realm, getResourceServer(identity), identity);
 
         ResteasyProviderFactory.getInstance().injectProperties(resource);
 

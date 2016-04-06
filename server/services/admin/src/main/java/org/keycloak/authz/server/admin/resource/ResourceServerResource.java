@@ -53,7 +53,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadFactory;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -110,7 +109,7 @@ public class ResourceServerResource {
         }
 
         model.setAllowRemoteResourceManagement(server.isAllowRemoteResourceManagement());
-        model.setAllowRemotePolicyManagement(server.isAllowRemotePolicyManagement());
+        model.setAllowEntitlements(server.isAllowEntitlements());
         model.setPolicyEnforcementMode(server.getPolicyEnforcementMode());
 
         this.authorizationManager.getStoreFactory().getResourceServerStore().save(model);

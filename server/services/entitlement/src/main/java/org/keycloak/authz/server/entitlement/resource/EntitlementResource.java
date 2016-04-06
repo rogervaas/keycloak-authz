@@ -95,6 +95,10 @@ public class EntitlementResource {
 
         ResourceServer resourceServer = this.authorizationManager.getStoreFactory().getResourceServerStore().findByClient(client.getId());
 
+        if (!resourceServer.isAllowEntitlements()) {
+            throw new ErrorResponseException(OAuthErrorException.INVALID_REQUEST, "Server does support entitlements.", Response.Status.BAD_REQUEST);
+        }
+
         this.authorizationManager.evaluators().schedule(Permissions.all(resourceServer, this.identity, this.authorizationManager), new KeycloakExecutionContext(this.realm), Executors.newSingleThreadExecutor(this.threadFactory)).evaluate(new DecisionResultCollector() {
 
             @Override

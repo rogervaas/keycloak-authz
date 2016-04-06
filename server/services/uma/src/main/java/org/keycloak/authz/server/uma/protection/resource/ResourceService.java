@@ -25,6 +25,7 @@ import org.keycloak.authz.server.admin.resource.representation.ResourceOwnerRepr
 import org.keycloak.authz.server.admin.resource.representation.ResourceRepresentation;
 import org.keycloak.authz.server.admin.resource.representation.ScopeRepresentation;
 import org.keycloak.authz.server.admin.resource.util.Models;
+import org.keycloak.authz.server.uma.ErrorResponse;
 import org.keycloak.authz.server.uma.representation.UmaResourceRepresentation;
 import org.keycloak.authz.server.uma.representation.UmaScopeRepresentation;
 import org.keycloak.models.KeycloakSession;
@@ -73,8 +74,8 @@ public class ResourceService {
     @Consumes("application/json")
     @Produces("application/json")
     public Response create(UmaResourceRepresentation umaResource) {
+        checkResourceServerSettings();
         ResourceRepresentation resource = toResourceRepresentation(umaResource);
-
         Response response = this.resourceManager.create(resource);
 
         if (response.getEntity() instanceof ResourceRepresentation) {
@@ -87,11 +88,13 @@ public class ResourceService {
     @Path("/{id}")
     @DELETE
     public Response delete(@PathParam("id") String id) {
+        checkResourceServerSettings();
         return this.resourceManager.delete(id);
     }
 
     @DELETE
     public Response deleteAll() {
+        checkResourceServerSettings();
         this.findAll().forEach(this::delete);
         return Response.noContent().build();
     }
@@ -223,5 +226,11 @@ public class ResourceService {
         }).collect(Collectors.toSet()));
 
         return resource;
+    }
+
+    private void checkResourceServerSettings() {
+        if (!this.resourceServer.isAllowRemoteResourceManagement()) {
+            throw new ErrorResponseException("not_supported", "Remote management is disabled.", Response.Status.BAD_REQUEST);
+        }
     }
 }

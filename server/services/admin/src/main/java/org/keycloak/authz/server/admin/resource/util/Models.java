@@ -81,7 +81,7 @@ public final class Models {
         server.setClientId(model.getClientId());
         ClientModel clientById = realm.getClientById(model.getClientId());
         server.setName(clientById.getClientId());
-        server.setAllowRemotePolicyManagement(model.isAllowRemotePolicyManagement());
+        server.setAllowEntitlements(model.isAllowEntitlements());
         server.setAllowRemoteResourceManagement(model.isAllowRemoteResourceManagement());
         server.setPolicyEnforcementMode(model.getPolicyEnforcementMode());
 
@@ -107,7 +107,7 @@ public final class Models {
 
         ResourceServer model = authorizationManager.getStoreFactory().getResourceServerStore().create(client.getId());
 
-        model.setAllowRemotePolicyManagement(server.isAllowRemotePolicyManagement());
+        model.setAllowEntitlements(server.isAllowEntitlements());
         model.setAllowRemoteResourceManagement(server.isAllowRemoteResourceManagement());
         model.setPolicyEnforcementMode(server.getPolicyEnforcementMode());
 

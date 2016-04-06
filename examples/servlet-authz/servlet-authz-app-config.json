@@ -1,7 +1,7 @@
 {
   "clientId": "servlet-authz-app",
   "allowRemoteResourceManagement": true,
-  "allowRemotePolicyManagement": true,
+  "allowEntitlements": true,
   "policyEnforcementMode": "ENFORCING",
   "resources": [
     {

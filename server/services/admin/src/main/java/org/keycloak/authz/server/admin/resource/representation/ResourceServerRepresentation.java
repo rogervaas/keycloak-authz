@@ -31,7 +31,7 @@ public class ResourceServerRepresentation {
     private String clientId;
     private String name;
     private boolean allowRemoteResourceManagement;
-    private boolean allowRemotePolicyManagement;
+    private boolean allowEntitlements;
     private ResourceServer.PolicyEnforcementMode policyEnforcementMode;
     private List<ResourceRepresentation> resources;
     private List<PolicyRepresentation> policies;
@@ -69,12 +69,12 @@ public class ResourceServerRepresentation {
         this.allowRemoteResourceManagement = allowRemoteResourceManagement;
     }
 
-    public boolean isAllowRemotePolicyManagement() {
-        return this.allowRemotePolicyManagement;
+    public boolean isAllowEntitlements() {
+        return this.allowEntitlements;
     }
 
-    public void setAllowRemotePolicyManagement(boolean allowRemotePolicyManagement) {
-        this.allowRemotePolicyManagement = allowRemotePolicyManagement;
+    public void setAllowEntitlements(boolean allowEntitlements) {
+        this.allowEntitlements = allowEntitlements;
     }
 
     public ResourceServer.PolicyEnforcementMode getPolicyEnforcementMode() {

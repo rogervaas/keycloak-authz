@@ -32,7 +32,7 @@ import java.util.Set;
 @Path("/album")
 @ProtectedResource(
         name = "Album Resource",
-        type = "http://photoz.com/dev/resource/album",
+        type = "http://photoz.com/album",
         uri = "/album/*",
         scopes = {
             @ProtectedScope(name = AlbumService.SCOPE_ALBUM_VIEW),

@@ -16,5 +16,5 @@ public @interface ProtectedResource {
     String type() default "";
     String uri() default "";
     ProtectedScope[] scopes() default {};
-    boolean create() default true;
+    boolean create() default false;
 }

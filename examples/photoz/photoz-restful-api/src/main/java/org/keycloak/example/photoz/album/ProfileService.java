@@ -15,12 +15,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.keycloak.example.photoz.admin;
+package org.keycloak.example.photoz.album;
 
 import org.keycloak.authz.policy.enforcer.jaxrs.annotation.Enforce;
 import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedResource;
-import org.keycloak.authz.policy.enforcer.jaxrs.annotation.ProtectedScope;
-import org.keycloak.example.photoz.entity.Album;
 
 import javax.ejb.Stateless;
 import javax.persistence.EntityManager;
@@ -29,45 +27,46 @@ import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.HashMap;
+import javax.ws.rs.core.SecurityContext;
 import java.util.List;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
  */
-@Path("/admin/album")
-@ProtectedResource(
-        name = "Admin Resources",
-        type = "http://photoz.com/admin",
-        uri = "/admin/*",
-        scopes = {
-                @ProtectedScope(name = AdminAlbumService.SCOPE_ADMIN_ALBUM_MANAGE)
-        })
+@Path("/profile")
 @Stateless
-public class AdminAlbumService {
+@ProtectedResource(name = "User Profile Resource")
+public class ProfileService {
 
-    public static final String SCOPE_ADMIN_ALBUM_MANAGE = "urn:photoz.com:scopes:album:admin:manage";
+    public static final String PROFILE_VIEW = "urn:photoz.com:scopes:profile:view";
 
     @PersistenceContext
     private EntityManager entityManager;
 
-    @Context
-    private HttpHeaders headers;
-
     @GET
     @Produces("application/json")
-    @Enforce(scopes= SCOPE_ADMIN_ALBUM_MANAGE)
-    public Response findAll() {
-        HashMap<String, List<Album>> albums = new HashMap<>();
-        List<Album> result = this.entityManager.createQuery("from Album").getResultList();
+    @Enforce(scopes= PROFILE_VIEW)
+    public Response view(@Context SecurityContext securityContext) {
+        List albums = this.entityManager.createQuery("from Album where userId = '" + securityContext.getUserPrincipal().getName() + "'").getResultList();
+        return Response.ok(new Profile(securityContext.getUserPrincipal().getName(), albums.size())).build();
+    }
 
-        for (Album album : result) {
-            albums.computeIfAbsent(album.getUserId(), key -> new ArrayList<>()).add(album);
+    public static class Profile {
+        private String userName;
+        private int totalAlbums;
+
+        public Profile(String name, int totalAlbums) {
+            this.userName = name;
+            this.totalAlbums = totalAlbums;
         }
 
-        return Response.ok(albums).build();
+        public String getUserName() {
+            return userName;
+        }
+
+        public int getTotalAlbums() {
+            return totalAlbums;
+        }
     }
 }

@@ -65,7 +65,13 @@ public final class Permissions {
                 .filter(evaluationResult -> evaluationResult.getEffect().equals(Decision.Effect.PERMIT))
                 .map(evaluationResult -> {
                     ResourcePermission permission = evaluationResult.getPermission();
-                    return new Permission(permission.getResource().getId(), permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList()));
+                    String resourceId = null;
+
+                    if (permission.getResource() != null) {
+                        resourceId = permission.getResource().getId();
+                    }
+
+                    return new Permission(resourceId, permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList()));
                 }).collect(Collectors.toList());
 
         Map<String, Permission> perms = new HashMap<>();

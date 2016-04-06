@@ -17,6 +17,7 @@
  */
 package org.keycloak.authz.server.uma.authorization;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.keycloak.authz.core.model.util.Identifiers;
 import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.JsonWebToken;
@@ -65,6 +66,7 @@ public class RequestingPartyToken extends JsonWebToken {
         return this.accessToken;
     }
 
+    @JsonIgnore
     public boolean isValid() {
         return getType() != null && getType().equals("rpt") &&  isActive();
     }

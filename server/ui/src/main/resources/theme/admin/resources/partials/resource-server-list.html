@@ -36,7 +36,7 @@
                 <td><a href="#/realms/{{realm.realm}}/authz/resource-server/{{server.id}}">{{server.name}}</a></td>
                 <td>{{server.policyEnforcementMode | toCamelCase}}</td>
                 <td>{{server.allowRemoteResourceManagement}}</td>
-                <td>{{server.allowRemotePolicyManagement}}</td>
+                <td>{{server.allowEntitlements}}</td>
             </tr>
             <tr data-ng-show="(servers | filter:search).length == 0">
                 <td class="text-muted" colspan="3" data-ng-show="search.clientId">No results</td>

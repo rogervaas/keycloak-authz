@@ -624,7 +624,13 @@ module.controller('ResourceServerPolicyScopeDetailCtrl', function($scope, $route
 
         onUpdate : function() {
             if ($scope.policy.config.resources != null) {
-                $scope.policy.config.resources = JSON.stringify([$scope.policy.config.resources]);
+                var resources = undefined;
+
+                if ($scope.policy.config.resources.length != 0) {
+                    resources = JSON.stringify([$scope.policy.config.resources])
+                }
+
+                $scope.policy.config.resources = resources;
             }
 
             $scope.policy.config.scopes = JSON.stringify($scope.policy.config.scopes);
@@ -638,7 +644,15 @@ module.controller('ResourceServerPolicyScopeDetailCtrl', function($scope, $route
         },
 
         onCreate : function() {
-            $scope.policy.config.resources = JSON.stringify([$scope.policy.config.resources]);
+            if ($scope.policy.config.resources != null) {
+                var resources = undefined;
+
+                if ($scope.policy.config.resources.length != 0) {
+                    resources = JSON.stringify([$scope.policy.config.resources])
+                }
+
+                $scope.policy.config.resources = resources;
+            }
             $scope.policy.config.scopes = JSON.stringify($scope.policy.config.scopes);
             $scope.policy.config.applyPolicies = JSON.stringify($scope.policy.config.applyPolicies);
         }

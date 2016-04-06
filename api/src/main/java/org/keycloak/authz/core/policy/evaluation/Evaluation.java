@@ -54,7 +54,7 @@ public class Evaluation {
      * Grants all the requested permissions to the caller.
      */
     public void grant() {
-        if (Policy.Logic.NEGATIVE.equals(policy.getLogic())) {
+        if (policy != null && Policy.Logic.NEGATIVE.equals(policy.getLogic())) {
             this.effect = Decision.Effect.DENY;
         } else {
             this.effect = Decision.Effect.PERMIT;
@@ -64,7 +64,7 @@ public class Evaluation {
     }
 
     public void deny() {
-        if (Policy.Logic.NEGATIVE.equals(policy.getLogic())) {
+        if (policy != null && Policy.Logic.NEGATIVE.equals(policy.getLogic())) {
             this.effect = Decision.Effect.PERMIT;
         } else {
             this.effect = Decision.Effect.DENY;

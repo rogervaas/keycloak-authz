@@ -18,6 +18,7 @@
 package org.keycloak.authz.server.uma.protection.permission;
 
 import org.keycloak.authz.core.model.util.Identifiers;
+import org.keycloak.representations.AccessToken;
 import org.keycloak.representations.JsonWebToken;
 
 import java.util.Set;
@@ -35,10 +36,15 @@ public class PermissionTicket extends JsonWebToken {
         this.resourceSetId = null;
     }
 
-    public PermissionTicket(String resourceSetId, Set<String> scopes) {
-        id(Identifiers.generateId());
+    public PermissionTicket(String resourceSetId, Set<String> scopes, AccessToken accessToken) {
         this.resourceSetId = resourceSetId;
         this.scopes = scopes;
+        id(Identifiers.generateId());
+        subject(accessToken.getSubject());
+        expiration(accessToken.getExpiration());
+        notBefore(accessToken.getNotBefore());
+        issuedAt(accessToken.getIssuedAt());
+        issuedFor(accessToken.getIssuedFor());
     }
 
     public Set<String> getScopes() {

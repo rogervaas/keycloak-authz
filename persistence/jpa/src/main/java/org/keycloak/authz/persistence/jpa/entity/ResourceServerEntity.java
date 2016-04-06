@@ -41,7 +41,7 @@ public class ResourceServerEntity implements ResourceServer {
     private boolean allowRemoteResourceManagement;
 
     @Column
-    private boolean allowRemotePolicyManagement;
+    private boolean allowEntitlements;
 
     @Column
     private PolicyEnforcementMode policyEnforcementMode;
@@ -81,13 +81,13 @@ public class ResourceServerEntity implements ResourceServer {
     }
 
     @Override
-    public boolean isAllowRemotePolicyManagement() {
-        return this.allowRemotePolicyManagement;
+    public boolean isAllowEntitlements() {
+        return this.allowEntitlements;
     }
 
     @Override
-    public void setAllowRemotePolicyManagement(boolean allowRemotePolicyManagement) {
-        this.allowRemotePolicyManagement = allowRemotePolicyManagement;
+    public void setAllowEntitlements(boolean allowEntitlements) {
+        this.allowEntitlements = allowEntitlements;
     }
 
     @Override

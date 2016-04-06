@@ -17,6 +17,7 @@
  */
 package org.keycloak.authz.server.entitlement.resource;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.keycloak.authz.core.model.util.Identifiers;
 import org.keycloak.authz.server.services.common.representation.Permission;
 import org.keycloak.representations.AccessToken;
@@ -58,6 +59,7 @@ public class EntitlementToken extends JsonWebToken {
         return this.accessToken;
     }
 
+    @JsonIgnore
     public boolean isValid() {
         return getType() != null && getType().equals("kc_ett") &&  isActive();
     }

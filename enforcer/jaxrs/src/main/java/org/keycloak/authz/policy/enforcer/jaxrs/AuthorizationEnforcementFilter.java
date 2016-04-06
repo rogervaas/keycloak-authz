@@ -18,6 +18,7 @@ import org.keycloak.jose.jws.JWSInput;
 import org.keycloak.jose.jws.JWSInputException;
 import org.keycloak.jose.jws.crypto.RSAProvider;
 import org.keycloak.representations.AccessToken;
+import org.omg.PortableInterceptor.SYSTEM_EXCEPTION;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.container.ContainerRequestContext;
@@ -69,6 +70,7 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
     }
 
     private void enforceAuthorization(ContainerRequestContext requestContext, ResourceInfo resourceInfo) {
+        System.out.println(resourceInfo.getResourceMethod());
         Class<?> resourceClass = resourceInfo.getResourceClass();
         Method resourceMethod = resourceInfo.getResourceMethod();
         Enforce enforce = resourceMethod.getAnnotation(Enforce.class);
@@ -140,10 +142,16 @@ public class AuthorizationEnforcementFilter implements ContainerRequestFilter {
     private boolean isAuthorized(ResourceRepresentation protectedResource, Set<String> requiredScopes, RequestingPartyToken rpt) {
         if (rpt != null && rpt.isValid()) {
             for (Permission permission : rpt.getPermissions()) {
+                Set<String> allowedScopes = permission.getScopes();
                 String resourceId = protectedResource.getId();
-                if (permission.getResourceSetId().equals(resourceId)) {
-                    Set<String> allowedScopes = permission.getScopes();
 
+                if (permission.getResourceSetId() != null) {
+                    if (permission.getResourceSetId().equals(resourceId)) {
+                        if ((allowedScopes.isEmpty() && requiredScopes.isEmpty()) || allowedScopes.containsAll(requiredScopes)) {
+                            return true;
+                        }
+                    }
+                } else {
                     if ((allowedScopes.isEmpty() && requiredScopes.isEmpty()) || allowedScopes.containsAll(requiredScopes)) {
                         return true;
                     }

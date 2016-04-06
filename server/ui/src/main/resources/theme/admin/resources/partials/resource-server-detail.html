@@ -64,13 +64,13 @@
                 <kc-tooltip>Should resources be managed remotely by the resource server? If false, resources can only be managed from this admin console.</kc-tooltip>
             </div>
             <div class="form-group">
-                <label class="col-md-2 control-label" for="server.allowRemotePolicyManagement">Allow Remote Policy Management</label>
+                <label class="col-md-2 control-label" for="server.allowEntitlements">Entitlements</label>
                 <div class="col-md-6">
-                    <input ng-model="server.allowRemotePolicyManagement" id="server.allowRemotePolicyManagement" onoffswitch />
+                    <input ng-model="server.allowEntitlements" id="server.allowEntitlements" onoffswitch />
                 </div>
-                <kc-tooltip>Should policies be managed remotely by the resource server? If false, policies can only be managed from this admin console.</kc-tooltip>
+                <kc-tooltip>Defines if clients are allowed to obtain the entitlements from this server. If enabled, clients are allowed to obtain all the permissions
+                granted to an user based on all resources and scopes in this server.</kc-tooltip>
             </div>
-
             <div class="form-group">
                 <div class="col-md-10 col-md-offset-2" data-ng-show="create">
                     <button kc-save data-ng-disabled="!changed">Save</button>

@@ -84,6 +84,9 @@ module.controller('AlbumCtrl', function ($scope, $http, $routeParams, $location,
         });
     };
 });
+module.controller('ProfileCtrl', function ($scope, $http, $routeParams, $location, Profile) {
+    $scope.profile = Profile.get();
+});
 module.controller('AdminAlbumCtrl', function ($scope, $http, $route, AdminAlbum, Album) {
     $scope.albums = {};
     $http.get('/photoz-restful-api/admin/album').success(function (data) {
@@ -99,6 +102,9 @@ module.controller('AdminAlbumCtrl', function ($scope, $http, $route, AdminAlbum,
 module.factory('Album', ['$resource', function ($resource) {
     return $resource('http://localhost:8080/photoz-restful-api/album/:id');
 }]);
+module.factory('Profile', ['$resource', function ($resource) {
+    return $resource('http://localhost:8080/photoz-restful-api/profile');
+}]);
 module.factory('AdminAlbum', ['$resource', function ($resource) {
     return $resource('http://localhost:8080/photoz-restful-api/admin/album/:id');
 }]);
@@ -107,7 +113,7 @@ module.factory('authInterceptor', function ($q, $injector, $timeout, Identity) {
 
     return {
         request: function (request) {
-            if (Identity.uma && Identity.uma.rpt && request.url.indexOf('/album') != -1) {
+            if (Identity.uma && Identity.uma.rpt && (request.url.indexOf('/album') != -1 || request.url.indexOf('/profile') != -1)) {
                 retries = 0;
                 request.headers.Authorization = 'Bearer ' + Identity.uma.rpt.rpt;
             } else {
@@ -121,7 +127,7 @@ module.factory('authInterceptor', function ($q, $injector, $timeout, Identity) {
             console.log(retries);
 
             if (rejection.status === 403) {
-                if (rejection.config.url.indexOf('/album') != -1 && retries < 1) {
+                if ((rejection.config.url.indexOf('/album') != -1 || rejection.config.url.indexOf('/profile') != -1) && retries < 1) {
                     if (rejection.data.ticket) {
                         return $timeout(function () {
                             var data = JSON.stringify({
@@ -163,8 +169,7 @@ module.config(function ($httpProvider, $routeProvider) {
     $httpProvider.interceptors.push('authInterceptor');
     $routeProvider.when('/', {
         templateUrl: 'partials/home.html',
-        controller: 'GlobalCtrl',
-        isFree: false
+        controller: 'GlobalCtrl'
     }).when('/album/create', {
         templateUrl: 'partials/album/create.html',
         controller: 'AlbumCtrl',
@@ -174,6 +179,9 @@ module.config(function ($httpProvider, $routeProvider) {
     }).when('/admin/album', {
         templateUrl: 'partials/admin/albums.html',
         controller: 'AdminAlbumCtrl',
+    }).when('/profile', {
+        templateUrl: 'partials/profile.html',
+        controller: 'ProfileCtrl',
     }).otherwise({
         redirectTo: '/'
     });

@@ -6,6 +6,7 @@ import org.keycloak.authz.core.EvaluationContext;
 import org.keycloak.authz.core.model.Policy;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
+import org.keycloak.authz.core.model.ResourceServer.PolicyEnforcementMode;
 import org.keycloak.authz.core.model.Scope;
 import org.keycloak.authz.core.permission.ResourcePermission;
 import org.keycloak.authz.core.policy.provider.PolicyProvider;
@@ -15,6 +16,7 @@ import org.keycloak.authz.core.store.PolicyStore;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
@@ -36,10 +38,17 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
 
     @Override
     public void evaluate(ResourcePermission permission, EvaluationContext executionContext, Decision decision) {
-        PolicyStore policyStore = this.authorization.getStoreFactory().getPolicyStore();
-        Consumer<Policy> consumer = createDecisionConsumer(permission, executionContext, decision);
-        Resource resource = permission.getResource();
         ResourceServer resourceServer = permission.getResourceServer();
+
+        if (PolicyEnforcementMode.DISABLED.equals(resourceServer.getPolicyEnforcementMode())) {
+            createEvaluation(permission, executionContext, decision, null, null).grant();
+            return;
+        }
+
+        PolicyStore policyStore = this.authorization.getStoreFactory().getPolicyStore();
+        AtomicInteger policiesCount = new AtomicInteger(0);
+        Consumer<Policy> consumer = createDecisionConsumer(permission, executionContext, decision, policiesCount);
+        Resource resource = permission.getResource();
 
         if (resource != null) {
             List<? extends Policy> resourcePolicies = policyStore.findByResource(resource.getId());
@@ -47,7 +56,6 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
             if (!resourcePolicies.isEmpty()) {
                 resourcePolicies.forEach(consumer);
             }
-
 
             if (resource.getType() != null) {
                 policyStore.findByResourceType(resource.getType(), resourceServer.getId()).forEach(consumer);
@@ -61,9 +69,13 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
         if (!permission.getScopes().isEmpty()) {
             policyStore.findByScopeName(permission.getScopes().stream().map(Scope::getName).collect(Collectors.toList()), resourceServer.getId()).forEach(consumer);
         }
+
+        if (PolicyEnforcementMode.PERMISSIVE.equals(resourceServer.getPolicyEnforcementMode()) && policiesCount.get() == 0) {
+            createEvaluation(permission, executionContext, decision, null, null).grant();
+        }
     }
 
-    private  Consumer<Policy> createDecisionConsumer(ResourcePermission permission, EvaluationContext executionContext, Decision decision) {
+    private  Consumer<Policy> createDecisionConsumer(ResourcePermission permission, EvaluationContext executionContext, Decision decision, AtomicInteger policiesCount) {
         return (parentPolicy) -> {
             if (hasRequestedScopes(permission, parentPolicy)) {
                 for (Policy associatedPolicy : parentPolicy.getAssociatedPolicies()) {
@@ -73,14 +85,19 @@ public class DefaultPolicyEvaluator implements PolicyEvaluator {
                         throw new RuntimeException("Unknown parentPolicy provider for type [" + associatedPolicy.getType() + "].");
                     }
 
-                    Evaluation evaluation = new Evaluation(permission, executionContext, parentPolicy, associatedPolicy, decision);
+                    Evaluation evaluation = createEvaluation(permission, executionContext, decision, parentPolicy, associatedPolicy);
 
                     policyProvider.evaluate(evaluation);
-
                     evaluation.denyIfNoEffect();
+
+                    policiesCount.incrementAndGet();
                 }
             }
         };
+    }
+
+    private Evaluation createEvaluation(ResourcePermission permission, EvaluationContext executionContext, Decision decision, Policy parentPolicy, Policy associatedPolicy) {
+        return new Evaluation(permission, executionContext, parentPolicy, associatedPolicy, decision);
     }
 
     private boolean hasRequestedScopes(final ResourcePermission permission, final Policy policy) {

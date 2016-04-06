@@ -18,7 +18,11 @@ public abstract class DecisionResultCollector implements Decision {
 
     @Override
     public void onDecision(Evaluation evaluation) {
-        results.computeIfAbsent(evaluation.getPermission(), Result::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(evaluation.getEffect());
+        if (evaluation.getParentPolicy() != null) {
+            results.computeIfAbsent(evaluation.getPermission(), Result::new).policy(evaluation.getParentPolicy()).policy(evaluation.getPolicy()).setStatus(evaluation.getEffect());
+        } else {
+            results.computeIfAbsent(evaluation.getPermission(), Result::new).setStatus(evaluation.getEffect());
+        }
     }
 
     @Override

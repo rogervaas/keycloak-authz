@@ -21,6 +21,7 @@ import org.keycloak.authz.core.Authorization;
 import org.keycloak.authz.core.model.Resource;
 import org.keycloak.authz.core.model.ResourceServer;
 import org.keycloak.authz.core.model.Scope;
+import org.keycloak.authz.server.services.common.KeycloakIdentity;
 import org.keycloak.authz.server.uma.ErrorResponse;
 import org.keycloak.jose.jws.JWSBuilder;
 import org.keycloak.models.RealmModel;
@@ -38,13 +39,15 @@ public class PermissionService {
 
     private final RealmModel realm;
     private final ResourceServer resourceServer;
+    private final KeycloakIdentity identity;
 
     @Context
     private Authorization authorizationManager;
 
-    public PermissionService(RealmModel realm, ResourceServer resourceServer) {
+    public PermissionService(RealmModel realm, ResourceServer resourceServer, KeycloakIdentity identity) {
         this.realm = realm;
         this.resourceServer = resourceServer;
+        this.identity = identity;
     }
 
     @POST
@@ -81,7 +84,7 @@ public class PermissionService {
     }
 
     private String createPermissionTicket(PermissionRequest request) {
-        return new JWSBuilder().jsonContent(new PermissionTicket(request.getResourceSetId(), request.getScopes()))
+        return new JWSBuilder().jsonContent(new PermissionTicket(request.getResourceSetId(), request.getScopes(), this.identity.getAccessToken()))
                 .rsa256(this.realm.getPrivateKey());
     }
 }

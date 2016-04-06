@@ -122,7 +122,7 @@ public class AuthorizationService {
 
         if (rpt != null && !"".equals(rpt)) {
             if (!Tokens.verifySignature(rpt, this.realm.getPublicKey())) {
-                throw new ErrorResponseException("invalid_rpt", "RPT signature is invalid", Response.Status.BAD_REQUEST);
+                throw new ErrorResponseException("invalid_rpt", "RPT signature is invalid", Response.Status.FORBIDDEN);
             }
 
             RequestingPartyToken requestingPartyToken;
@@ -130,7 +130,7 @@ public class AuthorizationService {
             try {
                 requestingPartyToken = new JWSInput(rpt).readJsonContent(RequestingPartyToken.class);
             } catch (JWSInputException e) {
-                throw new ErrorResponseException("invalid_rpt", "Invalid RPT", Response.Status.BAD_REQUEST);
+                throw new ErrorResponseException("invalid_rpt", "Invalid RPT", Response.Status.FORBIDDEN);
             }
 
             if (requestingPartyToken.isValid()) {
@@ -181,13 +181,19 @@ public class AuthorizationService {
 
     private PermissionTicket verifyPermissionTicket(AuthorizationRequest request) {
         if (!Tokens.verifySignature(request.getTicket(), this.realm.getPublicKey())) {
-            throw new ErrorResponseException("invalid_ticket", "Ticket verification failed", Response.Status.BAD_REQUEST);
+            throw new ErrorResponseException("invalid_ticket", "Ticket verification failed", Response.Status.FORBIDDEN);
         }
 
         try {
-            return new JWSInput(request.getTicket()).readJsonContent(PermissionTicket.class);
+            PermissionTicket ticket = new JWSInput(request.getTicket()).readJsonContent(PermissionTicket.class);
+
+            if (!ticket.isActive()) {
+                throw new ErrorResponseException("invalid_ticket", "Invalid permission ticket.", Response.Status.FORBIDDEN);
+            }
+
+            return ticket;
         } catch (JWSInputException e) {
-            throw new ErrorResponseException("invalid_ticket", "Could not parse permission ticket.", Response.Status.INTERNAL_SERVER_ERROR);
+            throw new ErrorResponseException("invalid_ticket", "Could not parse permission ticket.", Response.Status.FORBIDDEN);
         }
     }
 }

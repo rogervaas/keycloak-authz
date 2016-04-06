@@ -31,7 +31,7 @@ public class MapResourceServer implements ResourceServer {
 
     @Getter
     @Setter
-    private boolean allowRemotePolicyManagement;
+    private boolean allowEntitlements;
 
     @Getter
     @Setter

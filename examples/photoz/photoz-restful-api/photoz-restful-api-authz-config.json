@@ -1,13 +1,26 @@
 {
   "clientId": "photoz-restful-api",
   "allowRemoteResourceManagement": true,
-  "allowRemotePolicyManagement": true,
+  "allowEntitlements": true,
   "policyEnforcementMode": "ENFORCING",
   "resources": [
     {
+      "name": "User Profile Resource",
+      "uri": "/profile",
+      "type": "http://photoz.com/profile",
+      "scopes": [
+        {
+          "name": "urn:photoz.com:scopes:profile:view"
+        }
+      ],
+      "owner": {
+        "name": "photoz-restful-api"
+      }
+    },
+    {
       "name": "Album Resource",
       "uri": "/album/*",
-      "type": "http://photoz.com/dev/resource/album",
+      "type": "http://photoz.com/album",
       "scopes": [
         {
           "name": "urn:photoz.com:scopes:album:view"
@@ -25,7 +38,8 @@
     },
     {
       "name": "Admin Resources",
-      "type": "http://photoz.com/dev/resource/admin/album",
+      "uri": "/admin/*",
+      "type": "http://photoz.com/admin",
       "scopes": [
         {
           "name": "urn:photoz.com:scopes:album:admin:manage"
@@ -33,25 +47,6 @@
       ],
       "owner": {
         "name": "photoz-restful-api"
-      }
-    },
-    {
-      "name": "test",
-      "uri": "/album/5",
-      "type": "http://photoz.com/dev/resource/album",
-      "scopes": [
-        {
-          "name": "urn:photoz.com:scopes:album:view"
-        },
-        {
-          "name": "urn:photoz.com:scopes:album:create"
-        },
-        {
-          "name": "urn:photoz.com:scopes:album:delete"
-        }
-      ],
-      "owner": {
-        "name": "alice"
       }
     }
   ],
@@ -111,25 +106,15 @@
       }
     },
     {
-      "name": "Delete Album Policy",
-      "description": "A policy that only allows the owner to delete his albums.",
-      "type": "scope",
-      "decisionStrategy": "UNANIMOUS",
-      "config": {
-        "applyPolicies": "[\"Only Owner And Admin User Policy\"]",
-        "scopes": "[\"urn:photoz.com:scopes:album:delete\"]"
-      }
-    },
-    {
       "name": "Album Resource Policy",
       "description": "General policies that apply to all album resources.",
       "type": "resource",
       "decisionStrategy": "AFFIRMATIVE",
       "config": {
-        "defaultResourceType": "http://photoz.com/dev/resource/album",
+        "defaultResourceType": "http://photoz.com/album",
         "resources": "[]",
         "default": "true",
-        "applyPolicies": "[\"Any User Policy\",\"Any Admin Policy\"]"
+        "applyPolicies": "[\"Any Admin Policy\",\"Any User Policy\"]"
       }
     },
     {
@@ -138,21 +123,31 @@
       "type": "resource",
       "decisionStrategy": "UNANIMOUS",
       "config": {
-        "defaultResourceType": "http://photoz.com/dev/resource/admin/album",
+        "defaultResourceType": "http://photoz.com/admin",
         "resources": "[]",
         "default": "true",
         "applyPolicies": "[\"Any Admin Policy\"]"
       }
     },
     {
-      "name": "Create Album Policy",
-      "description": "A policy that roles the creation of albums",
+      "name": "View User Profile",
+      "description": "Defines who is allowed to view an user profile",
+      "type": "scope",
+      "logic": "POSITIVE",
+      "decisionStrategy": "UNANIMOUS",
+      "config": {
+        "applyPolicies": "[\"Only From a Specific Client Address\"]",
+        "scopes": "[\"urn:photoz.com:scopes:profile:view\"]"
+      }
+    },
+    {
+      "name": "Delete Album Policy",
+      "description": "A policy that only allows the owner to delete his albums.",
       "type": "scope",
       "decisionStrategy": "UNANIMOUS",
       "config": {
-        "resources": "[\"Album Resource\"]",
-        "scopes": "[\"urn:photoz.com:scopes:album:create\"]",
-        "applyPolicies": "[\"Only From a Specific Client Address\"]"
+        "applyPolicies": "[\"Only Owner And Admin User Policy\"]",
+        "scopes": "[\"urn:photoz.com:scopes:album:delete\"]"
       }
     }
   ],
@@ -165,11 +160,7 @@
     {
       "name": "urn:photoz.com:scopes:album:create",
       "iconUri": "",
-      "policies": [
-        {
-          "name": "Create Album Policy"
-        }
-      ]
+      "policies": []
     },
     {
       "name": "urn:photoz.com:scopes:album:delete",
@@ -183,6 +174,14 @@
     {
       "name": "urn:photoz.com:scopes:album:admin:manage",
       "policies": []
+    },
+    {
+      "name": "urn:photoz.com:scopes:profile:view",
+      "policies": [
+        {
+          "name": "View User Profile"
+        }
+      ]
     }
   ]
 }
