@@ -46,7 +46,6 @@ public class ProfileService {
 
     @GET
     @Produces("application/json")
-    @Enforce(scopes= PROFILE_VIEW)
     public Response view(@Context SecurityContext securityContext) {
         List albums = this.entityManager.createQuery("from Album where userId = '" + securityContext.getUserPrincipal().getName() + "'").getResultList();
         return Response.ok(new Profile(securityContext.getUserPrincipal().getName(), albums.size())).build();

@@ -53,7 +53,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+
+import static javafx.scene.input.KeyCode.R;
 
 /**
  * @author <a href="mailto:psilva@redhat.com">Pedro Igor</a>
@@ -114,9 +117,16 @@ public class AuthorizationService {
     }
 
     private List<ResourcePermission> createPermissions(PermissionTicket ticket, AuthorizationRequest request) {
+        Resource resource = authorizationManager.getStoreFactory().getResourceStore().findById(ticket.getResourceSetId());
         Map<String, Set<String>> permissionsToEvaluate = new HashMap<>();
 
-        permissionsToEvaluate.put(ticket.getResourceSetId(), ticket.getScopes());
+        Set<String> requestedScopes = ticket.getScopes();
+
+        if (requestedScopes.isEmpty()) {
+            requestedScopes = resource.getScopes().stream().map(Scope::getName).collect(Collectors.toSet());
+        }
+
+        permissionsToEvaluate.put(ticket.getResourceSetId(), requestedScopes);
 
         String rpt = request.getRpt();
 
@@ -135,14 +145,14 @@ public class AuthorizationService {
 
             if (requestingPartyToken.isValid()) {
                 requestingPartyToken.getPermissions().forEach(permission -> {
-                    Resource resource = authorizationManager.getStoreFactory().getResourceStore().findById(permission.getResourceSetId());
+                    Resource resourcePermission = authorizationManager.getStoreFactory().getResourceStore().findById(permission.getResourceSetId());
 
-                    if (resource != null) {
-                        Set<String> scopes = permissionsToEvaluate.get(permission.getResourceSetId());
+                    if (resourcePermission != null) {
+                        Set<String> scopes = permissionsToEvaluate.get(resourcePermission.getId());
 
                         if (scopes == null) {
                             scopes = new HashSet<>();
-                            permissionsToEvaluate.put(permission.getResourceSetId(), scopes);
+                            permissionsToEvaluate.put(resourcePermission.getId(), scopes);
                         }
 
                         scopes.addAll(permission.getScopes());
@@ -152,14 +162,14 @@ public class AuthorizationService {
         }
 
         return permissionsToEvaluate.entrySet().stream().map(entry -> {
-            Resource resource = authorizationManager.getStoreFactory().getResourceStore().findById(entry.getKey());
+            Resource entryResource = authorizationManager.getStoreFactory().getResourceStore().findById(entry.getKey());
 
-            if (resource != null) {
+            if (entryResource != null) {
                 List<Scope> scopes = entry.getValue().stream()
                         .map(scopeName -> authorizationManager.getStoreFactory().getScopeStore().findByName(scopeName))
                         .filter(scope -> scope != null).collect(Collectors.toList());
 
-                return new ResourcePermission(resource, scopes, resource.getResourceServer());
+                return new ResourcePermission(entryResource, scopes, entryResource.getResourceServer());
             }
 
             return null;
