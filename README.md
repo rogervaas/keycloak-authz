@@ -1,3 +1,7 @@
+# Note
+
+This repository is no longer being maintened. For the last work about Keycloak Authorization Services, please take a look at [Keycloak Authorization Services](https://github.com/pedroigor/keycloak/blob/KEYCLOAK-2753/authz/README.md).
+
 # Keycloak Authorization Server
 
 This a temporary repository for an Authorization Server based on [Keycloak](https://github.com/keycloak/keycloak).
